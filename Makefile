@@ -59,7 +59,7 @@ LIBMPI    = -lmpi
 LIBLOCA   = -L./libLOCA/ -lloca
 LIBS      = $(LIBMUMPS) $(LIBMPI) $(LIBLOCA) $(LIBARPACK) $(LIBLAPACK) $(LIBBLAS)
 
-FOLDER = ~/Dropbox/UNI/Fortran/bin/
+FOLDER = ~/BTSync/UNI/Fortran/bin/
 NAME   = continuation_axi
 
 

@@ -1,0 +1,18 @@
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#    _     __    _    __  _ 
+#   |_) _ (_ _|_|_|    _)| \
+#   |  (_|__) |_| |   /__|_/
+#
+# a software for Parallel Stability Analysis
+#
+# Created by Jacopo Canton <jacopo.canton@mail.polimi.it>
+# based on Luigi Quartapelle's subroutines for FEM discretization
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+# FEATURES:
+#  - base flow computation
+#  - continuation of solutions and bifurcation tracking (LOCA library)
+#  - eigenvalues and eigenvectors computation (ARPACK library)
+#  - structural sensitivity computation
+#  - transient growth computation
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

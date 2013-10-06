@@ -1,0 +1,13 @@
+#
+# no vim auxiliary files
+#
+*.swp
+#
+# no build files
+#
+*.o
+*.mod
+# 
+# no backup files
+#
+*.bak

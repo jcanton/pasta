@@ -74,8 +74,8 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
 !--------------------------------------------------------
 ! DEFINE HERE SOME PARAMETERS WHICH SHOULD NOT BE CHANGED
 
-   nsv   = 1 ! we only want the largest singular value
-   sigma = 0 ! and we don't use any real shift
+   nsv   =   1 ! we only want the largest singular value
+   sigma = 0d0 ! and we don't use any real shift
 
 !--------------------------------------------------
 ! PREPARE MATRICES FOR THE TRANSIENT GROWTH PROBLEM
@@ -1087,7 +1087,7 @@ SUBROUTINE timeStepper (u0v, nSteps, dirAdj,  u1v)
    ! (1)
    ! build a full unknowns vector x0 = (u0, p0)
    !
-   CALL collect (u0, p0,  x0) !!! p0 ??? At the moment this is ok
+   CALL collect (u0, 0*p0,  x0) !!! p0 ??? At the moment this is ok
                                          ! because the first time step is computed
                                          ! with implicit Euler which doesn't
                                          ! need the pressure

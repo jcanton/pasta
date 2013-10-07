@@ -330,6 +330,7 @@ DO ii = 1, tausNumber
          CALL qc_0y1_sp_M     (mm, jj, jj_L,        -2d0,     Lns) ! - velocity divergence
          CALL Dirichlet_rc_M  (np, js_Axis, js_D_tg, 1d0,     Lns) ! Dirichlet BCs
          IF (DESINGULARIZE_tg) THEN
+            ! row
             DO i = Lns%i(Nx), Lns%i(Nx + 1) - 1
                Lns%e(i) = 0
                IF (Lns%j(i) == Nx) Lns%e(i) = 1
@@ -358,6 +359,7 @@ DO ii = 1, tausNumber
          CALL qc_0y1_sp_M     (mm, jj, jj_L,          -1d0,     Lns) ! - velocity divergence
          CALL Dirichlet_rc_M  (np, js_Axis, js_D_tg,   1d0,     Lns) ! Dirichlet BCs
          IF (DESINGULARIZE_tg) THEN
+            ! column
             WHERE (Lns%j == Nx)
                Lns%e = 0
             ENDWHERE
@@ -412,6 +414,11 @@ DO ii = 1, tausNumber
    CALL qc_0y1_sp_M     (mm, jj, jj_L,          -1d0,     Lns) ! - velocity divergence
    CALL Dirichlet_rc_M  (np, js_Axis, js_D_tg,   1d0,     Lns) ! Dirichlet BCs
    IF (DESINGULARIZE_tg) THEN
+      ! column
+      WHERE (Lns%j == Nx)
+         Lns%e = 0
+      ENDWHERE
+      ! row
       DO i = Lns%i(Nx), Lns%i(Nx + 1) - 1
          Lns%e(i) = 0
          IF (Lns%j(i) == Nx) Lns%e(i) = 1
@@ -526,7 +533,13 @@ DO ii = 1, tausNumber
    resLinfty = MAXVAL(ABS( tmpVector(:,1) - singularValue(1)*singularVector(:,1) ))
 
    WRITE(*,*) '    |res|_L-infty = ', resLinfty
-
+   WRITE(*,*)
+   WRITE(*,*) '    u0''*u0   = ', SUM(Ek0)
+   WRITE(*,*) '    u0''*M*u0 = ', Ek0_s
+   WRITE(*,*) '    uu''*uu   = ', SUM(Ek)
+   WRITE(*,*) '    uu''*M*uu = ', Ek_s
+   WRITE(*,*) '    (uu''*uu) / ( u0''*u0 )  = ', SUM(Ek) / SUM(Ek0)
+   WRITE(*,*) '    (uu''*M*uu) / ( u0''*M*u0 )  = ', Ek_s / Ek0_s
 
 !-------------
 ! SAVE RESULTS
@@ -539,7 +552,7 @@ DO ii = 1, tausNumber
       OPEN(UNIT=20, FILE='./tranGrowthOut/tranGrowth.dat', STATUS='new', ACTION='write')
       WRITE(20,*)   '         tau               method                dt' &
                   //'                      G                      Ek/Ek0                      resLinfty' &
-                  //'         ite'
+                  //'                ite'
       WRITE(20,*)
    ELSE
       OPEN(UNIT=20, FILE='./tranGrowthOut/tranGrowth.dat', STATUS='old', POSITION='append', ACTION='write')
@@ -1004,16 +1017,15 @@ SUBROUTINE singularValueDecomposition(nsv, uInitGuess, maxit, tol, sigma, nSteps
       WRITE(*,*) ' The number of Implicit Arnoldi update iterations taken is ', iparam(3)
       WRITE(*,*) ' The number of OP*x is ', iparam(9)
       WRITE(*,*) ' The convergence criterion is ', tol
-      WRITE(*,*) ' The number of main loop iterations is ', i
       WRITE(*,*) ' Shift used: ', sigma
       WRITE(*,*) ' '
 
-      iteNum = i
+      iteNum = iparam(9)
 
    END IF
 
    DEALLOCATE(v, s)
-   DEALLOCATE(Ax, workl, workd, resid)
+   DEALLOCATE(Ax, workl, workd, workev, resid)
    DEALLOCATE(lselect)
 
 

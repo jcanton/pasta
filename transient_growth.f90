@@ -2,7 +2,7 @@ MODULE transient_growth
 !
 ! Author: Jacopo Canton
 ! E-mail: jacopo.canton@mail.polimi.it
-! Last revision: 5/10/2013
+! Last revision: 17/10/2013
 !
    USE dynamic_structures
    USE sparse_matrix_profiles
@@ -57,7 +57,7 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
 
    REAL(KIND=8) :: dataIdentifier = 313d0 ! Donald Duck's plate number!
    INTEGER      :: tausNumber = 1
-   REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: taus
+   REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: taus
    CHARACTER(LEN=128) :: tauName ! used to insert tau in file names
    INTEGER            :: tauNameTemp
 
@@ -74,7 +74,7 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
 !--------------------------------------------------------
 ! DEFINE HERE SOME PARAMETERS WHICH SHOULD NOT BE CHANGED
 
-   nsv   =   1 ! we only want the largest singular value
+   nsv   = 1   ! we only want the largest singular value
    sigma = 0d0 ! and we don't use any real shift
 
 !--------------------------------------------------
@@ -238,10 +238,12 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
 
    IF ( p_in%tranGrowth_tau == dataIdentifier ) THEN
 
+      WRITE(*,*)
       WRITE(*,*) '--> Reading taus from file taus.in'
 
       OPEN( UNIT = 20, FILE = 'taus.in' )
       READ(20,*) tausNumber
+      READ(20,*)
       ALLOCATE(taus(tausNumber))
       DO ii = 1, tausNumber
          READ(20,*) taus(ii)
@@ -574,8 +576,8 @@ DO ii = 1, tausNumber
 
 ENDDO
 
-!---------------------------------------------
-! DEALLOCATE VARIABLES WHICH ARE tau DEPENDENT
+!-----------------------------------------------
+! DEALLOCATE VARIABLES WHICH ARE tau INDEPENDENT
 
    IF ( p_in%tranGrowth_tau == dataIdentifier ) THEN
       DEALLOCATE(taus)
@@ -600,6 +602,7 @@ ENDDO
 
    CALL par_mumps_master (DEALLOCATION, 9, MassV, 0)
    DEALLOCATE( MassV%i, MassV%i_mumps, MassV%j, MassV%e )
+
 
 END SUBROUTINE compute_transientGrowth
 

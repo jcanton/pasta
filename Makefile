@@ -16,7 +16,7 @@ Dependencies.inc:
 release:
 	@echo making release
 	@rm -f *.mod *.o
-	@cd .. && tar -czf ./backups/continuation_axi_$(NOW).tar.gz continuation_axi/
+	@cd .. && tar -czf ./backups/pasta_axi_$(NOW).tar.gz pasta_axi/
 
 continuation_axi.exe: main.o $(OBJ) 
 	$(F90LNK) $(F90FLAGS) main.o $(OBJ) $(LIBS) -o $(FOLDER)$(NAME)
@@ -60,7 +60,7 @@ LIBLOCA   = -L./libLOCA/ -lloca
 LIBS      = $(LIBMUMPS) $(LIBMPI) $(LIBLOCA) $(LIBARPACK) $(LIBLAPACK) $(LIBBLAS)
 
 FOLDER = ~/BTSync/UNI/Fortran/bin/
-NAME   = continuation_axi
+NAME   = pasta_axi
 
 
 ###############################################################################

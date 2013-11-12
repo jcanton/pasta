@@ -355,15 +355,15 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
 
       !------------------------------------------------------------------
       !-------------UPDATE SOLUTION VECTOR-------------------------------
-     
+
       x_vec = x0 + dx 
-      
+
       x0  = x_vec
       dx0 = dx
-     
+
    ENDDO
    !
-   ! end of NEWTON'S ITERATIONS IN INCREMENTAL-INCREMENTAL FORM
+   ! end of NEWTON'S ITERATIONS IN BI-INCREMENTAL FORM
    !=============================================================
 
 
@@ -559,10 +559,9 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
       IF ( JmoM_init ) THEN
          WRITE(*,*) '    destroying [J-i*omega*M] matrix'
 
+         CALL par_mumps_master (DEALLOCATION, 2, JmoM, 0)
          DEALLOCATE(JmoM%i, JmoM%i_mumps, JmoM%j, JmoM%e)
          JmoM_init=.FALSE.
-         ! the MUMPS module will take care of deallocating isave(2) the next time
-         ! it will be used
 
       ELSE
 
@@ -625,36 +624,59 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
       ALLOCATE ( ww(SIZE(p0)) )
       !------------------------------------------------------------------
       !-------------GENERATION OF THE RIGHT-HAND SIDE--------------------
-      ! rhs <-- - (u0 \dot \nabla)u0 + 1/Re lapl{u0} - grad{p0}
-      !         - div{u0}
+      !
+      ! NON-INCREMENTAL FORM
+      ! rhs <---  (u0 \dot \nabla)u0
+      !           0
       vv = 0
       CALL extract (xsol,  u0, p0)
-
-      CALL qv_0y01_sp (mm, jj, u0,               vv) ! (u0 \dot \nabla)u0
-      CALL qc_1y1_sp  (mm, jj, u0, 1d0/Re,       vv) ! - 1/Re lapl{u0} !!!!!! ibp
-
-      CALL qv_10_hybrid_sp (mm, jj, jj_L, -p0,   vv) ! grad{p0} !!!!!!!!!!!!! ibp
-
+      CALL qv_0y01_sp (mm, jj, u0,  vv)
+      CALL qc_ty0_sp_s (ms_2, jjs, iis,  c_2,  vv)  !  cumulative
+      CALL qc_ny0_sp_s (ms_3, jjs, iis, -q_3,  vv)  !  cumulative
       ww = 0
-      CALL qs_01_hybrid_L_sp (mm, jj, jj_L, u0,  ww) ! div{u0}
-
-      CALL collect (-vv, -ww,  rhs)
+      CALL collect (vv, ww,  rhs) ! here dx is the RHS
       !------------------------------------------------------------------
       !-------------ENFORCING DIRICHLET BOUNDARY CONDITIONS ON THE RHS---
       !
-      ! INCREMENTAL FORM
-      ! differential type boundary conditions
+      ! NON-INCREMENTAL FORM
+      ! non-homogeneous boundary conditions
       !
-      CALL extract_Dirichlet_c (np, js_Axis, js_D, xsol,  old_bvs_D)
-      CALL Dirichlet_c_DIFF (np, js_Axis, js_D, bvs_D, old_bvs_D, rhs)
-
+      CALL Dirichlet_c (np, js_Axis, js_D, bvs_D,  rhs)
       IF (DESINGULARIZE) rhs(Nx) = 0d0
-
-      WRITE(*,*) '*check*'
-      DO ii = 1, SIZE(u0, 1)
-         WRITE(*,*) 'MAXdelta_bvs_D = ', MAXVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
-         WRITE(*,*) 'MINdelta_bvs_D = ', MINVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
-      ENDDO
+!!!      !
+!!!      ! INCREMENTAL FORM
+!!!      ! rhs <-- - (u0 \dot \nabla)u0 + 1/Re lapl{u0} - grad{p0}
+!!!      !         - div{u0}
+!!!!     WRITE(*,*) '*check*'
+!!!!     WRITE(*,*) '    Re = ', Re
+!!!      vv = 0
+!!!      CALL extract (xsol,  u0, p0)
+!!!
+!!!      CALL qv_0y01_sp   (mm, jj, u0,              vv) ! (u0 \dot \nabla)u0
+!!!      CALL qc_1y1_sp_gg (mm, jj, u0, 1d0/Re,      vv) ! - 1/Re lapl{u0} !!!!!! ibp
+!!!
+!!!      CALL qv_y_10_hybrid_sp (mm, jj, jj_L, -p0,  vv) ! grad{p0} !!!!!!!!!!!!! ibp
+!!!
+!!!      ww = 0
+!!!      CALL qs_01_hybrid_L_sp (mm, jj, jj_L, u0,   ww) ! div{u0}
+!!!
+!!!      CALL collect (-vv, -ww,  rhs)
+!!!      !------------------------------------------------------------------
+!!!      !-------------ENFORCING DIRICHLET BOUNDARY CONDITIONS ON THE RHS---
+!!!      !
+!!!      ! INCREMENTAL FORM
+!!!      ! differential type boundary conditions
+!!!      !
+!!!      CALL extract_Dirichlet_c (np, js_Axis, js_D, xsol,  old_bvs_D)
+!!!      CALL Dirichlet_c_DIFF (np, js_Axis, js_D, bvs_D, old_bvs_D, rhs)
+!!!
+!!!      IF (DESINGULARIZE) rhs(Nx) = 0d0
+!!!
+!!!      WRITE(*,*) '*check*'
+!!!      DO ii = 1, SIZE(u0, 1)
+!!!         WRITE(*,*) 'MAXdelta_bvs_D = ', MAXVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
+!!!         WRITE(*,*) 'MINdelta_bvs_D = ', MINVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
+!!!      ENDDO
 
       DEALLOCATE( vv, ww )
 
@@ -1040,6 +1062,7 @@ SUBROUTINE assign_parameter_conwrap(param) &
 
       CASE( REYNOLDS )
          WRITE(*,*) '    Reynolds = ', param
+         WRITE(*,*) '    oldRe    = ', Re
          Re          = param
          pd%reynolds = param
 
@@ -1047,14 +1070,14 @@ SUBROUTINE assign_parameter_conwrap(param) &
          WRITE(*,*) '    velRatio = ', param
          WRITE(*,*) '    oldVR    = ', velRatio
 
-         WRITE(*,*) 'REIMPLEMENT THIS NOW THAT'
-         WRITE(*,*) 'BOUNDARY CONDITIONS HAVE BEEN CHANGED'
-         STOP
-
-         CALL gen_dirichlet_boundary_values (rr, sides, Dir, jjs, js_D, in_bvs_D, bvs_D)
-
          velRatio  = param
          pd%vRatio = param
+
+         ! coaxial jets
+         in_bvs_D(1,1,2) = 1d0
+         in_bvs_D(1,5,2) = velRatio
+
+         CALL gen_dirichlet_boundary_values (rr, sides, Dir, jjs, js_D, in_bvs_D, bvs_D)
 
       CASE( MU )
          WRITE(*,*) '    mu = ', param
@@ -1102,6 +1125,7 @@ SUBROUTINE assign_bif_parameter_conwrap(bif_param) &
 
       CASE( REYNOLDS )
          WRITE(*,*) '    Reynolds = ', bif_param
+         WRITE(*,*) '    oldRe    = ', Re
          Re          = bif_param
          pd%reynolds = bif_param
 
@@ -1109,14 +1133,14 @@ SUBROUTINE assign_bif_parameter_conwrap(bif_param) &
          WRITE(*,*) '    velRatio = ', bif_param
          WRITE(*,*) '    oldVR    = ', velRatio
        
-         WRITE(*,*) 'REIMPLEMENT THIS NOW THAT'
-         WRITE(*,*) 'BOUNDARY CONDITIONS HAVE BEEN CHANGED'
-         STOP
-
-         CALL gen_dirichlet_boundary_values (rr, sides, Dir, jjs, js_D, in_bvs_D, bvs_D)
-
          velRatio  = bif_param
          pd%vRatio = bif_param
+
+         ! coaxial jets
+         in_bvs_D(1,1,2) = 1d0
+         in_bvs_D(1,5,2) = velRatio
+
+         CALL gen_dirichlet_boundary_values (rr, sides, Dir, jjs, js_D, in_bvs_D, bvs_D)
 
       CASE( MU )
          WRITE(*,*) '    mu = ', bif_param
@@ -1402,6 +1426,7 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
 !enddo
 !close(20)
 !write(*,*) 'done'
+!return
 !+++
 
 

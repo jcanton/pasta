@@ -446,7 +446,7 @@ SUBROUTINE read_and_apply_boundary_conditions(input_file, k_d, rr, mms, jjs, &
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> reading input-file ', trim(input_file), ' ...'
    WRITE(*,*) '    Re       = ', Re
-   WRITE(*,*) '    velRatio = ', velRatio, '***NOT USED FOR NOW***'
+   WRITE(*,*) '    velRatio = ', velRatio
    WRITE(*,*) '    number of boundary segments: ', number_of_sides
 
    DO m = 1, number_of_sides
@@ -469,6 +469,14 @@ SUBROUTINE read_and_apply_boundary_conditions(input_file, k_d, rr, mms, jjs, &
 
     ENDDO
    
+!+++
+! coaxial jets
+   IF (velRatio /= 0d0) THEN
+      WRITE(*,*) '    assigning velRatio based on header input'
+      in_bvs_D(1,1,2) = 1d0
+      in_bvs_D(1,5,2) = velRatio
+   ENDIF
+!+++
   
    CLOSE (21)
    WRITE(*,*) '--> finished reading file ', trim(input_file), '.'
@@ -504,7 +512,7 @@ SUBROUTINE read_and_apply_boundary_conditions(input_file, k_d, rr, mms, jjs, &
    ! (3)
    ! generate Dirichlet boundary values
    CALL gen_dirichlet_boundary_values (rr, sides, Dir, jjs, js_D, in_bvs_D, bvs_D)
-   DO k = 1, k_d
+   DO k = 1, velCmpnnts
       old_bvs_D(k)%DRL = bvs_D(k)%DRL
    ENDDO
 

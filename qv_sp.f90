@@ -71,7 +71,7 @@ SUBROUTINE qv_01_sp (m0, jj, ff,  v0)
   
    INTEGER :: mm, m, l, k, n
 
-   v0 = 0
+!   v0 = 0
 
    DO mm = 1, SIZE(m0);  m = m0(mm)
 
@@ -103,14 +103,20 @@ SUBROUTINE qv_01_sp (m0, jj, ff,  v0)
 
 END SUBROUTINE qv_01_sp
 
-
 !------------------------------------------------------------------------------
 
-
-SUBROUTINE qv_10_hybrid_sp (m0, jj, jj_L, ff_L,  v0)
+SUBROUTINE qv_y_10_hybrid_sp (m0, jj, jj_L, ff_L,  v0)
 !===================================================
 
-!  << D.w, f_L >>    ===>    v0
+!  << D.w, f_L >>    ===>    v0   VECCHIO
+
+! CANTON 
+
+!  << y w, Df_L >>    integrando per parti
+
+!  << y D.w  +  2 w_R , f_L >>    ===>    v0
+
+! CANTON
 
    USE Gauss_points
   
@@ -134,10 +140,6 @@ SUBROUTINE qv_10_hybrid_sp (m0, jj, jj_L, ff_L,  v0)
    
    INTEGER :: mm, m, l, k, n
 
-
-   WRITE(*,*)
-   WRITE(*,*) "***WARNING: I don't know if this function is 2D or axisym***"
-   WRITE(*,*)
 
    SELECT CASE (k_d)
 
@@ -173,16 +175,17 @@ SUBROUTINE qv_10_hybrid_sp (m0, jj, jj_L, ff_L,  v0)
             ENDDO
          ENDDO
          
-         fl = SUM(ffm_L * w_L(:,l)) * pp_w(l)
+         fl = SUM(ffm_L * w_L(:,l)) * pp_w(l) 
          
-         v0(:, jjm) = v0(:, jjm)  +  dwl * fl
+         v0(:, jjm) = v0(:, jjm)  +  dwl * fl * yy_G(l,m)  ! new * yy_G(l,m)
+       
+         v0(2, jjm) = v0(2, jjm)  +  ww(:,l) * fl          ! new  tutta la linea
        
       ENDDO
 
    ENDDO
 
-END SUBROUTINE qv_10_hybrid_sp
-
+END SUBROUTINE qv_y_10_hybrid_sp
 
 !------------------------------------------------------------------------------
 
@@ -466,7 +469,7 @@ SUBROUTINE qv_0y01_sp (m0, jj, gg,  v0)
    REAL(KIND=8) :: yl_p
    INTEGER :: mm, m, l, k3, k, n
 
-   v0 = 0
+!   v0 = 0
 
    DO mm = 1, SIZE(m0);  m = m0(mm)
 
@@ -500,9 +503,9 @@ SUBROUTINE qv_0y01_sp (m0, jj, gg,  v0)
       
             SELECT CASE (k3) 
       
-               CASE(2);  v0(2, jjm) = v0(2, jjm)  -  ww(:,l) * gl(3)**2 * JAC(m) * pp_w(l) 
+               CASE(2);  v0(2, jjm) = v0(2, jjm)  -  ww(:,l) * gl(3)**2 * JAC(m) * pp_w(l)
             
-               CASE(3);  v0(3, jjm) = v0(3, jjm)  +  ww(:,l) * gl(3) * gl(2) * JAC(m) * pp_w(l) 
+               CASE(3);  v0(3, jjm) = v0(3, jjm)  +  ww(:,l) * gl(3) * gl(2) * JAC(m) * pp_w(l)
       
             END SELECT
       

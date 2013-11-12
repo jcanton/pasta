@@ -122,7 +122,6 @@ SUBROUTINE read_BVS (sideNumber, scaleFactor, nodes_on_this_side, velCmpnnts, rr
    INTEGER                                   :: locXa, locXb, &
                                                 locYa, locYb, &
                                                 locA,  locB
-
    ! executable statements
 
    ! (1)
@@ -157,6 +156,8 @@ SUBROUTINE read_BVS (sideNumber, scaleFactor, nodes_on_this_side, velCmpnnts, rr
 
    CLOSE(20)
    WRITE(*,*) '    Done.'
+
+   dataSideData(1:velCmpnnts,:) = dataSideData(1:velCmpnnts,:) * scaleFactor
 
    ! (3)
    ! check that the end points of the read side correspond to the end
@@ -245,12 +246,11 @@ SUBROUTINE read_BVS (sideNumber, scaleFactor, nodes_on_this_side, velCmpnnts, rr
                   / SQRT( (dataSideData(velCmpnnts+1,locB)-dataSideData(velCmpnnts+1,locA))**2 &
                         + (dataSideData(velCmpnnts+2,locB)-dataSideData(velCmpnnts+2,locA))**2 ) &
                   * SQRT( (rr(1,nodes_on_this_side(j))-dataSideData(velCmpnnts+1,locA))**2 &
-                        + (rr(2,nodes_on_this_side(j))-dataSideData(velCmpnnts+2,locA))**2 ) &
-                  * scaleFactor
+                        + (rr(2,nodes_on_this_side(j))-dataSideData(velCmpnnts+2,locA))**2 )
                endwhere
             ELSE
                where( js_D(k)%DIL == nodes_on_this_side(j) )
-                  bvs_D(k)%DRL = dataSideData(k,locA) * scaleFactor
+                  bvs_D(k)%DRL = dataSideData(k,locA)
                endwhere
             ENDIF
 

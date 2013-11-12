@@ -850,22 +850,10 @@ END SUBROUTINE qc_1y1_sp_gg_M
 
 !------------------------------------------------------------------------------
 
-SUBROUTINE qc_1y1_sp (m0, jj, gg, alpha,  v0)  !  BEWARE: NOT  _M
-!====================================
-! created by Jacopo Canton (jacopo.canton@mail.polimi.it)
-! who does not assure that what follows is correct
-! use it at your own risk
+SUBROUTINE qc_1y1_sp_gg (m0, jj, gg, alpha,  v0)   !  BEWARE: NOT  _M 
+!======================================   
 
-!  + alpha [<< (Dxw), y Dxg >>  +  < (D.w), D.g >]   ===>   v0 cumulative
-
-!  TWO-DIMENSIONAL VERSION ONLY
-!
-!  +  alpha times
-!
-!  dwx/dx . dgx/dx  +  dwx/dy . dgx/dy   |   dwx/dx . dgy/dy  -  dwx/dy . dgy/dx
-!
-! -dwy/dx . dgx/dy  +  dwy/dy . dgx/dy   |   dwy/dx . dgy/dx  +  dwy/dy . dgy/dy 
-!
+!  alpha << (Dw), y Dg >> 
 
    USE Gauss_points
 
@@ -875,37 +863,20 @@ SUBROUTINE qc_1y1_sp (m0, jj, gg, alpha,  v0)  !  BEWARE: NOT  _M
    INTEGER,      DIMENSION(:,:), INTENT(IN)  :: jj
    REAL(KIND=8), DIMENSION(:,:), INTENT(IN)  :: gg
    REAL(KIND=8),                 INTENT(IN)  :: alpha
-   REAL(KIND=8), DIMENSION(:,:), INTENT(OUT) :: v0
- 
-   REAL(KIND=8), DIMENSION(k_d, n_w) :: ggm, dwl
+   REAL(KIND=8), DIMENSION(:,:)              :: v0
+
+   REAL(KIND=8), DIMENSION(k_d, n_w) :: ggm, dwl  
    REAL(KIND=8), DIMENSION(k_d, k_d) :: dgl
-   REAL(KIND=8), DIMENSION(n_w)      :: dwdgl_k, dwdgl_k_OFF_DIAG
+   REAL(KIND=8), DIMENSION(3)        :: gl
+   REAL(KIND=8), DIMENSION(n_w)      :: dwdgl_k
    INTEGER,      DIMENSION(n_w)      :: jjm
  
-   INTEGER :: np, mm, k, k1, l, m, n
-   
-   
-   WRITE(*,*)
-   WRITE(*,*) '***WARNING: this subroutine has been implemented by Jacopo Canton***'
-   WRITE(*,*) '***         and quite surely does not work                       ***'
-   WRITE(*,*) 'STOP.'
-   STOP
-   
-
-   IF (k_d /= 2) THEN
-   
-      WRITE (*,*) 'qc_1y1_sp  is implemented only in 2D'
-      WRITE (*,*) 'STOP.'
-      STOP
-   
-   ENDIF
-
-   np = MAXVAL(jj)  
-   
-   v0 = 0 
+   INTEGER :: mm, m, n, k, k1, l
+      
+!   v0 = 0
 
    DO mm = 1, SIZE(m0);  m = m0(mm)
-      
+
       jjm = jj(:,m)
 
       ggm = gg(:,jjm)
@@ -918,52 +889,39 @@ SUBROUTINE qc_1y1_sp (m0, jj, gg, alpha,  v0)  !  BEWARE: NOT  _M
             ENDDO
          ENDDO
 
-         DO k = 1, k_d
+         DO k = 1, 3
+            gl(k) = SUM(ggm(k,:) * ww(:,l)) 
+         ENDDO
+
+         DO k = 1, 3
             DO k1 = 1, k_d
                dgl(k,k1) = SUM(ggm(k,:) * dwl(k1,:)) 
             ENDDO
          ENDDO
 
-         dgl = dgl * pp_w(l) / JAC(m) * yy_G(l,m) !  BEWARE 
-     
-         DO k = 1, k_d
+         DO k = 1, 3
           
             DO n = 1, n_w
-            
-               dwdgl_k(n) = SUM(dwl(:,n) * dgl(k,:))              
-               
-               SELECT CASE (k)
-               
-                  CASE(1);  dwdgl_k_OFF_DIAG(n) =  dwl(1,n) * dgl(2,2)  -  dwl(2,n) * dgl(2,1)      
-                  CASE(2);  dwdgl_k_OFF_DIAG(n) = -dwl(1,n) * dgl(1,2)  +  dwl(2,n) * dgl(1,1)          
-            
-               END SELECT 
-            
-            ENDDO
+               dwdgl_k(n) = SUM(dwl(:,n) * dgl(k,:)) * yy_G(l,m) * pp_w(l) / JAC(m)
+            ENDDO ! ok fin qui
          
-            v0(k, jjm)  =  v0(k, jjm)  +  alpha * dwdgl_k  +  dwdgl_k_OFF_DIAG
+            v0(k, jjm)  =  v0(k, jjm)  + alpha * dwdgl_k
+
+            SELECT CASE (k)
+
+               CASE(2); v0(2, jjm)  =  v0(2, jjm)  + alpha * ww(:,l) * gl(2) * JAC(m) * pp_w(l) / yy_G(l,m)
+
+               CASE(3); v0(3, jjm)  =  v0(3, jjm)  + alpha * ww(:,l) * gl(3) * JAC(m) * pp_w(l) / yy_G(l,m)
+
+            END SELECT
 
          ENDDO
          
-         ! dgl(1,1)  -->  dgx/dx  [times pp_w(l) / JAC(m)]
-         
-         ! dgl(1,1)  -->  dgx/dx   |   dgl(1,2)  --->  dgx/dy
-         ! dgl(2,1)  -->  dgy/dx   |   dgl(2,2)  --->  dgy/dy
-         
-         !  dw/dx . dgy/dy  -  dw/dy . dgy/dx
-         ! -dw/dx . dgx/dy  +  dw/dy . dgx/dx        
-         
-         ! FIRST BLOCK-VECTOR
-         !  dw/dx . dgx/dx  +  dw/dy . dgx/dy  |  dw/dx . dgy/dy  -  dw/dy . dgy/dx
- 
-         ! SECOND BLOCK-VECTOR   
-         ! -dw/dx . dgx/dy  +  dw/dy . dgx/dx  |  dw/dx . dgy/dx  +  dw/dy . dgy/dy 
-      
       ENDDO
 
    ENDDO
 
-END SUBROUTINE qc_1y1_sp
+END SUBROUTINE qc_1y1_sp_gg
 
 !------------------------------------------------------------------------------
 

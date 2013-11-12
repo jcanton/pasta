@@ -643,40 +643,40 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
       !
       CALL Dirichlet_c (np, js_Axis, js_D, bvs_D,  rhs)
       IF (DESINGULARIZE) rhs(Nx) = 0d0
-!!!      !
-!!!      ! INCREMENTAL FORM
-!!!      ! rhs <-- - (u0 \dot \nabla)u0 + 1/Re lapl{u0} - grad{p0}
-!!!      !         - div{u0}
-!!!!     WRITE(*,*) '*check*'
-!!!!     WRITE(*,*) '    Re = ', Re
-!!!      vv = 0
-!!!      CALL extract (xsol,  u0, p0)
-!!!
-!!!      CALL qv_0y01_sp   (mm, jj, u0,              vv) ! (u0 \dot \nabla)u0
-!!!      CALL qc_1y1_sp_gg (mm, jj, u0, 1d0/Re,      vv) ! - 1/Re lapl{u0} !!!!!! ibp
-!!!
-!!!      CALL qv_y_10_hybrid_sp (mm, jj, jj_L, -p0,  vv) ! grad{p0} !!!!!!!!!!!!! ibp
-!!!
-!!!      ww = 0
-!!!      CALL qs_01_hybrid_L_sp (mm, jj, jj_L, u0,   ww) ! div{u0}
-!!!
-!!!      CALL collect (-vv, -ww,  rhs)
-!!!      !------------------------------------------------------------------
-!!!      !-------------ENFORCING DIRICHLET BOUNDARY CONDITIONS ON THE RHS---
-!!!      !
-!!!      ! INCREMENTAL FORM
-!!!      ! differential type boundary conditions
-!!!      !
-!!!      CALL extract_Dirichlet_c (np, js_Axis, js_D, xsol,  old_bvs_D)
-!!!      CALL Dirichlet_c_DIFF (np, js_Axis, js_D, bvs_D, old_bvs_D, rhs)
-!!!
-!!!      IF (DESINGULARIZE) rhs(Nx) = 0d0
-!!!
-!!!      WRITE(*,*) '*check*'
-!!!      DO ii = 1, SIZE(u0, 1)
-!!!         WRITE(*,*) 'MAXdelta_bvs_D = ', MAXVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
-!!!         WRITE(*,*) 'MINdelta_bvs_D = ', MINVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
-!!!      ENDDO
+!!!       !
+!!!       ! INCREMENTAL FORM
+!!!       ! rhs <-- - (u0 \dot \nabla)u0 + 1/Re lapl{u0} - grad{p0}
+!!!       !         - div{u0}
+!!! !     WRITE(*,*) '*check*'
+!!! !     WRITE(*,*) '    Re = ', Re
+!!!       vv = 0
+!!!       CALL extract (xsol,  u0, p0)
+!!! 
+!!!       CALL qv_0y01_sp   (mm, jj, u0,              vv) ! (u0 \dot \nabla)u0
+!!!       CALL qc_1y1_sp_gg (mm, jj, u0, 1d0/Re,      vv) ! - 1/Re lapl{u0} !!!!!! ibp
+!!! 
+!!!       CALL qv_y_10_hybrid_sp (mm, jj, jj_L, -p0,  vv) ! grad{p0} !!!!!!!!!!!!! ibp
+!!! 
+!!!       ww = 0
+!!!       CALL qs_01_hybrid_L_sp (mm, jj, jj_L, u0,   ww) ! div{u0}
+!!! 
+!!!       CALL collect (-vv, -ww,  rhs)
+!!!       !------------------------------------------------------------------
+!!!       !-------------ENFORCING DIRICHLET BOUNDARY CONDITIONS ON THE RHS---
+!!!       !
+!!!       ! INCREMENTAL FORM
+!!!       ! differential type boundary conditions
+!!!       !
+!!!       CALL extract_Dirichlet_c (np, js_Axis, js_D, xsol,  old_bvs_D)
+!!!       CALL Dirichlet_c_DIFF (np, js_Axis, js_D, bvs_D, old_bvs_D, rhs)
+!!! 
+!!!       IF (DESINGULARIZE) rhs(Nx) = 0d0
+
+      WRITE(*,*) '*check*'
+      DO ii = 1, SIZE(u0, 1)
+         WRITE(*,*) 'MAXdelta_bvs_D = ', MAXVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
+         WRITE(*,*) 'MINdelta_bvs_D = ', MINVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
+      ENDDO
 
       DEALLOCATE( vv, ww )
 

@@ -865,8 +865,9 @@ SUBROUTINE qc_1y1_sp_gg (m0, jj, gg, alpha,  v0)   !  BEWARE: NOT  _M
    REAL(KIND=8),                 INTENT(IN)  :: alpha
    REAL(KIND=8), DIMENSION(:,:)              :: v0
 
-   REAL(KIND=8), DIMENSION(k_d, n_w) :: ggm, dwl  
-   REAL(KIND=8), DIMENSION(k_d, k_d) :: dgl
+   REAL(KIND=8), DIMENSION(k_d, n_w) :: dwl
+   REAL(KIND=8), DIMENSION(3, n_w)   :: ggm
+   REAL(KIND=8), DIMENSION(3, k_d)   :: dgl
    REAL(KIND=8), DIMENSION(3)        :: gl
    REAL(KIND=8), DIMENSION(n_w)      :: dwdgl_k
    INTEGER,      DIMENSION(n_w)      :: jjm
@@ -903,8 +904,8 @@ SUBROUTINE qc_1y1_sp_gg (m0, jj, gg, alpha,  v0)   !  BEWARE: NOT  _M
           
             DO n = 1, n_w
                dwdgl_k(n) = SUM(dwl(:,n) * dgl(k,:)) * yy_G(l,m) * pp_w(l) / JAC(m)
-            ENDDO ! ok fin qui
-         
+            ENDDO
+
             v0(k, jjm)  =  v0(k, jjm)  + alpha * dwdgl_k
 
             SELECT CASE (k)

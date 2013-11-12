@@ -204,8 +204,8 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
    !-------------OF THE COUPLED EQUATION SYSTEM-----------------------
    !             Jacobian  <--- [(u0.V)_ + (_.V)u0)]  +  K_  +  V_ (ibp)
    !
-!  WRITE(*,*) '*check*'
-!  WRITE(*,*) '    Re = ', Re
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    Re = ', Re
    CALL ComputeJacobianMatrix (np, mm, jj, jj_L, js_Axis, js_D, DESINGULARIZE, Jacobian, Re, u0)
    CALL par_mumps_master (NUMER_FACTOR, 1, Jacobian, 0)
    !------------------------------------------------------------------
@@ -278,11 +278,11 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
 
       IF (DESINGULARIZE) dx(Nx) = 0d0
 
-!     WRITE(*,*) '*check*'
-!     DO ii = 1, SIZE(du0, 1)
-!        WRITE(*,*) 'MAXdelta_bvs_D = ', MAXVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
-!        WRITE(*,*) 'MINdelta_bvs_D = ', MINVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
-!     ENDDO
+      WRITE(*,*) '*check*'
+      DO ii = 1, SIZE(du0, 1)
+         WRITE(*,*) 'MAXdelta_bvs_D = ', MAXVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
+         WRITE(*,*) 'MINdelta_bvs_D = ', MINVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
+      ENDDO
    
       !------------------------------------------------------------------
       !-------------COMPUTE RESIDUAL-------------------------------------
@@ -313,8 +313,8 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
       !             Jacobian  <--- [(u0.V)_ + (_.V)u0)]  +  K_  +  V_ (ibp)
       !
 
-!     WRITE(*,*) '*check*'
-!     WRITE(*,*) '    Re = ', Re
+      WRITE(*,*) '*check*'
+      WRITE(*,*) '    Re = ', Re
       CALL ComputeJacobianMatrix (np, mm, jj, jj_L, js_Axis, js_D, DESINGULARIZE, Jacobian, Re, u0)
       CALL par_mumps_master (NUMER_FACTOR, 1, Jacobian, 0)
 
@@ -427,7 +427,9 @@ FUNCTION linear_solver_conwrap(xsol, jac_flag, tmp) &
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to linear_solver_conwrap'
-   !WRITE(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(xsol))
+
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(xsol))
    
    pd%num_linear_its = pd%num_linear_its + 1
 
@@ -450,7 +452,8 @@ FUNCTION linear_solver_conwrap(xsol, jac_flag, tmp) &
    ENDIF
    
    CALL par_mumps_master (DIRECT_SOLUTION, 1, Jacobian, 0, xsol)
-   !WRITE(*,*) '    |sol|_L-infty = ', MAXVAL(ABS(xsol))
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |sol|_L-infty = ', MAXVAL(ABS(xsol))
    
 
    ires = 1
@@ -503,7 +506,8 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
    
    rhs = CMPLX(c, d)
 
-   !WRITE(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(DBLE(rhs))), MAXVAL(ABS(AIMAG(rhs)))
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(DBLE(rhs))), MAXVAL(ABS(AIMAG(rhs)))
    
 
    IF (jac_flag == NEW_JACOBIAN) THEN
@@ -519,7 +523,8 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
          ! impose boundary conditions on the Mass Matrix
          CALL Dirichlet_c_M_MASS (np, js_Axis, js_D,  Mass)
          Mass_init = .TRUE.
-         !WRITE(*,*) '    |Mass%e|_L-infty = ', MAXVAL(ABS(Mass%e))
+         WRITE(*,*) '*check*'
+         WRITE(*,*) '    |Mass%e|_L-infty = ', MAXVAL(ABS(Mass%e))
       ENDIF
 
 
@@ -544,14 +549,16 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
          ! because they have been lazily built
          JmoM%e(i) = CMPLX( Jacobian%e(i), - omega*Mass%e(i) )
       ENDDO
-      !WRITE(*,*) '    |[J-i*omega*M]%e|_L-infty = ', MAXVAL(ABS(DBLE(JmoM%e))), MAXVAL(ABS(AIMAG(JmoM%e)))
+      WRITE(*,*) '*check*'
+      WRITE(*,*) '    |[J-i*omega*M]%e|_L-infty = ', MAXVAL(ABS(DBLE(JmoM%e))), MAXVAL(ABS(AIMAG(JmoM%e)))
 
       CALL par_mumps_master (NUMER_FACTOR, 2, JmoM, 0)
 
    ENDIF
 
    CALL par_mumps_master (DIRECT_SOLUTION, 2, JmoM, 0, rhs)
-   !WRITE(*,*) '    |sol|_L-infty = ', MAXVAL(ABS(DBLE(rhs))), MAXVAL(ABS(AIMAG(rhs)))
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |sol|_L-infty = ', MAXVAL(ABS(DBLE(rhs))), MAXVAL(ABS(AIMAG(rhs)))
 
 
    IF (jac_flag == OLD_JACOBIAN_DESTROY) THEN
@@ -614,7 +621,9 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to matrix_residual_fill_conwrap'
-   !WRITE(*,*) '    |xsol|_L-infty = ', MAXVAL(ABS(xsol))
+
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |xsol|_L-infty = ', MAXVAL(ABS(xsol))
 
    IF (matflag == RHS_ONLY .OR. matflag == RHS_MATRIX .OR. matflag == RHS_MATRIX_SAVE) THEN
 
@@ -628,49 +637,54 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
       ! NON-INCREMENTAL FORM
       ! rhs <---  (u0 \dot \nabla)u0
       !           0
+!!      vv = 0
+!!      CALL extract (xsol,  u0, p0)
+!!      CALL qv_0y01_sp (mm, jj, u0,  vv)
+!!      CALL qc_ty0_sp_s (ms_2, jjs, iis,  c_2,  vv)  !  cumulative
+!!      CALL qc_ny0_sp_s (ms_3, jjs, iis, -q_3,  vv)  !  cumulative
+!!      ww = 0
+!!      CALL collect (vv, ww,  rhs)
+!!      !------------------------------------------------------------------
+!!      !-------------ENFORCING DIRICHLET BOUNDARY CONDITIONS ON THE RHS---
+!!      !
+!!      ! NON-INCREMENTAL FORM
+!!      ! non-homogeneous boundary conditions
+!!      !
+!!      CALL Dirichlet_c (np, js_Axis, js_D, bvs_D,  rhs)
+!!      IF (DESINGULARIZE) rhs(Nx) = 0d0
+      !
+      ! INCREMENTAL FORM
+      ! rhs <-- - (u0 \dot \nabla)u0 + 1/Re lapl{u0} - grad{p0}
+      !         - div{u0}
+      WRITE(*,*) '*check*'
+      WRITE(*,*) '    Re = ', Re
       vv = 0
       CALL extract (xsol,  u0, p0)
-      CALL qv_0y01_sp (mm, jj, u0,  vv)
-      CALL qc_ty0_sp_s (ms_2, jjs, iis,  c_2,  vv)  !  cumulative
-      CALL qc_ny0_sp_s (ms_3, jjs, iis, -q_3,  vv)  !  cumulative
+
+      CALL qv_0y01_sp   (mm, jj, u0,              vv) ! (u0 \dot \nabla)u0
+      CALL qc_1y1_sp_gg (mm, jj, u0, 1d0/Re,      vv) ! - 1/Re lapl{u0} !!!!!! ibp
+      CALL qv_y_10_hybrid_sp (mm, jj, jj_L, -p0,  vv) ! grad{p0} !!!!!!!!!!!!! ibp
+      !do ii = 1, size(vv,2)
+      !   write(*,*) vv(:,ii)
+      !enddo
+      !stop
+
       ww = 0
-      CALL collect (vv, ww,  rhs) ! here dx is the RHS
+      ! no need to use this (furthermore the subroutine commented here
+      ! is for 2d cartesian problems)
+      !CALL qs_01_hybrid_L_sp (mm, jj, jj_L, u0,   ww) ! div{u0}
+
+      CALL collect (-vv, -ww,  rhs)
       !------------------------------------------------------------------
       !-------------ENFORCING DIRICHLET BOUNDARY CONDITIONS ON THE RHS---
       !
-      ! NON-INCREMENTAL FORM
-      ! non-homogeneous boundary conditions
+      ! INCREMENTAL FORM
+      ! differential type boundary conditions
       !
-      CALL Dirichlet_c (np, js_Axis, js_D, bvs_D,  rhs)
+      CALL extract_Dirichlet_c (np, js_Axis, js_D, xsol,  old_bvs_D)
+      CALL Dirichlet_c_DIFF (np, js_Axis, js_D, bvs_D, old_bvs_D, rhs)
+
       IF (DESINGULARIZE) rhs(Nx) = 0d0
-!!!       !
-!!!       ! INCREMENTAL FORM
-!!!       ! rhs <-- - (u0 \dot \nabla)u0 + 1/Re lapl{u0} - grad{p0}
-!!!       !         - div{u0}
-!!! !     WRITE(*,*) '*check*'
-!!! !     WRITE(*,*) '    Re = ', Re
-!!!       vv = 0
-!!!       CALL extract (xsol,  u0, p0)
-!!! 
-!!!       CALL qv_0y01_sp   (mm, jj, u0,              vv) ! (u0 \dot \nabla)u0
-!!!       CALL qc_1y1_sp_gg (mm, jj, u0, 1d0/Re,      vv) ! - 1/Re lapl{u0} !!!!!! ibp
-!!! 
-!!!       CALL qv_y_10_hybrid_sp (mm, jj, jj_L, -p0,  vv) ! grad{p0} !!!!!!!!!!!!! ibp
-!!! 
-!!!       ww = 0
-!!!       CALL qs_01_hybrid_L_sp (mm, jj, jj_L, u0,   ww) ! div{u0}
-!!! 
-!!!       CALL collect (-vv, -ww,  rhs)
-!!!       !------------------------------------------------------------------
-!!!       !-------------ENFORCING DIRICHLET BOUNDARY CONDITIONS ON THE RHS---
-!!!       !
-!!!       ! INCREMENTAL FORM
-!!!       ! differential type boundary conditions
-!!!       !
-!!!       CALL extract_Dirichlet_c (np, js_Axis, js_D, xsol,  old_bvs_D)
-!!!       CALL Dirichlet_c_DIFF (np, js_Axis, js_D, bvs_D, old_bvs_D, rhs)
-!!! 
-!!!       IF (DESINGULARIZE) rhs(Nx) = 0d0
 
       WRITE(*,*) '*check*'
       DO ii = 1, SIZE(u0, 1)
@@ -687,7 +701,8 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
       !-------------------------------------
       rhs = -rhs
 
-      !WRITE(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(rhs))
+      WRITE(*,*) '*check*'
+      WRITE(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(rhs))
    ENDIF  
 
    IF (matflag == MATRIX_ONLY .OR. matflag == RHS_MATRIX .OR. matflag == RECOVER_MATRIX ) THEN
@@ -705,7 +720,8 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
       CALL ComputeJacobianMatrix (np, mm, jj, jj_L, js_Axis, js_D, DESINGULARIZE, Jacobian, Re, u0)
       CALL par_mumps_master (NUMER_FACTOR, 1, Jacobian, 0)
 
-      !WRITE(*,*) '    |Jacobian%e|_L-infty = ', MAXVAL(ABS(Jacobian%e))
+      WRITE(*,*) '*check*'
+      WRITE(*,*) '    |Jacobian%e|_L-infty = ', MAXVAL(ABS(Jacobian%e))
    ENDIF
 
    WRITE(*,*)
@@ -750,7 +766,9 @@ SUBROUTINE mass_matrix_fill_conwrap(xsol, rhs) &
       ! impose boundary conditions on the Mass Matrix
       CALL Dirichlet_c_M_MASS (np, js_Axis, js_D,  Mass)
       Mass_init = .TRUE.
-      !WRITE(*,*) '    |Mass%e|_L-infty = ', MAXVAL(ABS(Mass%e))
+
+      WRITE(*,*) '*check*'
+      WRITE(*,*) '    |Mass%e|_L-infty = ', MAXVAL(ABS(Mass%e))
    ENDIF
 
 END SUBROUTINE mass_matrix_fill_conwrap
@@ -785,7 +803,9 @@ SUBROUTINE matvec_mult_conwrap(xxx, yyy) &
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to matvec_mult_conwrap'
-   !WRITE(*,*) '    |x|_L-infty = ', MAXVAL(ABS(xxx))
+
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |x|_L-infty = ', MAXVAL(ABS(xxx))
 
    number_of_rows = SIZE(Jacobian%i)-1
 
@@ -810,7 +830,8 @@ SUBROUTINE matvec_mult_conwrap(xxx, yyy) &
    END DO
 !$OMP END PARALLEL DO
 
-   !WRITE(*,*) '    |y|_L-infty = ', MAXVAL(ABS(yyy))
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |y|_L-infty = ', MAXVAL(ABS(yyy))
    WRITE(*,*)
 
 END SUBROUTINE matvec_mult_conwrap
@@ -845,7 +866,9 @@ SUBROUTINE mass_matvec_mult_conwrap(xxx, yyy) &
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to mass_matvec_mult_conwrap'
-   !WRITE(*,*) '    |x|_L-infty = ', MAXVAL(ABS(xxx))
+
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |x|_L-infty = ', MAXVAL(ABS(xxx))
 
    IF ( .NOT.Mass_init ) THEN
       WRITE(*,*) '***************************'
@@ -880,7 +903,8 @@ SUBROUTINE mass_matvec_mult_conwrap(xxx, yyy) &
    END DO
 !$OMP END PARALLEL DO
 
-   !WRITE(*,*) '    |y|_L-infty = ', MAXVAL(ABS(yyy))
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |y|_L-infty = ', MAXVAL(ABS(yyy))
    WRITE(*,*)
 
 END SUBROUTINE mass_matvec_mult_conwrap

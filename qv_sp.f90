@@ -158,7 +158,7 @@ SUBROUTINE qv_y_10_hybrid_sp (m0, jj, jj_L, ff_L,  v0)
  
    END SELECT
 
-   v0 = 0
+!   v0 = 0
 
    DO mm = 1, SIZE(m0);  m = m0(mm)
       

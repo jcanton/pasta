@@ -65,7 +65,7 @@ SUBROUTINE qs_01_hybrid_L_sp (m0, jj, jj_L, gg,  u0_L)
    END SELECT
 
 
-   u0_L = 0
+!   u0_L = 0
 
    DO mm = 1, SIZE(m0);  m = m0(mm)
 

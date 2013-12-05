@@ -84,9 +84,33 @@ SUBROUTINE dns (x0)
    ALLOCATE( Matr%j      (SIZE(Jacobian%j))       ); Matr%j       = Jacobian%j
    ALLOCATE( Matr%e      (SIZE(Jacobian%e))       ); Matr%e       = 0d0
 
-   CALL par_mumps_master (INITIALIZATION, 7, Matr, 0)
-   CALL par_mumps_master (SYMBO_FACTOR,   7, Matr, 0)
+   SELECT CASE (p_in%dns_method)
+      CASE (1)
+         CALL par_mumps_master (INITIALIZATION, 7, Matr, 0)
+         CALL par_mumps_master (SYMBO_FACTOR,   7, Matr, 0)
 
+      CASE (2)
+         CALL par_mumps_master (INITIALIZATION, 7, Matr, 0)
+         CALL par_mumps_master (SYMBO_FACTOR,   7, Matr, 0)
+         ! assemble matrix
+         !
+         CALL qc_0y0_zero_sp_M (mm, jj,        1.5d0/dt, Matr) !   Mass
+         CALL qc_1y1_sp_gg_M   (mm, jj,        1d0/Re,   Matr) ! + stifness (GRAD:GRAD)
+         CALL qc_1y0_sp_M      (mm, jj, jj_L, -1d0,      Matr) ! + pressure gradient (ibp)
+         CALL qc_0y1_sp_M      (mm, jj, jj_L, -1d0,      Matr) ! - velocity divergence
+         CALL Dirichlet_c_M    (np, js_Axis, js_D,  Matr)
+         CALL par_mumps_master (NUMER_FACTOR, 7, Matr, 0)
+
+      CASE DEFAULT
+         WRITE(*,*) '*************************************'
+         WRITE(*,*) '*** Wrong parameter:              ***'
+         WRITE(*,*) '*** p_in % dns_method             ***'
+         WRITE(*,*) '*** set to: ', p_in%dns_method
+         WRITE(*,*) '*************************************'
+         WRITE(*,*) 'STOP.'
+         STOP
+   END SELECT
+         
 !-------------------------------
 ! INITIALIZE previous time steps
 
@@ -115,7 +139,8 @@ SUBROUTINE dns (x0)
       ENDIF
 
       ! update solution
-      x0 = xx
+      xOld2 = x0
+      x0    = xx
 
    ENDDO
 
@@ -147,59 +172,83 @@ SUBROUTINE advanceInTime (method, dt, xOld, x)
    REAL(KIND=8), DIMENSION(np_L)          :: pRHS
 
 
-   IF ( method == 1 ) THEN
+   SELECT CASE (method)
+
+      CASE (1)
       !------------------------
       ! BDF2 with semi-explicit
       ! convective term
       !------------------------
-      
-      ! (1)
-      ! extract previous velocity fields
-      !
-      CALL extract (xOld2,  u02)
-      CALL extract (xOld,   u0)
+         ! (1)
+         ! extract previous velocity fields
+         !
+         CALL extract (xOld2,  u02)
+         CALL extract (xOld,   u0)
+         
+         ! (2)
+         ! assemble matrix
+         !
+         Matr%e = 0d0
+         CALL qc_0y0_zero_sp_M (mm, jj,        1.5d0/dt, Matr) !   Mass
+         CALL qc_advecy_sp_M   (mm, jj,        2*u0-u02, Matr) ! + convective term
+         CALL qc_1y1_sp_gg_M   (mm, jj,        1d0/Re,   Matr) ! + stifness (GRAD:GRAD)
+         CALL qc_1y0_sp_M      (mm, jj, jj_L, -1d0,      Matr) ! + pressure gradient (ibp)
+         CALL qc_0y1_sp_M      (mm, jj, jj_L, -1d0,      Matr) ! - velocity divergence
+         
+         CALL Dirichlet_c_M (np, js_Axis, js_D,  Matr)
+         CALL par_mumps_master (NUMER_FACTOR, 7, Matr, 0)
+         
+         ! (3)
+         ! assemble RHS
+         !
+         uRHS = 0d0
+         CALL qv_0y0_sp (mm, jj, u0,   2/dt,    uRHS)
+         CALL qv_0y0_sp (mm, jj, u02, -0.5/dt,  uRHS)
+         pRHS = 0d0
+         CALL collect (uRHS, pRHS,  xx)
+         
+         ! (4)
+         ! enforce Dirichlet boundary conditions
+         !
+         CALL Dirichlet_c (np, js_Axis, js_D, bvs_D,  xx)
+         IF (DESINGULARIZE) xx(Nx) = 0d0
+         
+         ! (5)
+         ! solve linear system
+         CALL par_mumps_master (DIRECT_SOLUTION, 7, Matr, 0, xx)
 
-      ! (2)
-      ! assemble matrix
-      !
-      Matr%e = 0d0
-      CALL qc_0y0_zero_sp_M (mm, jj,        1.5d0/dt, Matr) !   Mass
-      CALL qc_advecy_sp_M   (mm, jj,        2*u0-u02, Matr) ! + convective term
-      CALL qc_1y1_sp_gg_M   (mm, jj,        1d0/Re,   Matr) ! + stifness (GRAD:GRAD)
-      CALL qc_1y0_sp_M      (mm, jj, jj_L, -1d0,      Matr) ! + pressure gradient (ibp)
-      CALL qc_0y1_sp_M      (mm, jj, jj_L, -1d0,      Matr) ! - velocity divergence
+      CASE (2)
+      !------------------------
+      ! BDF2 with explicit
+      ! convective term
+      !------------------------
+         ! (1)
+         ! extract previous velocity fields
+         !
+         CALL extract (xOld2,  u02)
+         CALL extract (xOld,   u0)
+         
+         ! (3)
+         ! assemble RHS
+         !
+         uRHS = 0d0
+         CALL qv_0y0_sp  (mm, jj, u0,       -2/dt,   uRHS)
+         CALL qv_0y0_sp  (mm, jj, u02,       0.5/dt, uRHS)
+         CALL qv_0y01_sp (mm, jj, 2*u0-u02,          uRHS)
+         pRHS = 0d0
+         CALL collect (-uRHS, pRHS,  xx)
+         
+         ! (4)
+         ! enforce Dirichlet boundary conditions
+         !
+         CALL Dirichlet_c (np, js_Axis, js_D, bvs_D,  xx)
+         IF (DESINGULARIZE) xx(Nx) = 0d0
+         
+         ! (5)
+         ! solve linear system
+         CALL par_mumps_master (DIRECT_SOLUTION, 7, Matr, 0, xx)
 
-      CALL Dirichlet_c_M (np, js_Axis, js_D,  Matr)
-      CALL par_mumps_master (NUMER_FACTOR, 7, Matr, 0)
-
-      ! (3)
-      ! assemble RHS
-      !
-      uRHS = 0d0
-      CALL qv_0y0_sp (mm, jj, u0,  2/dt,    uRHS)
-      CALL qv_0y0_sp (mm, jj, u0, -0.5/dt,  uRHS)
-      pRHS = 0d0
-      CALL collect (uRHS, pRHS,  xx)
-
-      ! (4)
-      ! enforce Dirichlet boundary conditions
-      !
-      CALL Dirichlet_c (np, js_Axis, js_D, bvs_D,  xx)
-      IF (DESINGULARIZE) xx(Nx) = 0d0
-
-      ! (5)
-      ! solve linear system
-      CALL par_mumps_master (DIRECT_SOLUTION, 7, Matr, 0, xx)
-
-   ELSE
-      WRITE(*,*) '*************************************'
-      WRITE(*,*) '*** Wrong parameter:              ***'
-      WRITE(*,*) '*** p_in % dns_method             ***'
-      WRITE(*,*) '*** set to: ', p_in%dns_method
-      WRITE(*,*) '*************************************'
-      WRITE(*,*) 'STOP.'
-      STOP
-   ENDIF
+   END SELECT
 
 
 END SUBROUTINE advanceInTime

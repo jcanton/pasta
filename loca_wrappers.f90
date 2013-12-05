@@ -634,25 +634,6 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
       !------------------------------------------------------------------
       !-------------GENERATION OF THE RIGHT-HAND SIDE--------------------
       !
-      ! NON-INCREMENTAL FORM
-      ! rhs <---  (u0 \dot \nabla)u0
-      !           0
-!!      vv = 0
-!!      CALL extract (xsol,  u0, p0)
-!!      CALL qv_0y01_sp (mm, jj, u0,  vv)
-!!      CALL qc_ty0_sp_s (ms_2, jjs, iis,  c_2,  vv)  !  cumulative
-!!      CALL qc_ny0_sp_s (ms_3, jjs, iis, -q_3,  vv)  !  cumulative
-!!      ww = 0
-!!      CALL collect (vv, ww,  rhs)
-!!      !------------------------------------------------------------------
-!!      !-------------ENFORCING DIRICHLET BOUNDARY CONDITIONS ON THE RHS---
-!!      !
-!!      ! NON-INCREMENTAL FORM
-!!      ! non-homogeneous boundary conditions
-!!      !
-!!      CALL Dirichlet_c (np, js_Axis, js_D, bvs_D,  rhs)
-!!      IF (DESINGULARIZE) rhs(Nx) = 0d0
-      !
       ! INCREMENTAL FORM
       ! rhs <-- - (u0 \dot \nabla)u0 + 1/Re lapl{u0} - grad{p0}
       !         - div{u0}
@@ -696,8 +677,8 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
 
       !-------------------------------------
       ! WARNING: continuation_hook expects the solution of
-      ! J(-x) = + R   and not
-      ! J( x) = - R
+      ! J(dx) = - R   and not
+      ! J(dx) = + R
       !-------------------------------------
       rhs = -rhs
 

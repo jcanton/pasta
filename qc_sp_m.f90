@@ -853,7 +853,7 @@ END SUBROUTINE qc_1y1_sp_gg_M
 SUBROUTINE qc_1y1_sp_gg (m0, jj, gg, alpha,  v0)   !  BEWARE: NOT  _M 
 !======================================   
 
-!  alpha << (Dw), y Dg >> 
+!  << (Dw), y Dg >> 
 
    USE Gauss_points
 
@@ -871,6 +871,8 @@ SUBROUTINE qc_1y1_sp_gg (m0, jj, gg, alpha,  v0)   !  BEWARE: NOT  _M
    REAL(KIND=8), DIMENSION(3)        :: gl
    REAL(KIND=8), DIMENSION(n_w)      :: dwdgl_k
    INTEGER,      DIMENSION(n_w)      :: jjm
+   
+   REAL(KIND=8) :: z1, z2
  
    INTEGER :: mm, m, n, k, k1, l
       
@@ -890,29 +892,33 @@ SUBROUTINE qc_1y1_sp_gg (m0, jj, gg, alpha,  v0)   !  BEWARE: NOT  _M
             ENDDO
          ENDDO
 
-         DO k = 1, 3
-            gl(k) = SUM(ggm(k,:) * ww(:,l)) 
+         DO k = 2, 3  ! g_x == g_z == g(k=1) non serve
+            gl(k) = SUM(ggm(k,:) * ww(:,l))
          ENDDO
 
          DO k = 1, 3
-            DO k1 = 1, k_d
+            DO k1 = 1, k_d ! k_d == 2
                dgl(k,k1) = SUM(ggm(k,:) * dwl(k1,:)) 
             ENDDO
          ENDDO
 
+         z1 = yy_G(l,m) * pp_w(l) / JAC(m)
+
+         z2 = JAC(m) * pp_w(l) / yy_G(l,m)
+
          DO k = 1, 3
           
             DO n = 1, n_w
-               dwdgl_k(n) = SUM(dwl(:,n) * dgl(k,:)) * yy_G(l,m) * pp_w(l) / JAC(m)
+               dwdgl_k(n) = SUM(dwl(:,n) * dgl(k,:))
             ENDDO
 
-            v0(k, jjm)  =  v0(k, jjm)  + alpha * dwdgl_k
+            v0(k, jjm)  =  v0(k, jjm)  +  alpha * dwdgl_k * z1
 
             SELECT CASE (k)
 
-               CASE(2); v0(2, jjm)  =  v0(2, jjm)  + alpha * ww(:,l) * gl(2) * JAC(m) * pp_w(l) / yy_G(l,m)
+               CASE(2); v0(2, jjm)  =  v0(2, jjm)  +  alpha * ww(:,l) * gl(2) * z2
 
-               CASE(3); v0(3, jjm)  =  v0(3, jjm)  + alpha * ww(:,l) * gl(3) * JAC(m) * pp_w(l) / yy_G(l,m)
+               CASE(3); v0(3, jjm)  =  v0(3, jjm)  +  alpha * ww(:,l) * gl(3) * z2
 
             END SELECT
 

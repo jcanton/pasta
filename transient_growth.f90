@@ -18,6 +18,7 @@ MODULE transient_growth
    USE par_solve_mumps
    USE vtk_plot
    USE eigensolve ! needed if one wants to use an eigenvector as initial guess
+   USE dns_algorithms
 
    IMPLICIT NONE
    ! variables "global" to this module
@@ -1398,6 +1399,149 @@ SUBROUTINE projectDiv (u_approx,  uDiv)
    WRITE(*,*) '    Done.'
 
 END SUBROUTINE projectDiv
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE evolve_transientGrowth(x_vec)
+
+   IMPLICIT NONE
+
+   ! input variables
+   REAL(KIND=8), DIMENSION(:), INTENT(IN) :: x_vec  ! computed base flow
+   REAL(KIND=8), DIMENSION(Nx)            :: x_bfl  ! computed base flow SAVE
+   REAL(KIND=8), DIMENSION(Nx)            :: x_opt  ! computed optimal perturbation
+   ! "output" variables
+   REAL(KIND=8), DIMENSION(np) :: Ek0, Ek     ! kinetic energy fields
+   REAL(KIND=8)                :: Ek0_s, Ek_s ! kinetic energy
+   ! local variables
+   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: tmpVector
+   LOGICAL :: existFlag
+   INTEGER :: i
+
+!----------------------------------------------------
+   WRITE(*,*) ''
+   WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+   WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+   WRITE(*,*) '--> CALL to evolve_transientGrowth'
+   WRITE(*,*) ''
+!----------------------------------------------------
+
+!---------------
+! SAVE BASE FLOW
+
+   x_bfl = x_vec
+
+!--------------------------
+! READ OPTIMAL PERTURBATION
+
+   CALL vtk_read_P2 (p_in%etg_opt_perturb, rr, jj, jj_L,  u0)
+   CALL collect (u0, p0,  x_opt)
+
+!---------------------------------------
+! SUM BASE FLOW AND OPTIMAL PERTURBATION
+
+   x0 = x_bfl + x_opt
+
+!----------------------------
+! EVOLVE OPTIMAL PERTURBATION
+
+   CALL dns(x0)
+
+!-----------------------
+! CREATE THE MASS MATRIX
+
+   ALLOCATE( Mass%i      (SIZE(Jacobian%i))       ); Mass%i       = Jacobian%i
+   ALLOCATE( Mass%i_mumps(SIZE(Jacobian%i_mumps)) ); Mass%i_mumps = Jacobian%i_mumps
+   ALLOCATE( Mass%j      (SIZE(Jacobian%j))       ); Mass%j       = Jacobian%j
+   ALLOCATE( Mass%e      (SIZE(Jacobian%e))       ); Mass%e       = 0d0
+   CALL qc_0y0_zero_sp_M (mm, jj, 1d0, Mass)
+   ! create the MassV matrix (non-singolar mass only for the velocity)
+   !
+   CALL dEssM (Mass%e, Mass%j, Mass%i, velCmpnnts*np, MassV%e, MassV%j, MassV%i, MassV%i_mumps)
+   !
+   DEALLOCATE( Mass%i, Mass%i_mumps, Mass%j, Mass%e )
+
+!-------------------
+! ALLOCATE tmpVector
+
+   ALLOCATE( tmpVector(velCmpnnts*np, 2) )
+
+!-----------------------
+! COMPUTE KINETIC ENERGY
+
+   ! compute kinetic energy of the optimal perturbation
+   CALL extract (x_opt,  u0)
+   DO i = 1, velCmpnnts
+      tmpVector( (i-1)*np+1 : i*np, 1 ) = u0(i,:)
+   ENDDO
+
+   Ek0 = SQRT(  (u0(1,:)*u0(1,:))**2 &
+              + (u0(1,:)*u0(2,:))**2 &
+              + (u0(1,:)*u0(3,:))**2 &
+              + (u0(2,:)*u0(1,:))**2 &
+              + (u0(2,:)*u0(2,:))**2 &
+              + (u0(2,:)*u0(3,:))**2 &
+              + (u0(3,:)*u0(1,:))**2 &
+              + (u0(3,:)*u0(2,:))**2 &
+              + (u0(3,:)*u0(3,:))**2 ) / 2
+
+   CALL dAtimx (tmpVector(:,2), MassV%e, MassV%j, MassV%i, tmpVector(:,1))
+   Ek0_s = SUM( tmpVector(:,1) * tmpVector(:,2) ) / 2
+
+
+   ! compute kinetic energy of the evolution of the optimal perturbation
+   xx = x0 - x_bfl
+   CALL extract (xx,  uu)
+   DO i = 1, velCmpnnts
+      tmpVector( (i-1)*np+1 : i*np, 1 ) = uu(i,:)
+   ENDDO
+
+   Ek = SQRT(  (uu(1,:)*uu(1,:))**2 &
+             + (uu(1,:)*uu(2,:))**2 &
+             + (uu(1,:)*uu(3,:))**2 &
+             + (uu(2,:)*uu(1,:))**2 &
+             + (uu(2,:)*uu(2,:))**2 &
+             + (uu(2,:)*uu(3,:))**2 &
+             + (uu(3,:)*uu(1,:))**2 &
+             + (uu(3,:)*uu(2,:))**2 &
+             + (uu(3,:)*uu(3,:))**2 ) / 2
+   CALL dAtimx (tmpVector(:,2), MassV%e, MassV%j, MassV%i, tmpVector(:,1))
+   Ek_s = SUM( tmpVector(:,1) * tmpVector(:,2) ) / 2
+
+   WRITE(*,*)
+   WRITE(*,*) '    u0''*u0   = ', SUM(Ek0)
+   WRITE(*,*) '    u0''*M*u0 = ', Ek0_s
+   WRITE(*,*) '    uu''*uu   = ', SUM(Ek)
+   WRITE(*,*) '    uu''*M*uu = ', Ek_s
+   WRITE(*,*) '    (uu''*uu) / ( u0''*u0 )  = ', SUM(Ek) / SUM(Ek0)
+   WRITE(*,*) '    (uu''*M*uu) / ( u0''*M*u0 )  = ', Ek_s / Ek0_s
+
+!-------------
+! SAVE RESULTS
+
+   WRITE(*,*)
+   WRITE(*,*) '    Saving results'
+
+   INQUIRE (FILE='./tranGrowthOut/tranGrowthEvolution.dat', EXIST=existFlag)
+   IF (.NOT.existFlag) THEN
+      OPEN(UNIT=20, FILE='./tranGrowthOut/tranGrowthEvolution.dat', STATUS='new', ACTION='write')
+      WRITE(20,*)   '         tau             Ek/Ek0'
+      WRITE(20,*)
+   ELSE
+      OPEN(UNIT=20, FILE='./tranGrowthOut/tranGrowthEvolution.dat', STATUS='old', POSITION='append', ACTION='write')
+   ENDIF
+
+   WRITE(20,*) p_in%dns_tEnd, Ek_s / Ek0_s
+   CLOSE(20)
+
+!---------------------
+! DEALLOCATE VARIABLES
+
+   DEALLOCATE( tmpVector )
+   DEALLOCATE( MassV%i, MassV%i_mumps, MassV%j, MassV%e )
+
+
+END SUBROUTINE evolve_transientGrowth
 
 !==============================================================================
 

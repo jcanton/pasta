@@ -448,6 +448,106 @@ END SUBROUTINE plot_inject_p1_p2
 
 !==============================================================================
 
+SUBROUTINE vtk_read_P2 (file_name, rr, jj, jj_L, uu)
+!
+! Author: Jacopo Canton
+! E-mail: jacopo.canton@mail.polimi.it
+! Last revision: 5/12/2013
+!
+!++++++++ 2D/3D version +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+!
+! - rr   :: coordinates of the nodes of the P2 grid (triangle vertices plus
+!           midpoints)
+! - jj   :: connectivity matrix of the P2 grid
+! - uu   :: a vector field whose values are defined on the P2 nodes
+! - pp   :: a scalar field whose values are defined on the P1 nodes
+!
+! - file_name :: a string for the file name
+!
+
+   IMPLICIT NONE
+
+   CHARACTER(*),                 INTENT(IN) :: file_name
+
+   REAL(KIND=8), DIMENSION(:,:), INTENT(IN) :: rr
+   INTEGER,      DIMENSION(:,:), INTENT(IN) :: jj, jj_L
+   REAL(KIND=8), DIMENSION(:,:)             :: uu
+   !REAL(KIND=8), DIMENSION(:)               :: pp
+
+   ! internal variables
+   INTEGER :: m
+   INTEGER :: me, np
+   INTEGER :: uc
+   !REAL(KIND=8), DIMENSION(SIZE(rr,2)) :: pp_P2
+
+
+   me = SIZE(jj, 2) ! number of volume elements
+   np = SIZE(rr, 2) ! number of P2 nodes
+   uc = SIZE(uu, 1) ! number of velocity components
+
+   WRITE(*,*)
+   WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+   WRITE(*,*) '--> Reading ' // trim(file_name) // ' ...'
+
+   OPEN( UNIT = 20, FILE = file_name, FORM = 'formatted', STATUS = 'unknown')
+
+   READ(20, *)
+   READ(20, *)
+   READ(20, *)
+   READ(20, *)
+   READ(20, *)
+
+   ! nodes coordinates
+   READ(20, *) ! 'POINTS ', np, ' double'
+   DO m = 1, np
+      READ(20, *)
+   END DO
+   
+   READ(20, *) ! jump one line
+
+   ! connectivity matrix
+   READ(20, *) ! 'CELLS ', me, ' ', me*7 ! 7 = number of numbers per row
+   DO m = 1, me
+      READ(20, *)
+   END DO
+
+   READ(20, *) ! jump one line
+
+   ! type of cells
+   READ(20, *) ! 'CELL_TYPES ', me
+   DO m = 1, me
+      READ(20, *) ! '22' ! 22 = P2 triangles
+   END DO
+
+   READ(20, *) ! jump one line
+
+   ! point data
+   READ(20, *) ! 'POINT_DATA ', np
+
+   ! scalar field
+   READ(20, *) ! 'SCALARS p double'
+   READ(20, *) ! 'LOOKUP_TABLE default'
+   DO m = 1, np
+      READ(20, *) ! pp_P2(m)
+   END DO
+
+   READ(20, *) ! jump one line
+
+   ! vector field
+   READ(20, *) ! 'VECTORS u double'
+
+   DO m = 1, np
+      READ(20, *) uu(1, m), uu(2, m), uu(3,m)
+   END DO
+
+   CLOSE(20)
+
+   
+   WRITE(*,*) '    Done.'
+
+END SUBROUTINE vtk_read_P2
+
+!------------------------------------------------------------------------------
 
 !==============================================================================
 

@@ -149,9 +149,9 @@ SUBROUTINE dns (x0)
 !--------------
 ! WRITE RESTART
 
-   WRITE(restart_name,*) trim(p_in%dns_output_directory) // 'restart.io'
+   !WRITE(restart_name,*) 'dnsRestart.io'
 
-   CALL write_restart(xx, i*dt, i, nSteps, trim(restart_name), LEN(trim(restart_name)))
+   CALL write_restart(xx, i*dt, i, nSteps, 'dnsRestart.io', LEN('dnsRestart.io'))
 
 
 END SUBROUTINE dns

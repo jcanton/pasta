@@ -48,6 +48,8 @@ MODULE read_input_files
       REAL(KIND=8)       :: dns_dt
       REAL(KIND=8)       :: dns_dtPlot
       CHARACTER(LEN=128) :: dns_output_directory
+      ! evolve transient growth data
+      CHARACTER(LEN=128) :: etg_opt_perturb
 
    END TYPE program_input
 
@@ -125,6 +127,10 @@ SUBROUTINE read_program_data(file_name,  prog_input)
    READ  (fid,*) prog_input % dns_dt
    READ  (fid,*) prog_input % dns_dtPlot
    READ  (fid,*) prog_input % dns_output_directory
+   READ  (fid,*) !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   READ  (fid,*) ! evolve transient growth data
+   READ  (fid,*) !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   READ  (fid,*) prog_input % etg_opt_perturb
    CLOSE(fid)
 
 

@@ -287,6 +287,23 @@ IF ( myRank == 0 ) THEN
       
       CALL dns(x0)
 
+   CASE (7)
+   !------------------------------------------
+   ! Evolution of optimal linear perturbations
+   ! an already computed base flow
+   !------------------------------------------
+
+      IF ( .NOT.p_in%read_restart_flag ) THEN
+         WRITE(*,*)
+         WRITE(*,*) '********************************************************'
+         WRITE(*,*) '*** I suggest you call the dns algorithm if you want ***'
+         WRITE(*,*) '*** to start from the Stokes initial guess.          ***'
+         WRITE(*,*) '********************************************************'
+         WRITE(*,*) 'STOP.'
+         STOP
+      ENDIF
+      CALL evolve_transientGrowth(x0)
+
    CASE DEFAULT
       WRITE(*,*) '*************************************'
       WRITE(*,*) '*** Wrong parameter:              ***'

@@ -119,6 +119,7 @@ transient_growth.o: dynamic_structures.o       \
                     qv_sp.o                    \
                     qs_l_m.o                   \
                     qs_l_sp.o                  \
+                    dns_algorithms.o           \
                     par_solve_mumps.o          \
                     vtk_plot.o
 

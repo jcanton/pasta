@@ -72,7 +72,7 @@ SUBROUTINE vtk_plot_P2 (rr, jj, jj_L, uu, pp, file_name)
    ! nodes coordinates
    WRITE(20, '(a7,i7,a7)') 'POINTS ', np, ' double'
    DO m = 1, np
-      WRITE(20, '(2(g17.10,1x),g17.10)') rr(1, m), rr(2, m), 0.0
+      WRITE(20, *) rr(1, m), rr(2, m), 0.0
    END DO
    
    WRITE(20, *) ! jump one line
@@ -80,8 +80,8 @@ SUBROUTINE vtk_plot_P2 (rr, jj, jj_L, uu, pp, file_name)
    ! connectivity matrix
    WRITE(20, '(a6,i7,a1,i7)') 'CELLS ', me, ' ', me*7 ! 7 = number of numbers per row
    DO m = 1, me
-      WRITE(20, '(i1,1x,5(i7,1x),i7)') 6, jj(1, m)-1, jj(2, m)-1, jj(3, m)-1, &
-                                          jj(6, m)-1, jj(4, m)-1, jj(5, m)-1
+      WRITE(20, *) 6, jj(1, m)-1, jj(2, m)-1, jj(3, m)-1, &
+                      jj(6, m)-1, jj(4, m)-1, jj(5, m)-1
    END DO
 
    WRITE(20, *) ! jump one line
@@ -103,7 +103,7 @@ SUBROUTINE vtk_plot_P2 (rr, jj, jj_L, uu, pp, file_name)
    WRITE(20, '(a)') 'SCALARS p double'
    WRITE(20, '(a)') 'LOOKUP_TABLE default'
    DO m = 1, np
-      WRITE(20, '(g17.10)') pp_P2(m)
+      WRITE(20, *) pp_P2(m)
    END DO
    WRITE(20, *) ! jump one line
 
@@ -112,15 +112,15 @@ SUBROUTINE vtk_plot_P2 (rr, jj, jj_L, uu, pp, file_name)
 
    IF ( uc == 3 ) THEN
       DO m = 1, np
-         WRITE(20, '(2(g17.10,1x),g17.10)') uu(1, m), uu(2, m), uu(3,m)
+         WRITE(20, *) uu(1, m), uu(2, m), uu(3,m)
       END DO
    ELSEIF ( uc == 2 ) THEN
       DO m = 1, np
-         WRITE(20, '(2(g17.10,1x),a3)') uu(1, m), uu(2, m), '0.0'
+         WRITE(20, *) uu(1, m), uu(2, m), '0.0'
       END DO
    ELSEIF ( uc == 1 ) THEN
       DO m = 1, np
-         WRITE(20, '(g17.10,1x,a7)') uu(1, m), '0.0 0.0'
+         WRITE(20, *) uu(1, m), '0.0 0.0'
       END DO
    ELSE
       ! what kind of vectorial field would you like to plot?!?

@@ -1410,6 +1410,7 @@ SUBROUTINE evolve_transientGrowth(x_vec)
    REAL(KIND=8), DIMENSION(:), INTENT(IN) :: x_vec  ! computed base flow
    REAL(KIND=8), DIMENSION(Nx)            :: x_bfl  ! computed base flow SAVE
    REAL(KIND=8), DIMENSION(Nx)            :: x_opt  ! computed optimal perturbation
+   REAL(KIND=8), DIMENSION(Nx)            :: x_optE ! already evolved optimal perturbation (may not be used)
    ! "output" variables
    REAL(KIND=8), DIMENSION(np) :: Ek0, Ek     ! kinetic energy fields
    REAL(KIND=8)                :: Ek0_s, Ek_s ! kinetic energy
@@ -1417,6 +1418,8 @@ SUBROUTINE evolve_transientGrowth(x_vec)
    REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: tmpVector
    LOGICAL :: existFlag
    INTEGER :: i
+   INTEGER           :: time_plot=0
+   CHARACTER(LEN=12) :: counter
 
 !----------------------------------------------------
    WRITE(*,*) ''
@@ -1437,10 +1440,88 @@ SUBROUTINE evolve_transientGrowth(x_vec)
    CALL vtk_read_P2 (p_in%etg_opt_perturb, rr, jj, jj_L,  u0)
    CALL collect (u0, p0,  x_opt)
 
-!---------------------------------------
-! SUM BASE FLOW AND OPTIMAL PERTURBATION
+!-------------------------------------------
+! CHECK IF THE EVOLUTION HAS ALREADY STARTED
 
-   x0 = x_bfl + x_opt
+   time_plot = NINT( p_in%dns_dtPlot*1d3 )
+   IF ( time_plot < 10 ) THEN
+      WRITE(counter, '(A5,I1)') '00000', time_plot
+   ELSEIF ( time_plot < 100 ) THEN
+      WRITE(counter, '(A4,I2)') '0000',  time_plot
+   ELSEIF ( time_plot < 1000 ) THEN
+      WRITE(counter, '(A3,I3)') '000',   time_plot
+   ELSEIF ( time_plot < 10000 ) THEN
+      WRITE(counter, '(A2,I4)') '00',    time_plot
+   ELSEIF ( time_plot < 100000 ) THEN
+      WRITE(counter, '(A1,I5)') '0',     time_plot
+   ELSEIF ( time_plot < 1000000 ) THEN
+      WRITE(counter, '(I6)')             time_plot
+   ELSE
+      WRITE(*,*) 'STOP.'
+      STOP
+   ENDIF
+   INQUIRE (FILE=trim(p_in%dns_output_directory)//'sol'//trim(counter)//'.vtk' , EXIST=existFlag)
+
+   IF ( existFlag ) THEN
+
+      DO WHILE ( existFlag )
+         time_plot = time_plot + NINT( p_in%dns_dtPlot*1d3 )
+         IF ( time_plot < 10 ) THEN
+            WRITE(counter, '(A5,I1)') '00000', time_plot
+         ELSEIF ( time_plot < 100 ) THEN
+            WRITE(counter, '(A4,I2)') '0000',  time_plot
+         ELSEIF ( time_plot < 1000 ) THEN
+            WRITE(counter, '(A3,I3)') '000',   time_plot
+         ELSEIF ( time_plot < 10000 ) THEN
+            WRITE(counter, '(A2,I4)') '00',    time_plot
+         ELSEIF ( time_plot < 100000 ) THEN
+            WRITE(counter, '(A1,I5)') '0',     time_plot
+         ELSEIF ( time_plot < 1000000 ) THEN
+            WRITE(counter, '(I6)')             time_plot
+         ELSE
+            WRITE(*,*) 'STOP.'
+            STOP
+         ENDIF
+         INQUIRE (FILE=trim(p_in%dns_output_directory)//'sol'//trim(counter)//'.vtk' , EXIST=existFlag)
+      ENDDO
+
+      p_in%dns_tInit = time_plot/1d3 - p_in%dns_dtPlot
+
+      time_plot = time_plot - NINT( p_in%dns_dtPlot*1d3 )
+      IF ( time_plot < 10 ) THEN
+         WRITE(counter, '(A5,I1)') '00000', time_plot
+      ELSEIF ( time_plot < 100 ) THEN
+         WRITE(counter, '(A4,I2)') '0000',  time_plot
+      ELSEIF ( time_plot < 1000 ) THEN
+         WRITE(counter, '(A3,I3)') '000',   time_plot
+      ELSEIF ( time_plot < 10000 ) THEN
+         WRITE(counter, '(A2,I4)') '00',    time_plot
+      ELSEIF ( time_plot < 100000 ) THEN
+         WRITE(counter, '(A1,I5)') '0',     time_plot
+      ELSEIF ( time_plot < 1000000 ) THEN
+         WRITE(counter, '(I6)')             time_plot
+      ELSE
+         WRITE(*,*) 'STOP.'
+         STOP
+      ENDIF
+      CALL vtk_read_P2 (trim(p_in%dns_output_directory)//'sol'//trim(counter)//'.vtk', rr, jj, jj_L,  uu)
+      CALL collect (uu, pp,  x_optE)
+
+      !-------------------------------------------------------
+      ! SUM BASE FLOW AND ALREADY EVOLVED OPTIMAL PERTURBATION
+      
+         x0 = x_bfl + x_optE
+
+   ELSE
+
+      !---------------------------------------
+      ! SUM BASE FLOW AND OPTIMAL PERTURBATION
+      
+         x0 = x_bfl + x_opt
+
+   ENDIF
+
+   existFlag = .FALSE.
 
 !----------------------------
 ! EVOLVE OPTIMAL PERTURBATION

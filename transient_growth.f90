@@ -1407,19 +1407,23 @@ SUBROUTINE evolve_transientGrowth(x_vec)
    IMPLICIT NONE
 
    ! input variables
-   REAL(KIND=8), DIMENSION(:), INTENT(IN) :: x_vec  ! computed base flow
-   REAL(KIND=8), DIMENSION(Nx)            :: x_bfl  ! computed base flow SAVE
-   REAL(KIND=8), DIMENSION(Nx)            :: x_opt  ! computed optimal perturbation
-   REAL(KIND=8), DIMENSION(Nx)            :: x_optE ! already evolved optimal perturbation (may not be used)
+   REAL(KIND=8), DIMENSION(:), INTENT(IN) :: x_vec   ! computed base flow
    ! "output" variables
    REAL(KIND=8), DIMENSION(np) :: Ek0, Ek     ! kinetic energy fields
    REAL(KIND=8)                :: Ek0_s, Ek_s ! kinetic energy
+   REAL(KIND=8), DIMENSION(Nx) :: x_opt       ! computed optimal perturbation
    ! local variables
+   REAL(KIND=8), DIMENSION(Nx) :: x_bfl   ! computed base flow SAVE
+   REAL(KIND=8), DIMENSION(Nx) :: x_optE  ! already evolved optimal perturbation (may not be used)
+   REAL(KIND=8), DIMENSION(velCmpnnts,np) :: uE
+   REAL(KIND=8), DIMENSION(np_L)          :: pE
    REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: tmpVector
    LOGICAL :: existFlag
    INTEGER :: i
    INTEGER           :: time_plot=0
    CHARACTER(LEN=12) :: counter
+   REAL(KIND=8) :: dummy
+   CHARACTER(LEN=128) :: restart_name
 
 !----------------------------------------------------
    WRITE(*,*) ''
@@ -1504,13 +1508,41 @@ SUBROUTINE evolve_transientGrowth(x_vec)
          WRITE(*,*) 'STOP.'
          STOP
       ENDIF
-      CALL vtk_read_P2 (trim(p_in%dns_output_directory)//'sol'//trim(counter)//'.vtk', rr, jj, jj_L,  uu)
-      CALL collect (uu, pp,  x_optE)
 
-      !-------------------------------------------------------
-      ! SUM BASE FLOW AND ALREADY EVOLVED OPTIMAL PERTURBATION
+      WRITE(*,*)
+      WRITE(*,*) '    Using restart:'
+      WRITE(*,*) '    starting evolution from time: ', p_in%dns_tInit
+      WRITE(*,*)
+
+      pE  = 0 ! unused
+
+      CALL vtk_read_P2 (trim(p_in%dns_output_directory)//'sol'//trim(counter)//'.vtk', rr, jj, jj_L,  uE)
+      CALL collect (uE, pE,  x_optE)
+
+      !-----------------------------------------------
+      ! x0 IS THE ALREADY EVOLVED OPTIMAL PERTURBATION
       
-         x0 = x_bfl + x_optE
+      x0 = x_optE
+
+      ! read previous time step
+      WRITE(restart_name, '(A)') trim(p_in%dns_output_directory)//'restartDNS.bin'
+      INQUIRE (FILE=restart_name , EXIST=existFlag)
+      IF ( existFlag ) THEN
+         CALL read_restart_bin(x_optE, dummy, trim(restart_name))
+      ELSE
+         WRITE(*,*) '***************************************'
+         WRITE(*,*) '*** Error:                          ***'
+         WRITE(*,*) '*** could not find DNS restart file ***'
+         WRITE(*,*) '*** ', trim(restart_name)
+         WRITE(*,*) '***************************************'
+         WRITE(*,*) 'STOP.'
+         STOP
+      ENDIF
+
+      !---------------------------------------------------
+      ! EVOLVE OPTIMAL PERTURBATION FROM WHERE WE LEFT OFF
+      
+      CALL dns(x0, x_optE)
 
    ELSE
 
@@ -1519,14 +1551,15 @@ SUBROUTINE evolve_transientGrowth(x_vec)
       
          x0 = x_bfl + x_opt
 
+      !----------------------------
+      ! EVOLVE OPTIMAL PERTURBATION
+      
+         CALL dns(x0)
+
    ENDIF
 
    existFlag = .FALSE.
 
-!----------------------------
-! EVOLVE OPTIMAL PERTURBATION
-
-   CALL dns(x0)
 
 !-----------------------
 ! CREATE THE MASS MATRIX

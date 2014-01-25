@@ -72,6 +72,7 @@ SUBROUTINE write_restart(x, param, step_num, max_steps, filenm, filenmLen) &
 
    CALL extract(x, u_save, p_save)
 
+   ! write fields
    DO i = 1, np
       WRITE(20, *) u_save(:,i)
    END DO
@@ -171,6 +172,134 @@ SUBROUTINE read_restart(x, param, filenm, filenmLen) &
    WRITE(*,*) '    Done.'
 
 END SUBROUTINE read_restart
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE write_restart_bin(x, param, step_num, max_steps, filenm)
+!
+! Author: Jacopo Canton
+! E-mail: jacopo.canton@mail.polimi.it
+! Last revision: 15/1/2014
+!
+! - x         :: solution vector
+! - param     :: value of important parameter
+! - step_num  :: number of iterations taken to compute the solution
+! - max_steps :: maximum number of iterations allowed
+!
+
+   IMPLICIT NONE
+   ! input variables
+   REAL(KIND=8), DIMENSION(Nx) :: x
+   REAL(KIND=8)                :: param
+   INTEGER                     :: step_num, max_steps
+   CHARACTER(*)                :: filenm
+   ! local variables
+   REAL(KIND=8), DIMENSION(velCmpnnts,np) :: u_save
+   REAL(KIND=8), DIMENSION(np_L)          :: p_save
+   INTEGER :: i
+
+
+   WRITE(*,*)
+   WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+   WRITE(*,*) '--> Writing binary restart file: '//trim(filenm)//' ...'
+
+
+   OPEN( UNIT = 20, FILE = trim(filenm), FORM='UNFORMATTED' )
+
+   WRITE(20) param
+   WRITE(20) step_num, max_steps
+   WRITE(20) velCmpnnts
+   WRITE(20) np
+   WRITE(20) np_L
+
+   WRITE(*,*) '    param      = ', param
+   WRITE(*,*) '    ite        = ', step_num, '/', max_steps
+   WRITE(*,*) '    velCmpnnts = ', velCmpnnts
+   WRITE(*,*) '    np         = ', np
+   WRITE(*,*) '    np_L       = ', np_L
+
+   CALL extract(x,  u_save, p_save)
+
+   ! write fields
+   WRITE(20) u_save
+   WRITE(20) p_save
+
+   CLOSE(20)
+
+
+   WRITE(*,*) '    Done.'
+
+END SUBROUTINE write_restart_bin
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE read_restart_bin(x, param, filenm)
+!
+! Author: Jacopo Canton
+! E-mail: jacopo.canton@mail.polimi.it
+! Last revision: 25/1/2014
+!
+! - x      :: solution vector
+! - param  :: value of important parameter
+!
+   USE ISO_C_BINDING
+
+   ! input variables
+   CHARACTER(*)                :: filenm
+   ! output variables
+   REAL(KIND=8), DIMENSION(Nx) :: x
+   REAL(KIND=8)                :: param
+   ! local variables
+   REAL(KIND=8), DIMENSION(velCmpnnts,np) :: u_save
+   REAL(KIND=8), DIMENSION(np_L)          :: p_save
+   INTEGER :: i, uc_in, np_in, np_L_in
+
+
+   WRITE(*,*)
+   WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+   WRITE(*,*) '--> Reading binary restart file: '//trim(filenm)//' ...'
+
+   OPEN( UNIT = 20, FILE = trim(filenm), FORM='UNFORMATTED' )
+
+   READ(20) param
+   READ(20) ! jump this line
+   READ(20) uc_in   ! number of velocity components
+   READ(20) np_in   ! number of P2 nodes
+   READ(20) np_L_in ! number of P1 nodes
+
+   WRITE(*,*) '    param      = ', param
+   WRITE(*,*) '    velCmpnnts = ', uc_in
+   WRITE(*,*) '    np         = ', np_in
+   WRITE(*,*) '    np_L       = ', np_L_in
+
+   ! check dimension consistency
+   ! uu
+   IF ( SIZE(u_save,1) /= uc_in .OR. SIZE(u_save,2) /= np_in ) THEN
+      WRITE(*,*) '    Error: wrong uu size'
+      WRITE(*,*) '    SIZE(uu,1) = ', SIZE(u_save,1), ', saved in this file: ', uc_in
+      WRITE(*,*) '    SIZE(uu,2) = ', SIZE(u_save,2), ', saved in this file: ', np_in
+      WRITE(*,*) '    STOP.'
+      STOP
+   END IF
+   ! pp
+   IF ( SIZE(p_save) /= np_L_in ) THEN
+      WRITE(*,*) '    Error: wrong pp size'
+      WRITE(*,*) '    SIZE(pp) = ', SIZE(p_save), ', saved in this file: ', np_L_in
+      WRITE(*,*) '    STOP.'
+      STOP
+   END IF
+
+   ! read fields
+   READ(20) u_save
+   READ(20) p_save
+
+   CLOSE(20)
+
+   CALL collect(u_save, p_save,  x)
+
+   WRITE(*,*) '    Done.'
+
+END SUBROUTINE read_restart_bin
 
 !------------------------------------------------------------------------------
 

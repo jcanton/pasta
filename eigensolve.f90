@@ -522,7 +522,7 @@ SUBROUTINE Save_eigenvalues (eigenvalues, file_name)
 !-----------------------------------------------------------
    IMPLICIT NONE
 
-   COMPLEX(KIND=8), DIMENSION(:),   INTENT(IN) :: eigenvalues
+   COMPLEX(KIND=8), DIMENSION(:), INTENT(IN) :: eigenvalues
    CHARACTER(*), OPTIONAL :: file_name
    
    ! local variables

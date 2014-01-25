@@ -25,7 +25,7 @@ CONTAINS
 
 !------------------------------------------------------------------------------
 
-SUBROUTINE dns (x0)
+SUBROUTINE dns (x0, x00)
 !
 !     %------------------------------------------------------%
 !     | Storage Declarations:                                |
@@ -46,6 +46,7 @@ SUBROUTINE dns (x0)
 
    ! input variables
    REAL(KIND=8), DIMENSION(:) :: x0
+   REAL(KIND=8), DIMENSION(:), OPTIONAL :: x00
    ! local variables
    REAL(KIND=8) :: tInit
    REAL(KIND=8) :: tEnd
@@ -69,6 +70,8 @@ SUBROUTINE dns (x0)
    tEnd   = p_in % dns_tEnd
    dt     = p_in % dns_dt
    dtPlot = p_in % dns_dtPlot
+
+   WRITE(restart_name, '(A)') trim(p_in%dns_output_directory)//'restartDNS.bin'
 
 !-----------
 ! PARAMETERS
@@ -116,7 +119,14 @@ SUBROUTINE dns (x0)
 
    ALLOCATE( xOld2(Nx)          )
    ALLOCATE( u02(velCmpnnts,np) )
-   xOld2 = x0
+
+   IF (PRESENT(x00)) THEN
+      ! using the restart
+      xOld2 = x00
+   ELSE
+      ! starting from a steady solution
+      xOld2 = x0
+   ENDIF
 
 !----------
 ! TIME LOOP
@@ -126,15 +136,17 @@ SUBROUTINE dns (x0)
    DO i = 1, nSteps
 
       WRITE(*,*) ''
-      WRITE(*,*) '    time = ', i*dt
+      WRITE(*,*) '    time = ', tInit + i*dt
 
       ! compute solution at new time
       CALL advanceInTime (p_in%dns_method, dt, x0,  xx)
 
-      ! plot
+      ! plot and save restart
       IF ( MODULO(i, itPlot) == 0 ) THEN
 
          CALL plot_frame(xx, tInit + i*dt)
+
+         CALL write_restart_bin(x0, tInit + (i-1)*dt, i, nSteps, trim(restart_name))
 
       ENDIF
 
@@ -145,13 +157,6 @@ SUBROUTINE dns (x0)
    ENDDO
 
    WRITE(*,*) '    End of time loop'
-
-!--------------
-! WRITE RESTART
-
-   !WRITE(restart_name,*) 'dnsRestart.io'
-
-   CALL write_restart(xx, i*dt, i, nSteps, 'dnsRestart.io', LEN('dnsRestart.io'))
 
 
 END SUBROUTINE dns

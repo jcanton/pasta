@@ -7,6 +7,7 @@ MODULE dns_algorithms
    USE dynamic_structures
    USE sparse_matrix_profiles
    USE global_variables
+   USE miscellaneous_subroutines
    USE prep_mesh_p1p2_sp ! for some global variables as jj
    USE start_sparse_kit  ! for collect and extract subroutines
    USE qc_sp_M
@@ -273,23 +274,7 @@ SUBROUTINE plot_frame(xx, time)
 
    ! generate file name
    time_plot = NINT( time*1d3 )
-   IF ( time_plot < 10 ) THEN
-      WRITE(counter, '(A5,I1)') '00000', time_plot
-   ELSEIF ( time_plot < 100 ) THEN
-      WRITE(counter, '(A4,I2)') '0000',  time_plot
-   ELSEIF ( time_plot < 1000 ) THEN
-      WRITE(counter, '(A3,I3)') '000',   time_plot
-   ELSEIF ( time_plot < 10000 ) THEN
-      WRITE(counter, '(A2,I4)') '00',    time_plot
-   ELSEIF ( time_plot < 100000 ) THEN
-      WRITE(counter, '(A1,I5)') '0',     time_plot
-   ELSEIF ( time_plot < 1000000 ) THEN
-      WRITE(counter, '(I6)')             time_plot
-   ELSE
-      WRITE(*,*) 'Change plot_frame in module dns_algorithms'
-      WRITE(*,*) 'STOP.'
-      STOP
-   ENDIF
+   CALL intToChar6 (time_plot,  counter)
    ! plot
    CALL extract (xx, uu, pp)
    CALL vtk_plot_P2 (rr, jj, jj_L, uu, pp, trim(p_in%dns_output_directory)//'sol'//trim(counter)//'.vtk')

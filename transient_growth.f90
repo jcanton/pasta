@@ -2,12 +2,13 @@ MODULE transient_growth
 !
 ! Author: Jacopo Canton
 ! E-mail: jacopo.canton@mail.polimi.it
-! Last revision: 17/10/2013
+! Last revision: 25/1/2014
 !
    USE dynamic_structures
    USE sparse_matrix_profiles
    USE sparse_matrix_operations
    USE global_variables
+   USE miscellaneous_subroutines
    USE prep_mesh_p1p2_sp ! for some global variables as jj
    USE start_sparse_kit  ! for collect and extract subroutines
    USE Dirichlet_Neumann ! for Dirichlet_nodes_gen subroutine
@@ -55,6 +56,9 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
    REAL(KIND=8) :: resLinfty
    INTEGER      :: iteNum
    REAL(KIND=8), DIMENSION(velCmpnnts,np) :: uInitGuess
+
+   CHARACTER(LEN=128) :: restart_name
+   REAL(KIND=8) :: dummy
 
    REAL(KIND=8) :: dataIdentifier = 313d0 ! Donald Duck's plate number!
    INTEGER      :: tausNumber = 1
@@ -188,56 +192,21 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
    CALL par_mumps_master (INITIALIZATION, 6, W0, 0)
    CALL par_mumps_master (SYMBO_FACTOR,   6, W0, 0)
 
-!---------------------
-! CREATE INITIAL GUESS
-
-   WRITE(*,*)
-   SELECT CASE ( p_in%tranGrowth_initGuess )
-      CASE (1)
-         ! (a)
-         ! random guess created by ARPACK
-         ! WARNING: the velocity is NOT zero on borders
-         WRITE(*,*) '    initial guess: ARPACK''s random'
-         WRITE(*,*)
-      CASE (2)
-         ! (b)
-         ! pseudo-random guess
-         !
-         WRITE(*,*) '    initial guess: pseudo-random'
-         WRITE(*,*)
-         CALL init_random_seed()
-         CALL RANDOM_NUMBER(xx)
-         !CALL Dirichlet_c (np, js_Axis, js_D_tg, zero_bvs_D,  xx)
-         CALL extract (xx,  uu)
-         CALL projectDiv (uu,  uInitGuess)
-      CASE (3)
-         ! (c)
-         ! base flow
-         WRITE(*,*) '    initial guess: base flow'
-         WRITE(*,*)
-         uInitGuess = u0
-      CASE (4)
-         ! (d)
-         ! already computed eigenvector
-         WRITE(*,*) '    initial guess: eigenvector'
-         WRITE(*,*)
-         CALL read_eigenvector (Nx, 1, './tranGrowthOut/eigenTranGrowth.dat', 35,  xx, x0)
-         CALL extract (xx,  uInitGuess)
-      CASE DEFAULT
-         WRITE(*,*) '*************************************'
-         WRITE(*,*) '*** Wrong parameter:              ***'
-         WRITE(*,*) '*** p_in % tranGrowth_initGuess   ***'
-         WRITE(*,*) '*** set to: ', p_in%tranGrowth_initGuess
-         WRITE(*,*) '*************************************'
-         WRITE(*,*) 'STOP.'
-         STOP
-   END SELECT
-   CALL vtk_plot_P2 (rr, jj, jj_L, uInitGuess, 0*p0, './tranGrowthOut/tranGrowthInitGuess.vtk')
-
 !-------------------------------
 ! IF CHOSEN, READ TAUs FROM FILE
 
    IF ( p_in%tranGrowth_tau == dataIdentifier ) THEN
+
+      WRITE(*,*) '*************************************'
+      WRITE(*,*) '*** WARNING:                      ***'
+      WRITE(*,*) '*** this feature has a bug that   ***'
+      WRITE(*,*) '*** prevents it from working.     ***'
+      WRITE(*,*) '*** The first tau is correctly    ***'
+      WRITE(*,*) '*** computed but not the          ***'
+      WRITE(*,*) '*** following ones.               ***'
+      WRITE(*,*) '*************************************'
+      WRITE(*,*) 'STOP.'
+      STOP
 
       WRITE(*,*)
       WRITE(*,*) '--> Reading taus from file taus.in'
@@ -255,6 +224,87 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
 
    ENDIF
 
+!--------------
+! INITIAL GUESS
+
+   WRITE(*,*)
+
+   ! look for restart file
+   !
+   tauNameTemp = NINT(p_in%tranGrowth_tau*1e3)
+   CALL intToChar6 (tauNameTemp,  tauName)
+   WRITE(restart_name, '(A)') './tranGrowthOut/tranGrowthRestart-tau'//trim(tauName)//'.bin'
+   INQUIRE (FILE=restart_name , EXIST=existFlag)
+
+   IF ( existFlag ) THEN
+      !
+      ! read restart file and use it as initial guess
+      !
+      IF ( p_in%tranGrowth_initGuess == 1 ) THEN
+         WRITE(*,*) '************************************************'
+         WRITE(*,*) '*** Warning:                                 ***'
+         WRITE(*,*) '*** I found a restart but you told me to use ***'
+         WRITE(*,*) '*** ARPACK''s random guess.                   ***'
+         WRITE(*,*) '*** These two choiches are not compatible.   ***'
+         WRITE(*,*) '************************************************'
+         WRITE(*,*) 'STOP.'
+         STOP
+      ENDIF
+      CALL read_restart_bin(xx(1:velCmpnnts*np), dummy, trim(restart_name))
+      CALL extract (xx,  uInitGuess)
+      WRITE(*,*)
+      WRITE(*,*) '    initial guess: ****** READ FROM RESTART FILE ******'
+      WRITE(*,*)
+
+   ELSE
+      !
+      ! create initial guess
+      !
+      SELECT CASE ( p_in%tranGrowth_initGuess )
+         CASE (1)
+            ! (a)
+            ! random guess created by ARPACK
+            ! WARNING: the velocity is NOT zero on borders
+            WRITE(*,*) '    initial guess: ARPACK''s random'
+            WRITE(*,*)
+         CASE (2)
+            ! (b)
+            ! pseudo-random guess
+            !
+            WRITE(*,*) '    initial guess: pseudo-random'
+            WRITE(*,*)
+            CALL init_random_seed()
+            CALL RANDOM_NUMBER(xx)
+            !CALL Dirichlet_c (np, js_Axis, js_D_tg, zero_bvs_D,  xx)
+            CALL extract (xx,  uu)
+            CALL projectDiv (uu,  uInitGuess)
+         CASE (3)
+            ! (c)
+            ! base flow
+            WRITE(*,*) '    initial guess: base flow'
+            WRITE(*,*)
+            uInitGuess = u0
+         CASE (4)
+            ! (d)
+            ! already computed eigenvector
+            WRITE(*,*) '    initial guess: eigenvector'
+            WRITE(*,*)
+            CALL read_eigenvector (Nx, 1, './tranGrowthOut/eigenTranGrowth.dat', 35,  xx, x0)
+            CALL extract (xx,  uInitGuess)
+         CASE DEFAULT
+            WRITE(*,*) '*************************************'
+            WRITE(*,*) '*** Wrong parameter:              ***'
+            WRITE(*,*) '*** p_in % tranGrowth_initGuess   ***'
+            WRITE(*,*) '*** set to: ', p_in%tranGrowth_initGuess
+            WRITE(*,*) '*************************************'
+            WRITE(*,*) 'STOP.'
+            STOP
+      END SELECT
+
+   ENDIF
+   !CALL vtk_plot_P2 (rr, jj, jj_L, uInitGuess, 0*p0, './tranGrowthOut/tranGrowthInitGuess.vtk')
+
+
 !--------------------
 ! OUTER CYCLE ON TAUs
 ! note: at the moment the matrices for the time stepper are filled
@@ -270,25 +320,7 @@ DO ii = 1, tausNumber
 
    ! Create very elaborate and stupid file name
    tauNameTemp = NINT(p_in%tranGrowth_tau*1e3)
-   IF ( tauNameTemp < 10 ) THEN
-      WRITE(tauName, '(a5,i1)') '00000', tauNameTemp
-   ELSEIF (tauNameTemp < 100 ) THEN
-      WRITE(tauName, '(a4,i2)') '0000',  tauNameTemp
-   ELSEIF (tauNameTemp < 1000 ) THEN
-      WRITE(tauName, '(a3,i3)') '000',   tauNameTemp
-   ELSEIF (tauNameTemp < 10000 ) THEN
-      WRITE(tauName, '(a2,i4)') '00',    tauNameTemp
-   ELSEIF (tauNameTemp < 100000 ) THEN
-      WRITE(tauName, '(a1,i5)') '0',     tauNameTemp
-   ELSEIF (tauNameTemp < 1000000 ) THEN
-      WRITE(tauName, '(i6)')             tauNameTemp
-   ELSE
-      WRITE(*,*) '**********************************************'
-      WRITE(*,*) '*** Error:                                 ***'
-      WRITE(*,*) '*** Change compute_transientGrowth tauName ***'
-      WRITE(*,*) '**********************************************'
-      WRITE(*,*) 'STOP.'
-   ENDIF
+   CALL intToChar6 (tauNameTemp,  tauName)
 
 !---------------
 ! SET TIME STEPS
@@ -673,7 +705,11 @@ SUBROUTINE singularValueDecomposition(nsv, uInitGuess, maxit, tol, sigma, nSteps
    INTEGER          :: ido, m, n, ncv, lworkl, info, ierr, &
                        i, nconv
 
-   LOGICAL          :: rvec 
+   LOGICAL          :: rvec
+
+   INTEGER            :: tauNameTemp
+   CHARACTER(LEN=6)   :: tauName
+   CHARACTER(LEN=128) :: restart_name
  
 !  %-----------------------------%
 !  | BLAS & LAPACK routines used |
@@ -825,6 +861,10 @@ SUBROUTINE singularValueDecomposition(nsv, uInitGuess, maxit, tol, sigma, nSteps
 !
 !
 !
+   tauNameTemp = NINT(p_in%tranGrowth_tau*1e3)
+   CALL intToChar6 (tauNameTemp,  tauName)
+   WRITE(restart_name, '(A)') './tranGrowthOut/tranGrowthRestart-tau'//trim(tauName)//'.bin'
+
    i = 0
    DO
       i = i+1
@@ -864,6 +904,9 @@ SUBROUTINE singularValueDecomposition(nsv, uInitGuess, maxit, tol, sigma, nSteps
 !        %-----------------------------------------%
 !        | L O O P   B A C K to call DSAUPD again. |
 !        %-----------------------------------------%
+
+         ! save "restart"
+         CALL write_restart_bin (workd(ipntr(2):ipntr(2)+n-1), p_in%tranGrowth_tau, i, maxit, restart_name)
 !
          CYCLE
 
@@ -1139,23 +1182,7 @@ SUBROUTINE timeStepper (u0v, nSteps, dirAdj,  u1v)
          x0 = xx
          ! temporary
          ! plot
-         !IF ( i < 10 ) THEN
-         !   WRITE(counter, '(A5,I1)') '00000', i
-         !ELSEIF ( i < 100 ) THEN
-         !   WRITE(counter, '(A4,I2)') '0000',  i
-         !ELSEIF ( i < 1000 ) THEN
-         !   WRITE(counter, '(A3,I3)') '000',   i
-         !ELSEIF ( i < 10000 ) THEN
-         !   WRITE(counter, '(A2,I4)') '00',    i
-         !ELSEIF ( i < 100000 ) THEN
-         !   WRITE(counter, '(A1,I5)') '0',     i
-         !ELSEIF ( i < 1000000 ) THEN
-         !   WRITE(counter, '(I6)')             i
-         !ELSE
-         !   WRITE(*,*) 'Change transient_growth.f90 at line \approx 710.'
-         !   WRITE(*,*) 'STOP.'
-         !   STOP
-         !ENDIF
+         !CALL intToChar6 (i,  counter)
          !CALL extract (xx,  uu, p0)
          !CALL vtk_plot_P2 (rr, jj, jj_L, uu, p0, './tranGrowthOut/tranGrowthDir'//trim(counter)//'.vtk')
       ENDDO
@@ -1200,23 +1227,7 @@ SUBROUTINE timeStepper (u0v, nSteps, dirAdj,  u1v)
          x0 = xx
          ! temporary
          ! plot
-         !IF ( i < 10 ) THEN
-         !   WRITE(counter, '(A5,I1)') '00000', i
-         !ELSEIF ( i < 100 ) THEN
-         !   WRITE(counter, '(A4,I2)') '0000',  i
-         !ELSEIF ( i < 1000 ) THEN
-         !   WRITE(counter, '(A3,I3)') '000',   i
-         !ELSEIF ( i < 10000 ) THEN
-         !   WRITE(counter, '(A2,I4)') '00',    i
-         !ELSEIF ( i < 100000 ) THEN
-         !   WRITE(counter, '(A1,I5)') '0',     i
-         !ELSEIF ( i < 1000000 ) THEN
-         !   WRITE(counter, '(I6)')             i
-         !ELSE
-         !   WRITE(*,*) 'Change transient_growth.f90 at line \approx 740.'
-         !   WRITE(*,*) 'STOP.'
-         !   STOP
-         !ENDIF
+         !CALL intToChar6 (i,  counter)
          !CALL extract (xx,  uu, p0)
          !CALL vtk_plot_P2 (rr, jj, jj_L, uu, p0, './tranGrowthOut/tranGrowthAdj'//trim(counter)//'.vtk')
       ENDDO
@@ -1448,66 +1459,21 @@ SUBROUTINE evolve_transientGrowth(x_vec)
 ! CHECK IF THE EVOLUTION HAS ALREADY STARTED
 
    time_plot = NINT( p_in%dns_dtPlot*1d3 )
-   IF ( time_plot < 10 ) THEN
-      WRITE(counter, '(A5,I1)') '00000', time_plot
-   ELSEIF ( time_plot < 100 ) THEN
-      WRITE(counter, '(A4,I2)') '0000',  time_plot
-   ELSEIF ( time_plot < 1000 ) THEN
-      WRITE(counter, '(A3,I3)') '000',   time_plot
-   ELSEIF ( time_plot < 10000 ) THEN
-      WRITE(counter, '(A2,I4)') '00',    time_plot
-   ELSEIF ( time_plot < 100000 ) THEN
-      WRITE(counter, '(A1,I5)') '0',     time_plot
-   ELSEIF ( time_plot < 1000000 ) THEN
-      WRITE(counter, '(I6)')             time_plot
-   ELSE
-      WRITE(*,*) 'STOP.'
-      STOP
-   ENDIF
+   CALL intToChar6 (time_plot,  counter)
    INQUIRE (FILE=trim(p_in%dns_output_directory)//'sol'//trim(counter)//'.vtk' , EXIST=existFlag)
 
    IF ( existFlag ) THEN
 
       DO WHILE ( existFlag )
          time_plot = time_plot + NINT( p_in%dns_dtPlot*1d3 )
-         IF ( time_plot < 10 ) THEN
-            WRITE(counter, '(A5,I1)') '00000', time_plot
-         ELSEIF ( time_plot < 100 ) THEN
-            WRITE(counter, '(A4,I2)') '0000',  time_plot
-         ELSEIF ( time_plot < 1000 ) THEN
-            WRITE(counter, '(A3,I3)') '000',   time_plot
-         ELSEIF ( time_plot < 10000 ) THEN
-            WRITE(counter, '(A2,I4)') '00',    time_plot
-         ELSEIF ( time_plot < 100000 ) THEN
-            WRITE(counter, '(A1,I5)') '0',     time_plot
-         ELSEIF ( time_plot < 1000000 ) THEN
-            WRITE(counter, '(I6)')             time_plot
-         ELSE
-            WRITE(*,*) 'STOP.'
-            STOP
-         ENDIF
+         CALL intToChar6 (time_plot,  counter)
          INQUIRE (FILE=trim(p_in%dns_output_directory)//'sol'//trim(counter)//'.vtk' , EXIST=existFlag)
       ENDDO
 
       p_in%dns_tInit = time_plot/1d3 - p_in%dns_dtPlot
 
       time_plot = time_plot - NINT( p_in%dns_dtPlot*1d3 )
-      IF ( time_plot < 10 ) THEN
-         WRITE(counter, '(A5,I1)') '00000', time_plot
-      ELSEIF ( time_plot < 100 ) THEN
-         WRITE(counter, '(A4,I2)') '0000',  time_plot
-      ELSEIF ( time_plot < 1000 ) THEN
-         WRITE(counter, '(A3,I3)') '000',   time_plot
-      ELSEIF ( time_plot < 10000 ) THEN
-         WRITE(counter, '(A2,I4)') '00',    time_plot
-      ELSEIF ( time_plot < 100000 ) THEN
-         WRITE(counter, '(A1,I5)') '0',     time_plot
-      ELSEIF ( time_plot < 1000000 ) THEN
-         WRITE(counter, '(I6)')             time_plot
-      ELSE
-         WRITE(*,*) 'STOP.'
-         STOP
-      ENDIF
+      CALL intToChar6 (time_plot,  counter)
 
       WRITE(*,*)
       WRITE(*,*) '    Using restart:'

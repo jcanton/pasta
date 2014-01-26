@@ -9,6 +9,7 @@ MODULE loca_wrappers
    USE dynamic_structures
    USE sparse_matrix_profiles
    USE global_variables
+   USE miscellaneous_subroutines
    USE prep_mesh_p1p2_sp
    USE start_sparse_kit
    USE Dirichlet_Neumann
@@ -1445,50 +1446,14 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
 
       ! Create very elaborate and stupid file name
       shiftNameTemp = NINT(ABS(DBLE(p_in%eigen_sigma))*1e3)
-      IF ( shiftNameTemp < 10 ) THEN
-         WRITE(shiftNameRe, '(a5,i1)') '00000', shiftNameTemp
-      ELSEIF (shiftNameTemp < 100 ) THEN
-         WRITE(shiftNameRe, '(a4,i2)') '0000',  shiftNameTemp
-      ELSEIF (shiftNameTemp < 1000 ) THEN
-         WRITE(shiftNameRe, '(a3,i3)') '000',   shiftNameTemp
-      ELSEIF (shiftNameTemp < 10000 ) THEN
-         WRITE(shiftNameRe, '(a2,i4)') '00',    shiftNameTemp
-      ELSEIF (shiftNameTemp < 100000 ) THEN
-         WRITE(shiftNameRe, '(a1,i5)') '0',     shiftNameTemp
-      ELSEIF (shiftNameTemp < 1000000 ) THEN
-         WRITE(shiftNameRe, '(i6)')             shiftNameTemp
-      ELSE
-         WRITE(*,*) '****************************************'
-         WRITE(*,*) '*** Error:                           ***'
-         WRITE(*,*) '*** Change compute_eigen shiftNameRe ***'
-         WRITE(*,*) '****************************************'
-         WRITE(*,*) 'STOP.'
-      ENDIF
+      CALL intToChar6 (shiftNameTemp,  shiftNameRe)
       IF ( DBLE(p_in%eigen_sigma) >= 0d0 ) THEN
          WRITE(shiftNameRe,'(a7)') '+'//trim(shiftNameRe)
       ELSE
          WRITE(shiftNameRe,'(a7)') '-'//trim(shiftNameRe)
       ENDIF
       shiftNameTemp = NINT(ABS(AIMAG(p_in%eigen_sigma))*1e3)
-      IF ( shiftNameTemp < 10 ) THEN
-         WRITE(shiftNameIm, '(a5,i1)') '00000', shiftNameTemp
-      ELSEIF (shiftNameTemp < 100 ) THEN
-         WRITE(shiftNameIm, '(a4,i2)') '0000',  shiftNameTemp
-      ELSEIF (shiftNameTemp < 1000 ) THEN
-         WRITE(shiftNameIm, '(a3,i3)') '000',   shiftNameTemp
-      ELSEIF (shiftNameTemp < 10000 ) THEN
-         WRITE(shiftNameIm, '(a2,i4)') '00',    shiftNameTemp
-      ELSEIF (shiftNameTemp < 100000 ) THEN
-         WRITE(shiftNameIm, '(a1,i5)') '0',     shiftNameTemp
-      ELSEIF (shiftNameTemp < 1000000 ) THEN
-         WRITE(shiftNameIm, '(i6)')             shiftNameTemp
-      ELSE
-         WRITE(*,*) '****************************************'
-         WRITE(*,*) '*** Error:                           ***'
-         WRITE(*,*) '*** Change compute_eigen shiftNameIm ***'
-         WRITE(*,*) '****************************************'
-         WRITE(*,*) 'STOP.'
-      ENDIF
+      CALL intToChar6 (shiftNameTemp,  shiftNameIm)
       IF ( AIMAG(p_in%eigen_sigma) >= 0d0 ) THEN
          WRITE(shiftNameIm,'(a7)') '+'//trim(shiftNameIm)
       ELSE

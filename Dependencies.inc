@@ -15,6 +15,7 @@ OBJ    = dirichlet_neumann.o         \
          sparse_matrix_profiles.o    \
          sparse_matrix_operations.o  \
          global_variables.o          \
+         miscellaneous_subroutines.o \
          start_sparse_kit.o          \
          fem_2d_grid.o               \
          par_solve_mumps.o           \
@@ -48,6 +49,8 @@ loca_parameters.o:
 global_variables.o: read_input_files.o   \
                     dynamic_structures.o \
                     sparse_matrix_profiles.o
+
+miscellaneous_subroutines.o:
 
 par_solve_mumps.o: global_variables.o \
                    sparse_matrix_profiles.o
@@ -88,50 +91,53 @@ axisym_boundary_values.o: global_variables.o   \
                           dirichlet_neumann.o  \
                           gauss_points_2d_p_sp.o
 
-loca_wrappers.o: loca_parameters.o        \
-                 par_solve_mumps.o        \
-                 qv_sp.o                  \
-                 qc_sp_m.o                \
-                 qs_l_sp.o                \
-                 dynamic_structures.o     \
-                 sparse_matrix_profiles.o \
-                 global_variables.o       \
-                 prep_mesh_p1p2_sp.o      \
-                 start_sparse_kit.o       \
-                 dirichlet_neumann.o      \
-                 read_input_files.o       \
-                 eigensolve.o             \
-                 axisym_boundary_values.o \
+loca_wrappers.o: loca_parameters.o           \
+                 par_solve_mumps.o           \
+                 qv_sp.o                     \
+                 qc_sp_m.o                   \
+                 qs_l_sp.o                   \
+                 dynamic_structures.o        \
+                 sparse_matrix_profiles.o    \
+                 global_variables.o          \
+                 miscellaneous_subroutines.o \
+                 prep_mesh_p1p2_sp.o         \
+                 start_sparse_kit.o          \
+                 dirichlet_neumann.o         \
+                 read_input_files.o          \
+                 eigensolve.o                \
+                 axisym_boundary_values.o    \
                  vtk_plot.o
 
 eigensolve.o: sparse_matrix_profiles.o   \
               sparse_matrix_operations.o \
               start_sparse_kit.o
 
-transient_growth.o: dynamic_structures.o       \
-                    sparse_matrix_profiles.o   \
-                    sparse_matrix_operations.o \
-                    global_variables.o         \
-                    prep_mesh_p1p2_sp.o        \
-                    start_sparse_kit.o         \
-                    dirichlet_neumann.o        \
-                    qc_sp_m.o                  \
-                    qv_sp.o                    \
-                    qs_l_m.o                   \
-                    qs_l_sp.o                  \
-                    dns_algorithms.o           \
-                    par_solve_mumps.o          \
+transient_growth.o: dynamic_structures.o        \
+                    sparse_matrix_profiles.o    \
+                    sparse_matrix_operations.o  \
+                    global_variables.o          \
+                    miscellaneous_subroutines.o \
+                    prep_mesh_p1p2_sp.o         \
+                    start_sparse_kit.o          \
+                    dirichlet_neumann.o         \
+                    qc_sp_m.o                   \
+                    qv_sp.o                     \
+                    qs_l_m.o                    \
+                    qs_l_sp.o                   \
+                    dns_algorithms.o            \
+                    par_solve_mumps.o           \
                     vtk_plot.o
 
-dns_algorithms.o: dynamic_structures.o     \
-                  sparse_matrix_profiles.o \
-                  global_variables.o       \
-                  prep_mesh_p1p2_sp.o      \
-                  start_sparse_kit.o       \
-                  qc_sp_m.o                \
-                  qv_sp.o                  \
-                  par_solve_mumps.o        \
-                  restart_io.o             \
+dns_algorithms.o: dynamic_structures.o        \
+                  sparse_matrix_profiles.o    \
+                  global_variables.o          \
+                  miscellaneous_subroutines.o \
+                  prep_mesh_p1p2_sp.o         \
+                  start_sparse_kit.o          \
+                  qc_sp_m.o                   \
+                  qv_sp.o                     \
+                  par_solve_mumps.o           \
+                  restart_io.o                \
                   vtk_plot.o
 
 vorticity_stream.o: global_variables.o  \

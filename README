@@ -8,7 +8,8 @@
 #   a software for Parallel Stability Analysis
 #
 # Created by Jacopo Canton <jacopo.canton@mail.polimi.it>
-# based on Luigi Quartapelle's subroutines for FEM discretization
+# under the supervision of Franco Auteri and Marco Carini,
+# based on Luigi Quartapelle's subroutines for FEM discretization.
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 # FEATURES:
@@ -16,5 +17,7 @@
 #  - continuation of solutions and bifurcation tracking (LOCA library)
 #  - eigenvalues and eigenvectors computation (ARPACK library)
 #  - structural sensitivity computation
-#  - transient growth computation
+#  - computation of the optimal linear perturbations (transient growth)
+#  - DNS
+#  - evolution of optimal linear perturbations on the nonlinear system
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

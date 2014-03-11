@@ -59,7 +59,7 @@ LIBMPI    = -lmpi
 LIBLOCA   = -L./libLOCA/ -lloca
 LIBS      = $(LIBMUMPS) $(LIBMPI) $(LIBLOCA) $(LIBARPACK) $(LIBLAPACK) $(LIBBLAS)
 
-FOLDER = ~/BTSync/UNI/Fortran/bin/
+FOLDER = ~/BTSync/Software/bin/
 NAME   = pasta_axi
 
 

@@ -1,0 +1,78 @@
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# program data
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+5                                 # prog_analysis                              see comments at the end of this file
+15                                # newt_maxit                                 max number of Newton iterations
+1e-10                             # newt_tol                                   tolerance for Newton's method
+'../mesh3-h5-l40' 'coaxialTubes'  # mesh_directory and mesh_name
+'./plots/'                        # plot_directory
+'./restart/'                      # restart_directory
+'restartRe750-ru0.5.io' 'restartRe750-ru0.5.io' # input_restart_file and output_restart_file
+.t. .f.                           # read_restart_flag and write_restart_flag
+.f.                               # write_QP_restart_flag
+.f.                               # write_BVS_flag
+.t.                               # write_plots_flag
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# (3) eigenvalue data
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2                                 # eigen_BC                                   see comments at the end of this file
+1                                 # eigen_number                               number of eigenvalues to be computed
+100                               # eigen_maxit                                max number of iterations
+0d0                               # eigen_tol                                  tolerance for ARPACK
+(0.4,-5.75)                       # eigen_shift                                complex shift
+'./eigenOut/Re1450-ru1.2/'        # eigen_output_directory
+1                                 # eigen_plotn                                how many eigenvectors do I plot?
+1                                 # eigen_kind                                 1=direct, 2=adjoint, 3=both
+.f.                               # compute_structural_sensitivity_flag        overrides the previous line
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# (4) structural sensitivity data
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1                                 # strsens_eigen                              which eigenvalue do I use to compute the structural sensitivity
+'./eigenOut/eigen.dat'            #  direct eigenvectors file                  file containing the  direct eigenvector
+'./eigenOut/eigen.dat'            # adjoint eigenvectors file                  file containing the adjoint eigenvector
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# (5) transient growth data
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2                                 # trgrowth_method                            2=CrNi, 3=imEul
+2                                 # trgrowth_initguess                         transient growth initial guess (see comments at the end of this file)
+1                                 # trgrowth_BC                                transient growth boundary conditions (see comments at the end of this file)
+2     # tau (end time)
+0.05                              # trgrowth_dt                                transient growth dt 
+50                                # trgrowth_maxit                             max number of iterations
+1d-10                             # trgrowth_tol                               tolerance for ARPACK
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# (6) dns data
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2                                 # dns_method                                 1=semiImplicit, 2=explicit
+0                                 # dns_initT                                  initial time 
+50                                # dns_endT                                   end time
+1e-3                              # dns_dt                                     dns dt
+1                                 # dns_dtplot                                 plot interval
+'tranGrowthOut/ru0.5/Re750/evolveTau50/' # dns_outputdir                       output directory
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# (7) evolve transient growth data
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'tranGrowthOut/ru0.5/Re750/tranGrowthShape.........' # evtrgrowth_optpert      optimal perturbation to be evolved
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# COMMENTS (what follows is not read by pasta)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+analysis: 1 = steady state computation
+          2 = continuation analisys with LOCA
+          3 = eigenvalue computation and, possibly, structural sensitivity computation
+          4 = structural sensitivity computation
+          5 = computation of linearly optimal perturbations and their transient growth
+          6 = DNS
+          7 = evolution of a linearly optimal perturbation on the nonlinear system
+
+eigen_BC &&
+tranGrowth_BC : 1 = zero velocity on every border
+                2 = same as base flow
+
+trgrowth_initGuess : 1 = ARPACK's random guess and zero pressure
+                         the velocity is NOT zero on borders
+                     2 = pseudo-random guess
+                         the velocity is zero on borders
+                     3 = base flow, both velocity and pressure
+                     4 = eigenvalue, which has to be read in this file
+                         './tranGrowthOut/eigenTranGrowth.dat'

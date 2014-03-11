@@ -1,0 +1,43 @@
+<!--Passdown-->
+            debug:      0
+<!--General_Info-->
+           method:      5
+        bif_param:      0
+            param:      1
+<!--Stepping_Info-->
+        max_steps:      300
+        max_param:      5
+       first_step:      0.05
+        step_ctrl:      0.0
+      max_delta_p:      0.05
+<!--Arclength_Info-->
+      dp_ds2_goal:      0.5
+        dp_ds_max:      0.0
+         tang_exp:      0.0
+  tang_step_limit:      0.0
+<!--Pitchfork_Info-->
+        pitch_nev:      0
+        pitch_ind:      0
+   pitch_load_dir:      none
+     psi_load_dir:      none
+<!--Hopf_Info-->
+     hopf_nevRead:      1
+   hopf_load_file:      ./eigenOut/Re1450-ru1.2/directEigenvectorsSteadyState-Shift_Re+000400_Im-005750.dat
+            omega:      -6.44
+        mass_flag:      4
+<!--Eigen_Info-->
+      calc_on_off:      0
+    every_n_steps:      1
+
+
+<!--Comments not read by the program-->
+ZERO_ORDER_CONTINUATION       = 0
+FIRST_ORDER_CONTINUATION      = 1
+ARC_LENGTH_CONTINUATION       = 2
+TURNING_POINT_CONTINUATION    = 3
+PITCHFORK_CONTINUATION        = 4
+HOPF_CONTINUATION             = 5
+PHASE_TRANSITION_CONTINUATION = 6
+AUGMENTING_CONDITION          = 7
+MANIFOLD_CONTINUATION         = 8
+LOCA_LSA_ONLY                 = 9

@@ -439,6 +439,7 @@ SUBROUTINE read_and_apply_boundary_conditions(input_file, k_d, rr, mms, jjs,    
    INTEGER,      DIMENSION(:),   INTENT(IN) :: sides
    ! output variables
    REAL(KIND=8)                        :: Re, velRatio
+   INTEGER                             :: beta
    TYPE(dyn_int_line),  DIMENSION(:)   :: js_D
    TYPE(dyn_real_line), DIMENSION(:)   :: zero_bvs_D, old_bvs_D, bvs_D
    INTEGER,      DIMENSION(:), POINTER :: ms_2, ms_3

@@ -103,7 +103,7 @@ IF ( myRank == 0 ) THEN
    CALL Dirichlet_nodes_gen (jjs, sides, Axis,  js_Axis)
 
    WRITE (*,*) 
-   WRITE (*,*) 'Axisymmetric problem' 
+   !WRITE (*,*) 'Axisymmetric problem' 
    WRITE (*,*) 'Boundary sides on z axis:'
    WRITE (*,*) 'Axis = ', Axis, '  nps_Axis = ', SIZE(js_Axis)
    WRITE (*,*)
@@ -111,8 +111,8 @@ IF ( myRank == 0 ) THEN
 !------------------------------------------------------------------------------
 !-------------PREPARE TYPE OF BOUNDARY CONDITIONS AND js_D ARRAY---------------
 
-   CALL read_and_apply_boundary_conditions('problem_data.in', k_d, rr, mms, jjs, &
-                       sides,  Re, velRatio, js_D, zero_bvs_D, old_bvs_D, bvs_D, &
+   CALL read_and_apply_boundary_conditions('problem_data.in', k_d, rr, mms, jjs,       &
+                       sides,  Re, velRatio, beta, js_D, zero_bvs_D, old_bvs_D, bvs_D, &
                                                           ms_2, ms_3, c_2, q_3)
    
 !------------------------------------------------------------------------------
@@ -425,8 +425,8 @@ END SUBROUTINE check_boundary_conditions
 !------------------------------------------------------------------------------
 ! new subroutines
 
-SUBROUTINE read_and_apply_boundary_conditions(input_file, k_d, rr, mms, jjs, &
-                   sides,  Re, velRatio, js_D, zero_bvs_D, old_bvs_D, bvs_D, &
+SUBROUTINE read_and_apply_boundary_conditions(input_file, k_d, rr, mms, jjs,       &
+                   sides,  Re, velRatio, beta, js_D, zero_bvs_D, old_bvs_D, bvs_D, &
                                                        ms_2, ms_3, c_2, q_3)
 
    IMPLICIT NONE
@@ -457,6 +457,7 @@ SUBROUTINE read_and_apply_boundary_conditions(input_file, k_d, rr, mms, jjs, &
    ! read input file
    OPEN (UNIT = 21, FILE = trim(input_file), FORM = 'formatted', STATUS = 'unknown')
    READ  (21,*)  Re, velRatio
+   READ  (21,*)  beta
    READ  (21,*) ! comment line
      
    WRITE(*,*)

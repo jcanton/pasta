@@ -143,7 +143,7 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
    CALL Dirichlet_rc_M (np, js_Axis, js_D_tg, 0d0,  Mass)
 
    ! (3)
-   ! create the matrices for the time stepper and store Wd in
+   ! create the matrices for the time stepper. Store Wd in
    ! position 5 of the MUMPS array id and Wa in position 8
    ! Prepare also Zd and Za, matrices for the RHSs
    !

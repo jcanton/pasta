@@ -1,8 +1,8 @@
 ###############################################################################
 # Rules
 #
-all: continuation_axi.exe
-default: continuation_axi.exe
+all: pasta_axi.exe
+default: pasta_axi.exe
 
 include Dependencies.inc
 # Is Dependencies.inc available ?
@@ -18,7 +18,7 @@ release:
 	@rm -f *.mod *.o
 	@cd .. && tar -czf ./backups/pasta_axi_$(NOW).tar.gz pasta_axi/
 
-continuation_axi.exe: main.o $(OBJ) 
+pasta_axi.exe: main.o $(OBJ) 
 	$(F90LNK) $(F90FLAGS) main.o $(OBJ) $(LIBS) -o $(FOLDER)$(NAME)
 
 clean:

@@ -1,9 +1,4 @@
 MODULE qc_sp_M
-
-
-!  AXISYMMETRIC
-
-
 !  COUPLED VELOCITY-PRESSURE SYSTEM OF EQUATIONS
 
 !  THE USE OF THIS PROGRAM ASSUMES THAT THE LARGE SPARSE
@@ -1236,7 +1231,7 @@ END SUBROUTINE qc_oseen2y_sp_M
 SUBROUTINE qc_1y0_sp_M (m0, jj, jj_L, alpha,  CC)
 !================================================
 
-!  +  alpha ( < D.w, y _L >  +  < w(2), _L > )   ===>   CC    
+!  +  alpha ( < D.w, y _L >  +  < w(2), _L > )   ===>   CC
 !                          
 !  ===>   CC   cumulative      
 
@@ -1520,9 +1515,561 @@ SUBROUTINE qc_ty0_sp_s (ms0, jjs, iis, gzs,  v0)
 
 END SUBROUTINE qc_ty0_sp_s
 
+!******************************************************************************
+!******************************************************************************
+! 3D subroutines follow
+!******************************************************************************
+!******************************************************************************
+
+SUBROUTINE qc_1y1_sp_gg_3d_M (m0, jj, alpha, beta,  CC) 
+!==========================================
+
+!  +  alpha [<< (Dw), y D_ >> ]   ===>   CC
+!
+!  beta is the azimutal wave number
+!
+!  ===>   CC   cumulative
+
+!  TWO-DIMENSIONAL VERSION ONLY
+
+   USE Gauss_points
+
+   IMPLICIT NONE
+
+   INTEGER, DIMENSION(:),         INTENT(IN) :: m0
+   INTEGER, DIMENSION(:,:),       INTENT(IN) :: jj
+   REAL(KIND=8),                  INTENT(IN) :: alpha
+   INTEGER,                       INTENT(IN) :: beta
+   TYPE(CSR_MUMPS_Complex_Matrix)            :: CC  
+
+   REAL(KIND=8), DIMENSION(k_d, n_w) :: dwl
+   
+   REAL(KIND=8) :: alpha_pyJ,  x
+   INTEGER      :: np, mm, k, l, m, n, ni, nj, i, j, p, i_, j_
+
+   IF (k_d /= 2) THEN
+   
+      WRITE (*,*) 'qc_1y1_sp_gg_3d_M  is implemented only for 2d'
+      WRITE (*,*) 'STOP.'
+      STOP
+   
+   ENDIF
+
+   np = MAXVAL(jj)  
+   
+   DO mm = 1, SIZE(m0);  m = m0(mm)
+
+      DO l = 1, l_G
+
+         DO k = 1, k_d
+            DO n = 1, n_w
+               dwl(k,n) = SUM(MNR(k,:,m) * Dw_re(:,n,l))
+            ENDDO
+         ENDDO
+
+         alpha_pyJ = alpha * pp_w(l) * yy_G(l,m) * JAC(m)
+
+         DO ni = 1, n_w;  i = jj(ni, m)
+
+            DO nj = 1, n_w;  j = jj(nj, m)
+
+               ! FIRST BLOCK-ROW
+               !================
+                   
+               ! diagonal block (1,1)
+               
+               ! y * ( dwx/dx . dvx/dx  +  dwx/dy . dvx/dy )  - 1/R * ( beta**2 wx . vx )
+               ! y * ( dwx/dx . d_x/dx  +  dwx/dy . d_x/dy )  - 1/R * ( beta**2 wx . _x )
+                          
+               !x = alpha_pyJ * SUM(dwl(:,ni) * dwl(:,nj)) / JAC(m)**2
+               x = alpha_pyJ *  (            dwl(1,ni) * dwl(1,nj) / JAC(m)**2  &
+                                +            dwl(2,ni) * dwl(2,nj) / JAC(m)**2  &
+                                -  beta**2 * ww(ni,l)  * ww(nj,l)  / yy_G(l,m)**2)
+
+               DO p = CC%i(i),  CC%i(i+1) - 1
+                  IF (CC%j(p) == j) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
+               ENDDO
+               
+               ! off-diagonal block (1,2)  ZERO
+                     
+               
+               ! off-diagonal block (1,3)  ZERO
+             
+              
+               ! SECOND BLOCK-ROW
+               !=================
+              
+               i_ = i + np;
+               
+               ! off-diagonal block (2,1) ZERO  
+
+               ! diagonal block (2,2)
+              
+               j_ = j + np 
+              
+               ! y * ( dwy/dx . dvy/dx  +  dwy/dy . dvy/dy )  - 1/R * ( - wy . vy  +  beta**2 wy . vy )
+               ! y * ( dwy/dx . d_y/dx  +  dwy/dy . d_y/dy )  - 1/R * ( - wy . _y  +  beta**2 wy . _y )
+             
+               x = alpha_pyJ *  (            dwl(1,ni) * dwl(1,nj) / JAC(m)**2    &
+                                +            dwl(2,ni) * dwl(2,nj) / JAC(m)**2    &
+                                +            ww(ni,l)  * ww(nj,l)  / yy_G(l,m)**2 &
+                                -  beta**2 * ww(ni,l)  * ww(nj,l)  / yy_G(l,m)**2)
+              
+               DO p = CC%i(i_),  CC%i(i_+1) - 1
+                  IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
+               ENDDO
+              
+               ! off-diagonal block (2,3) ZERO 
+              
+                  
+               ! THIRD BLOCK-ROW
+               !================
+              
+               i_ = i + 2*np;
+               
+               ! off-diagonal block (3,1) ZERO 
+               
+               ! off-diagonal block (3,2) ZERO 
+            
+               ! diagonal block (3,3) 
+               
+               j_ = j + 2*np 
+              
+               ! x = idem, vedi sopra
+
+               DO p = CC%i(i_),  CC%i(i_+1) - 1
+                  IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
+               ENDDO
+            
+            ENDDO
+
+         ENDDO
+
+      ENDDO
+
+   ENDDO
+
+END SUBROUTINE qc_1y1_sp_gg_3d_M
 
 !------------------------------------------------------------------------------
+
+SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC) 
+!===========================================
+
+!  +  << w, y (g.D)_ >>  +  << w, y (_.D)g >>   ===>   CC    /ALL VECTORS/
+!
+!  beta is the azimutal wave number
+!    
+!  ACCUMULATES CONTRIBUTIONS TO ALL NINE VELOCITY BLOCKS
+!                      
+!  ===>   CC   cumulative      
+
+   USE Gauss_points
+
+   IMPLICIT NONE
+
+   INTEGER,      DIMENSION(:),    INTENT(IN) :: m0
+   INTEGER,      DIMENSION(:,:),  INTENT(IN) :: jj
+   REAL(KIND=8), DIMENSION(:,:),  INTENT(IN) :: gg
+   INTEGER,                       INTENT(IN) :: beta
+   TYPE(CSR_MUMPS_Complex_Matrix)            :: CC  
+   
+   REAL(KIND=8), DIMENSION(k_d, n_w) :: dwl   
+   REAL(KIND=8), DIMENSION(3, n_w)   :: ggm
+   REAL(KIND=8), DIMENSION(k_d, 3)   :: dglo_py
+   REAL(KIND=8), DIMENSION(3)        :: gl
+   REAL(KIND=8), DIMENSION(n_w)      :: dgl_py
+   INTEGER,      DIMENSION(n_w)      :: jjm
+
+   INTEGER      :: np, mm, k3, k, l, m, n, ni, nj, i, j, p, i_, j_
+   REAL(KIND=8) :: wij, xd, xo  ! xd --> diagonal contribution
+                                ! xo --> off diagonal contribution
+   COMPLEX(KIND=8) :: x3 ! azimutal contribution
+
+   np = SIZE(gg, 2)
+
+   DO mm = 1, SIZE(m0);  m = m0(mm)
+
+      jjm = jj(:,m)
+      ggm = gg(:, jjm)
+
+      DO l = 1, l_G
+         
+         DO k3 = 1, 3
+            gl(k3) = SUM(ggm(k3,:) * ww(:,l))
+         ENDDO
+         
+         DO k = 1, k_d
+            DO n = 1, n_w
+               dwl(k,n) = SUM(MNR(k,:,m) * Dw_re(:,n,l))
+            ENDDO
+         ENDDO
+    
+         ! nell'operatore d'advezione intervengono solo le prime
+         ! due componenti g(1) = gx = gz  e  g(2) = gy = gR
+     
+         DO n = 1, n_w
+            dgl_py(n) = SUM(gl(1:2) * dwl(:,n)) * pp_w(l) * yy_G(l,m)
+         ENDDO
+
+         DO k = 1, k_d
+            DO k3 = 1, 3
+               dglo_py(k, k3) = SUM(dwl(k,:) * ggm(k3,:)) * pp_w(l) * yy_G(l,m)
+            ENDDO
+         ENDDO
+         
+         DO ni = 1, n_w;  i = jjm(ni)
+                           
+            DO nj = 1, n_w;  j = jjm(nj)
+               
+               xd = ww(ni,l) * dgl_py(nj)
+
+               wij = ww(ni,l) * ww(nj,l)
+               
+               ! FIRST BLOCK ROW
+               !================
+               
+               ! block (1,1)   xo =  _ dgx/dx - i beta/R * _ gt
+                
+               xo = wij * dglo_py(1,1)
+
+               x3 = - wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(3) * pp_w(l) * JAC(m)
+               
+               DO p = CC%i(i),  CC%i(i+1) - 1
+                  IF (CC%j(p) == j) THEN;  CC%e(p) = CC%e(p) + xd + xo + x3;  EXIT;  ENDIF
+               ENDDO
+
+               ! block (1,2)   xo =  _ dgx/dy
+
+               j_ = j + np
+
+               xo = wij * dglo_py(2,1)
+               
+               DO p = CC%i(i),  CC%i(i+1) - 1
+                  IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
+               ENDDO
+                              
+               ! block (1,3)   xo = -i beta/R * _ gx
+
+               j_ = j + np
+
+               x3 = - wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(1) * pp_w(l) * JAC(m)
+               
+               DO p = CC%i(i),  CC%i(i+1) - 1
+                  IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + x3;  EXIT;  ENDIF
+               ENDDO
+             
+                  
+               ! SECOND BLOCK ROW
+               !=================
+               i_ = i + np 
+         
+               ! block (2,1)   xo =  _ dgy/dx 
+       
+               xo = wij * dglo_py(1,2)     
+             
+               DO p = CC%i(i_),  CC%i(i_+1) - 1
+                  IF (CC%j(p) == j) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
+               ENDDO
+
+               ! block (2,2)   xo =  _ dgy/dy - i beta/R * _ gt
+
+               j_ = j + np
+            
+               xo = wij * dglo_py(2,2)
+
+               x3 = - wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(3) * pp_w(l) * JAC(m)
+             
+               DO p = CC%i(i_),  CC%i(i_+1) - 1
+                  IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xd + xo + x3;  EXIT;  ENDIF
+               ENDDO
+
+               ! block (2,3)   xo = - 2 _ gt/R - i beta/R * _ gy
+
+               j_ = j + 2*np
+            
+               xo = - 2 * wij * gl(3) * pp_w(l) * JAC(m)
+
+               x3 = - wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(2) * pp_w(l) * JAC(m)
+              
+               DO p = CC%i(i_),  CC%i(i_+1) - 1
+                  IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xo + x3;  EXIT;  ENDIF
+               ENDDO
+
+
+               ! THIRD BLOCK ROW
+               !================
+               i_ = i + 2*np 
+            
+               ! block (3,1)   xo = _ dgt/dx
+            
+               xo = wij * dglo_py(1,3) 
+               
+               DO p = CC%i(i_),  CC%i(i_+1) - 1
+                  IF (CC%j(p) == j) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
+               ENDDO
+               
+               ! block (3,2)   xo = _ (dgt/dy + gt/R)  
+            
+               j_ = j + np
+            
+               xo = wij * (dglo_py(2,3)  +  gl(3) * pp_w(l) * JAC(m)) 
+            
+               DO p = CC%i(i_),  CC%i(i_+1) - 1
+                  IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
+               ENDDO
+
+            
+               ! block (3,3)   xo = _ gy/R - 2 i beta/R * _ gy
+
+               j_ = j + 2*np
+            
+               xo = wij * gl(2) * pp_w(l) * JAC(m)
+
+               x3 = - 2 * wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(3) * pp_w(l) * JAC(m)
+
+               DO p = CC%i(i_),  CC%i(i_+1) - 1
+                  IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xd + xo + x3;  EXIT;  ENDIF
+               ENDDO
+
+            
+            ENDDO
+
+         ENDDO
+
+      ENDDO
+
+   ENDDO
+
+END SUBROUTINE qc_oseen2y_sp_3d_M
+
 !------------------------------------------------------------------------------
+
+SUBROUTINE qc_1y0_sp_3d_M (m0, jj, jj_L, alpha, beta,  CC)
+!================================================
+
+!  +  alpha ( < D.w, y _L >  +  < w(2), _L > )   ===>   CC
+!
+!  beta is the azimutal wave number
+!
+!  ===>   CC   cumulative
+
+   USE Gauss_points
+   
+   USE Gauss_points_L
+
+   IMPLICIT NONE
+
+   INTEGER,      DIMENSION(:),    INTENT(IN) :: m0
+   INTEGER,      DIMENSION(:,:),  INTENT(IN) :: jj, jj_L
+   REAL(KIND=8),                  INTENT(IN) :: alpha
+   INTEGER,                       INTENT(IN) :: beta
+   TYPE(CSR_MUMPS_Complex_Matrix)            :: CC  
+
+   REAL(KIND=8), DIMENSION(SIZE(jj_L,1), l_G) :: w_L
+
+   REAL(KIND=8), DIMENSION(k_d, n_w)     :: dwl
+   INTEGER,      DIMENSION(n_w)          :: jjm
+   INTEGER,      DIMENSION(SIZE(jj_L,1)) :: jjm_L
+  
+   INTEGER         :: np, mm, m, l, n, k, ni, nj, i, j, p, j_ 
+   COMPLEX(KIND=8) :: x
+ 
+ 
+   np = MAXVAL(jj)  
+
+
+   SELECT CASE (k_d)
+
+      CASE (2)
+               
+         w_L(1,:) = ww(1,:) + 0.5*(ww(5,:) + ww(6,:))
+         w_L(2,:) = ww(2,:) + 0.5*(ww(6,:) + ww(4,:))
+         w_L(3,:) = ww(3,:) + 0.5*(ww(4,:) + ww(5,:))
+
+      CASE (3)
+               
+         w_L(1,:) = ww(1,:) + 0.5*(ww(n_w-2,:) + ww(n_w-1,:) + ww(n_w,:))
+         w_L(2,:) = ww(2,:) + 0.5*(ww(6,:)     + ww(n_w-3,:) + ww(n_w,:))
+         w_L(3,:) = ww(3,:) + 0.5*(ww(5,:)     + ww(n_w-3,:) + ww(n_w-1,:))
+         w_L(4,:) = ww(4,:) + 0.5*(ww(5,:)     + ww(6,:)     + ww(n_w-2,:))
+
+   END SELECT
+
+
+   DO mm = 1, SIZE(m0);  m = m0(mm)
+
+      jjm   = jj  (:,m)
+      jjm_L = jj_L(:,m)
+
+      DO l = 1, l_G
+
+         DO k = 1, k_d
+            DO n = 1, n_w
+               dwl(k,n) = SUM(MNR(k,:,m) * Dw_re(:,n,l))
+            ENDDO
+         ENDDO
+
+         DO ni = 1, n_w;   i = jjm(ni)
+              
+            DO nj = 1, n_w_L;   j = jjm_L(nj);   j_ = j + 3*np
+
+               ! first rectangular off-diagonal block of the last block-column  
+
+               ! x = alpha * dwl(1,ni) * w_L(nj,l) * pp_w(l) * yy_G(l,m)
+                 
+               x = alpha * dwl(1,ni) * w_L(nj,l) * pp_w(l) * yy_G(l,m)
+                 
+               DO p = CC%i(i),  CC%i(i+1) - 1
+                  IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
+               ENDDO
+ 
+               ! second rectangular off-diagonal block of the last block-column  
+   
+               ! x1 = alpha * dwl(2,ni) * w_L(nj,l) * pp_w(l) * yy_G(l,m)
+               ! x2 = alpha *  ww(ni,l) * w_L(nj,l) * pp_w(l) * JAC(m)
+              
+               x = alpha * w_L(nj,l) * pp_w(l) &
+                         * (dwl(2,ni) * yy_G(l,m)  +  ww(ni,l) * JAC(m))
+
+               DO p = CC%i(i+np),  CC%i(i+np+1) - 1
+                  IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
+               ENDDO
+             
+               ! third rectangular off-diagonal block of the last block-column  
+
+               ! x = - alpha * i beta * ww(ni,l) * w_L(nj,l) * pp_w(l) * JAC(m)
+              
+               x = - alpha * CMPLX(0d0,1d0,KIND=8) * beta * ww(ni,l) * w_L(nj,l) * pp_w(l) * JAC(m) 
+               
+               DO p = CC%i(i+2*np),  CC%i(i+2*np+1) - 1
+                  IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
+               ENDDO
+   
+            ENDDO
+
+         ENDDO
+
+      ENDDO
+
+   ENDDO
+
+END SUBROUTINE qc_1y0_sp_3d_M
+
 !------------------------------------------------------------------------------
+
+SUBROUTINE qc_0y1_sp_3d_M (m0, jj, jj_L, alpha, beta,  CC)
+!================================================
+
+!  +  alpha  ( < w_L, y D._ >  +  < w_L, __(2) > )  ===>   CC
+!
+!  beta is the azimutal wave number
+!
+!  ===>   CC   cumulative
+
+   USE Gauss_points
+   
+   USE Gauss_points_L
+
+   IMPLICIT NONE
+
+   INTEGER,      DIMENSION(:),    INTENT(IN) :: m0
+   INTEGER,      DIMENSION(:,:),  INTENT(IN) :: jj, jj_L
+   REAL(KIND=8),                  INTENT(IN) :: alpha
+   INTEGER,                       INTENT(IN) :: beta
+   TYPE(CSR_MUMPS_Complex_Matrix)            :: CC  
+
+   REAL(KIND=8), DIMENSION(SIZE(jj_L,1), l_G) :: w_L
+
+   REAL(KIND=8), DIMENSION(k_d, n_w)     :: dwl
+   INTEGER,      DIMENSION(n_w)          :: jjm
+   INTEGER,      DIMENSION(SIZE(jj_L,1)) :: jjm_L
+  
+   INTEGER         :: np, mm, m, l, n, k, ni, nj, i, j, p, i_
+   COMPLEX(KIND=8) :: x  
+
+
+   np = MAXVAL(jj)  
+  
+
+   SELECT CASE (k_d)
+
+      CASE (2)
+               
+         w_L(1,:) = ww(1,:) + 0.5*(ww(5,:) + ww(6,:))
+         w_L(2,:) = ww(2,:) + 0.5*(ww(6,:) + ww(4,:))
+         w_L(3,:) = ww(3,:) + 0.5*(ww(4,:) + ww(5,:))
+
+      CASE (3)
+               
+         w_L(1,:) = ww(1,:) + 0.5*(ww(n_w-2,:) + ww(n_w-1,:) + ww(n_w,:))
+         w_L(2,:) = ww(2,:) + 0.5*(ww(6,:)     + ww(n_w-3,:) + ww(n_w,:))
+         w_L(3,:) = ww(3,:) + 0.5*(ww(5,:)     + ww(n_w-3,:) + ww(n_w-1,:))
+         w_L(4,:) = ww(4,:) + 0.5*(ww(5,:)     + ww(6,:)     + ww(n_w-2,:))
+
+   END SELECT
+
+
+   DO mm = 1, SIZE(m0);  m = m0(mm)
+
+      jjm   = jj  (:,m)
+      jjm_L = jj_L(:,m)
+
+      DO l = 1, l_G
+
+         DO k = 1, k_d
+            DO n = 1, n_w
+               dwl(k,n) = SUM(MNR(k,:,m) * Dw_re(:,n,l))
+            ENDDO
+         ENDDO
+ 
+         DO ni = 1, n_w_L;   i = jjm_L(ni);   i_ = i + 3*np
+
+            DO nj = 1, n_w;   j = jjm(nj)
+               
+               ! first rectangular off-diagonal block of the bottom block-row  
+              
+               x = alpha * w_L(ni,l) * pp_w(l) * yy_G(l,m) * dwl(1,nj) 
+                 
+               DO p = CC%i(i_),  CC%i(i_+1) - 1
+                  IF (CC%j(p) == j) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
+               ENDDO
+  
+               ! second rectangular off-diagonal block of the bottom block-row
+                 
+               ! x1 = alpha * w_L(ni,l) * pp_w(l) * yy_G(l,m) * dwl(2,nj)             
+               ! x2 = alpha * w_L(ni,l) * pp_w(l) *  ww(nj,l) * JAC(m)
+                
+               x = alpha * w_L(ni,l) * pp_w(l)  &
+                         * (dwl(2,nj) * yy_G(l,m)  +  ww(nj,l) * JAC(m))
+                 
+               DO p = CC%i(i_),  CC%i(i_+1) - 1
+                  IF (CC%j(p) == j+np) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
+               ENDDO
+
+               ! third rectangular off-diagonal block of the bottom block-row
+
+               ! x = - alpha * i beta * ww(ni,l) * w_L(nj,l) * pp_w(l) * JAC(m)
+              
+               x = - alpha * w_L(nj,l) * pp_w(l) * CMPLX(0d0,1d0,KIND=8) * beta * ww(ni,l) * JAC(m) 
+               
+               DO p = CC%i(i_),  CC%i(i_+1) - 1
+                  IF (CC%j(p) == j+2*np) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
+               ENDDO
+ 
+              
+            ENDDO
+
+         ENDDO
+
+      ENDDO
+
+   ENDDO
+
+END SUBROUTINE qc_0y1_sp_3d_M
+
+!==============================================================================
+!==============================================================================
+!==============================================================================
 
 END MODULE qc_sp_M

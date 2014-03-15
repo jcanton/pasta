@@ -7,7 +7,7 @@
 #
 #   a software for Parallel Stability Analysis
 #
-# Created by Jacopo Canton <jacopo.canton@mail.polimi.it>
+# Created by Jacopo Canton <jcanton@mech.kth.se>
 # under the supervision of Franco Auteri and Marco Carini,
 # based on Luigi Quartapelle's subroutines for FEM discretization.
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

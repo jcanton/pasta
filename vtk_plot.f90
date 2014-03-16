@@ -22,7 +22,7 @@ CONTAINS
 SUBROUTINE vtk_plot_P2 (rr, jj, jj_L, uu, pp, file_name)
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 6/10/2013
 !
 !++++++++ 2D/3D version +++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -142,7 +142,7 @@ END SUBROUTINE vtk_plot_P2
 SUBROUTINE vtk_plot_scalar_P2 (rr, jj, psi, file_name)
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 14/3/2013
 !
 ! - rr   :: coordinates of the nodes of the P2 grid (triangle vertices plus
@@ -312,7 +312,7 @@ END SUBROUTINE vtk_plot_P1
 SUBROUTINE vtk_plot_eigenvectors (rr, jj, eigvecs, file_name)
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 21/5/2013
 !
 !******************************************************************************
@@ -451,7 +451,7 @@ END SUBROUTINE plot_inject_p1_p2
 SUBROUTINE vtk_read_P2 (file_name, rr, jj, jj_L, uu)
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 5/12/2013
 !
 !++++++++ 2D/3D version +++++++++++++++++++++++++++++++++++++++++++++++++++++++

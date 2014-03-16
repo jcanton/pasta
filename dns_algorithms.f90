@@ -1,7 +1,7 @@
 MODULE dns_algorithms
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 2/9/2013
 !
    USE dynamic_structures

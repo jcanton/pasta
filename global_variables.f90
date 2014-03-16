@@ -1,7 +1,7 @@
 MODULE global_variables
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 26/8/2013
 !
    USE read_input_files       ! for the definition of the type 'program_input'

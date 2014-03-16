@@ -28,7 +28,7 @@ SUBROUTINE write_restart(x, param, step_num, max_steps, filenm, filenmLen) &
    BIND(C, NAME='write_restart')
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 6/5/2013
 !
 ! - x         :: solution vector
@@ -104,7 +104,7 @@ SUBROUTINE read_restart(x, param, filenm, filenmLen) &
    BIND(C, NAME='read_restart')
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 5/5/2013
 !
 ! - x      :: solution vector
@@ -178,7 +178,7 @@ END SUBROUTINE read_restart
 SUBROUTINE write_restart_bin(x, param, step_num, max_steps, filenm)
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 15/1/2014
 !
 ! - x         :: solution vector
@@ -225,7 +225,7 @@ END SUBROUTINE write_restart_bin
 SUBROUTINE read_restart_bin(x, param, filenm)
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 25/1/2014
 !
 ! - x      :: solution vector
@@ -278,7 +278,7 @@ SUBROUTINE write_QP_restart(x, filenm, filenmLen) &
    BIND(C, NAME='write_QP_restart')
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 15/7/2013
 !
 ! - x         :: solution vector

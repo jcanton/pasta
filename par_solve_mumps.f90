@@ -17,7 +17,7 @@
 ! systems for subsequent solutions with different rhs.
 !
 !
-! AUTHOR: Jacopo Canton (jacopo.canton@mail.polimi.it) - 12/09/2013
+! AUTHOR: Jacopo Canton (jcanton@mech.kth.se) - 12/09/2013
 !
 ! LAST REVISION: 12/09/2013
 !

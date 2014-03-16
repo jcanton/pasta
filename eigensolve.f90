@@ -1,7 +1,7 @@
 MODULE EigenSolve
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 23/8/2013
 !
    USE sparse_matrix_profiles
@@ -554,7 +554,7 @@ END SUBROUTINE Save_eigenvalues
 SUBROUTINE Save_eigenvectors (eigenvectors, file_name)
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 16/5/2013
 !
 !-----------------------------------------------------------
@@ -598,7 +598,7 @@ SUBROUTINE read_eigenvector (Nx, nevRead, filenm, filenmLen, &
    BIND(C, NAME='read_eigenvector')
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 16/5/2013
 !
 !-----------------------------------------------------------

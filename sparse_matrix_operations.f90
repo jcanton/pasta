@@ -1,7 +1,7 @@
 MODULE sparse_matrix_operations
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 25/8/2013
 !
    IMPLICIT NONE
@@ -24,7 +24,7 @@ SUBROUTINE dAlinB_s (alpha, a, beta, b,  c)
 ! The three matrices need to have the same sparsity pattern
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 25/8/2013
 !
 ! on entry:
@@ -71,7 +71,7 @@ SUBROUTINE dAtimx (y, a, ja, ia, x)
 ! Matrix A is stored in compressed sparse row storage.
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 25/8/2013
 !
 ! on entry:
@@ -154,7 +154,7 @@ SUBROUTINE dAtimx_T (y, a, ja, ia, x)
 ! Matrix A is stored in compressed sparse row storage.
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 25/8/2013
 !
 ! on entry:
@@ -232,7 +232,7 @@ SUBROUTINE dEssM (a, ja, ia, n, b, jb, ib, i_mumpsb)
 ! Matrix A and B are stored in compressed sparse row storage.
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 25/8/2013
 !
 ! on entry:
@@ -352,7 +352,7 @@ SUBROUTINE zAlinB_s (alpha, a, beta, b,  c)
 ! The three matrices need to have the same sparsity pattern
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 25/8/2013
 !
 ! on entry:
@@ -399,7 +399,7 @@ SUBROUTINE zAtimx (y, a, ja, ia, x)
 ! Matrix A is stored in compressed sparse row storage.
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 22/3/2013
 !
 ! on entry:
@@ -481,7 +481,7 @@ SUBROUTINE zAtimx_T (y, a, ja, ia, x)
 ! Matrix A is stored in compressed sparse row storage.
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 22/3/2013
 !
 ! on entry:

@@ -1,7 +1,7 @@
 MODULE transient_growth
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 25/1/2014
 !
    USE dynamic_structures

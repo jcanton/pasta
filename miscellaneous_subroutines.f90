@@ -13,7 +13,7 @@ CONTAINS
 SUBROUTINE intToChar6 (intNumber, sixCharString)
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 26/1/2014
 !
 ! - intNumber     :: integer number

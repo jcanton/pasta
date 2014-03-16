@@ -104,7 +104,7 @@ END SUBROUTINE qs_01_hybrid_L_sp
 
 
 ! commented because the variable rj_L(l,m) appears to be inexistent....
-! jacopo.canton@mail.polimi.it
+! jcanton@mech.kth.se
 !
 ! SUBROUTINE qs_00_L (m0, jj_L, ff_L,  u0_L)
 ! !=========================================

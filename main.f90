@@ -4,8 +4,8 @@
 PROGRAM  main
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
-! Last revision: 05/10/2013
+! E-mail: jcanton@mech.kth.se
+! Last revision: 16/03/2014
 !
 !=========================
 !=========================

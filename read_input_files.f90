@@ -60,7 +60,7 @@ CONTAINS
 SUBROUTINE read_program_data(file_name,  prog_input)
 !
 ! Author: Jacopo Canton
-! E-mail: jacopo.canton@mail.polimi.it
+! E-mail: jcanton@mech.kth.se
 ! Last revision: 24/8/2013
 !
 ! - file_name  :: file to be read

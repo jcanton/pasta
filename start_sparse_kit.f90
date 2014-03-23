@@ -683,62 +683,6 @@ SUBROUTINE  start_coupled_system_axisym (np, np_L, jj, js,  CC)
 
 END SUBROUTINE  start_coupled_system_axisym
 
-!------------------------------------------------------------------------------
-
-SUBROUTINE collect (uu, ppL,  xx)
-
-   IMPLICIT NONE
-   
-   REAL(KIND=8), DIMENSION(:,:), INTENT(IN)  :: uu
-   REAL(KIND=8), DIMENSION(:),   INTENT(IN)  :: ppL
-   
-   REAL(KIND=8), DIMENSION(:),   INTENT(OUT) :: xx
-
-   INTEGER :: np, np_L
- 
-   np   = SIZE(uu, 2)
-   np_L = SIZE(ppL)
-   
-   xx(1:np) = uu(1,:)
-  
-   xx(np+1 : 2*np) = uu(2,:)
-   
-   xx(2*np + 1 : 3*np) = uu(3,:)
-  
-   xx(3*np + 1 : 3*np + np_L) = ppL
- 
-END SUBROUTINE collect
-
-!------------------------------------------------------------------------------
-
-SUBROUTINE extract (xx,  uu,  ppL)
-
-   IMPLICIT NONE
-    
-   REAL(KIND=8), DIMENSION(:),   INTENT(IN)  :: xx
-   REAL(KIND=8), DIMENSION(:,:), INTENT(OUT) :: uu
-   REAL(KIND=8), DIMENSION(:),   INTENT(OUT), OPTIONAL :: ppL
-   
-   INTEGER :: np, np_L
- 
-   np = SIZE(uu, 2)
-   
-   uu(1,:) = xx(1:np) 
-  
-   uu(2,:) = xx(np+1 : 2*np)
-  
-   uu(3,:) = xx(2*np+1 : 3*np)
- 
-   IF (PRESENT(ppL)) THEN 
-     
-      np_L = SIZE(ppL)
-     
-      ppL = xx(3*np+1 : 3*np + np_L) 
- 
-   ENDIF
- 
-END SUBROUTINE extract
-
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 SUBROUTINE  sort_pick (arr)

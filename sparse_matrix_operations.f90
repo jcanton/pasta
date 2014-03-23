@@ -548,6 +548,121 @@ SUBROUTINE zAtimx_T (y, a, ja, ia, x)
 
 END SUBROUTINE zAtimx_T
 
+!------------------------------------------------------------------------------
+
+SUBROUTINE zEssM (a, ja, ia, n, b, jb, ib, i_mumpsb)
+!
+!-----------------------------------------------------------------------
+!         Extract square sub-Matrix  nxn
+!----------------------------------------------------------------------- 
+! Extract a square submatrix B from matrix A
+! Matrix A and B are stored in compressed sparse row storage.
+!
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 16/03/2014
+!
+! on entry:
+!----------
+! a, ja,
+!    ia = input matrix in compressed sparse row format.
+!
+! on return:
+!-----------
+! b, jb,
+!    ib = output matrix in compressed sparse row format.
+!
+!-----------------------------------------------------------------------
+
+   IMPLICIT NONE
+   ! input variables
+   COMPLEX(KIND=8), DIMENSION(:), INTENT(IN) :: a
+   INTEGER,         DIMENSION(:), INTENT(IN) :: ja, ia
+   INTEGER,                       INTENT(IN) :: n
+   ! output variables
+   COMPLEX(KIND=8), DIMENSION(:), POINTER        :: b
+   INTEGER,      DIMENSION(:), POINTER           :: jb, ib
+   INTEGER,      DIMENSION(:), POINTER, OPTIONAL :: i_mumpsb
+   ! local variables
+   INTEGER      :: number_of_rows, i, p, c
+
+
+   number_of_rows = SIZE(ia)-1
+
+   ! check dimension consistency
+   !
+   IF ( n > number_of_rows ) THEN
+      WRITE(*,*) '--> zEssM Error: n > rows(A)' 
+      WRITE(*,*) '    n = ', n, ' SIZE(A,1) = ', number_of_rows
+      WRITE(*,*) '    STOP.'
+      STOP
+   END IF
+
+
+   ! count elements
+   !
+   c = 0
+   DO i = 1, n
+
+      DO p = ia(i), ia(i+1) - 1
+
+         IF ( ja(p) <= n ) THEN
+
+            c = c + 1
+
+         ENDIF
+
+      ENDDO
+
+   ENDDO
+
+   ALLOCATE( ib(n+1) )
+   ALLOCATE( jb(c), b(c) )
+
+   ! fill matrix
+   !
+   c = 0
+   DO i = 1, n
+
+      ib(i) = c + 1
+
+      DO p = ia(i), ia(i+1) - 1
+
+         IF ( ja(p) <= n ) THEN
+
+            c = c + 1
+
+            jb(c) = ja(p)
+             b(c) =  a(p)
+
+         ENDIF
+
+      ENDDO
+
+   ENDDO
+   ib(n+1) = c + 1
+
+
+   IF (PRESENT(i_mumpsb)) THEN
+
+      ALLOCATE( i_mumpsb(SIZE(jb)) )
+
+      DO i = 1, SIZE(ib) - 1
+      
+         DO p = ib(i), ib(i+1) - 1
+
+            i_mumpsb(p) = i
+
+         ENDDO
+
+      END DO
+
+   ENDIF
+
+END SUBROUTINE zEssM
+!
+!
+
 !==============================================================================
 
 END MODULE sparse_matrix_operations

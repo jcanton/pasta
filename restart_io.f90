@@ -274,6 +274,105 @@ END SUBROUTINE read_restart_bin
 
 !------------------------------------------------------------------------------
 
+SUBROUTINE write_cmplx_restart_bin(x, param, step_num, max_steps, filenm)
+!
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 16/03/2014
+!
+! - x         :: solution vector
+! - param     :: value of important parameter
+! - step_num  :: number of iterations taken to compute the solution
+! - max_steps :: maximum number of iterations allowed
+!
+
+   IMPLICIT NONE
+   ! input variables
+   COMPLEX(KIND=8), DIMENSION(:) :: x
+   REAL(KIND=8)                  :: param
+   INTEGER                       :: step_num, max_steps
+   CHARACTER(*)                  :: filenm
+
+
+   WRITE(*,*)
+   WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+   WRITE(*,*) '--> Writing binary restart file: '//trim(filenm)//' ...'
+
+
+   OPEN( UNIT = 20, FILE = trim(filenm), FORM='UNFORMATTED' )
+
+   WRITE(20) param
+   WRITE(20) step_num, max_steps
+   WRITE(20) SIZE(x)
+
+   WRITE(*,*) '    param   = ', param
+   WRITE(*,*) '    ite     = ', step_num, '/', max_steps
+   WRITE(*,*) '    size(x) = ', SIZE(x)
+
+   ! write field
+   WRITE(20) x
+
+   CLOSE(20)
+
+
+   WRITE(*,*) '    Done.'
+
+END SUBROUTINE write_cmplx_restart_bin
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE read_cmplx_restart_bin(x, param, filenm)
+!
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 16/03/2014
+!
+! - x      :: solution vector
+! - param  :: value of important parameter
+!
+   USE ISO_C_BINDING
+
+   ! input variables
+   CHARACTER(*)                  :: filenm
+   ! output variables
+   COMPLEX(KIND=8), DIMENSION(:) :: x
+   REAL(KIND=8)                  :: param
+   ! local variables
+   INTEGER :: sizeX
+
+
+   WRITE(*,*)
+   WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+   WRITE(*,*) '--> Reading binary restart file: '//trim(filenm)//' ...'
+
+   OPEN( UNIT = 20, FILE = trim(filenm), FORM='UNFORMATTED' )
+
+   READ(20) param
+   READ(20) ! jump this line
+   READ(20) sizeX ! vector length
+
+   WRITE(*,*) '    param      = ', param
+
+   ! check dimension consistency
+   !
+   IF ( SIZE(x) /= sizeX ) THEN
+      WRITE(*,*) '    Error: wrong x size'
+      WRITE(*,*) '    SIZE(x) = ', SIZE(x), ', saved in this file: ', sizeX
+      WRITE(*,*) '    STOP.'
+      STOP
+   END IF
+
+   ! read field
+   READ(20) x
+
+   CLOSE(20)
+
+   WRITE(*,*) '    Done.'
+
+END SUBROUTINE read_cmplx_restart_bin
+
+!------------------------------------------------------------------------------
+
 SUBROUTINE write_QP_restart(x, filenm, filenmLen) &
    BIND(C, NAME='write_QP_restart')
 !

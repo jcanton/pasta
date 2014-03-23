@@ -452,83 +452,6 @@ END SUBROUTINE Dirichlet_rc_M
 
 !------------------------------------------------------------------------------
 
-SUBROUTINE Dirichlet_rc_3d_M (np, js_Axis, js_D, diagE,  CC)
-!========================================================
-
-!  Modification of elements of selected rows AND columns
-!  matrix CC to impose Dirichlet boundary conditions 
-!  at the nodes  js_D(1)%DIL  and  js_D(2)%DIL  
-
-   USE Gauss_points
-
-   IMPLICIT NONE
-  
-   INTEGER,                          INTENT(IN)    :: np
-   INTEGER,            DIMENSION(:), INTENT(IN)    :: js_Axis
-   TYPE(dyn_int_line), DIMENSION(:), INTENT(IN)    :: js_D
-   REAL(KIND=8),                     INTENT(IN)    :: diagE
-   TYPE(CSR_MUMPS_Complex_Matrix)                  :: CC 
-
-   INTEGER :: k, n, i_, p
-
-   DO k = 2, 3
-
-      DO n = 1, SIZE(js_Axis)
-    
-         i_ = js_Axis(n) + (k-1)*np
-    
-         ! column
-         WHERE ( CC%j == i_ )
-
-            CC%e = 0
-
-         ENDWHERE
-    
-         ! row
-         DO p = CC%i(i_), CC%i(i_+1) - 1
-        
-            CC%e(p) = 0
-         
-            IF (CC%j(p) == i_) CC%e(p) = 1
-                
-         ENDDO  
-         
-      ENDDO
-   
-   ENDDO
-   
-  
-   DO k = 1, 3
-  
-      DO n = 1, SIZE(js_D(k)%DIL)
-    
-         i_ = js_D(k)%DIL(n)  +  (k-1) * np
-
-         ! column
-         WHERE ( CC%j == i_ )
-
-            CC%e = 0
-
-         ENDWHERE
-    
-         ! row
-         DO p = CC%i(i_), CC%i(i_+1) - 1
-         
-            CC%e(p) = 0
-         
-            IF (CC%j(p) == i_) CC%e(p) = diagE
-         
-         ENDDO
-    
-      ENDDO
-  
-   ENDDO 
-   
-  
-END SUBROUTINE Dirichlet_rc_3d_M
-
-!------------------------------------------------------------------------------
-
 SUBROUTINE qc_0y0_zero_sp_M (m0, jj, alpha,  CC) 
 !===============================================
 
@@ -2213,6 +2136,83 @@ SUBROUTINE qc_0y1_sp_3d_M (m0, jj, jj_L, alpha, beta,  CC)
    ENDDO
 
 END SUBROUTINE qc_0y1_sp_3d_M
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE Dirichlet_rc_3d_M (np, js_Axis, js_D, diagE,  CC)
+!========================================================
+
+!  Modification of elements of selected rows AND columns
+!  matrix CC to impose Dirichlet boundary conditions 
+!  at the nodes  js_D(1)%DIL  and  js_D(2)%DIL  
+
+   USE Gauss_points
+
+   IMPLICIT NONE
+  
+   INTEGER,                          INTENT(IN)    :: np
+   INTEGER,            DIMENSION(:), INTENT(IN)    :: js_Axis
+   TYPE(dyn_int_line), DIMENSION(:), INTENT(IN)    :: js_D
+   REAL(KIND=8),                     INTENT(IN)    :: diagE
+   TYPE(CSR_MUMPS_Complex_Matrix)                  :: CC 
+
+   INTEGER :: k, n, i_, p
+
+   DO k = 2, 3
+
+      DO n = 1, SIZE(js_Axis)
+    
+         i_ = js_Axis(n) + (k-1)*np
+    
+         ! column
+         WHERE ( CC%j == i_ )
+
+            CC%e = 0
+
+         ENDWHERE
+    
+         ! row
+         DO p = CC%i(i_), CC%i(i_+1) - 1
+        
+            CC%e(p) = 0
+         
+            IF (CC%j(p) == i_) CC%e(p) = 1
+                
+         ENDDO  
+         
+      ENDDO
+   
+   ENDDO
+   
+  
+   DO k = 1, 3
+  
+      DO n = 1, SIZE(js_D(k)%DIL)
+    
+         i_ = js_D(k)%DIL(n)  +  (k-1) * np
+
+         ! column
+         WHERE ( CC%j == i_ )
+
+            CC%e = 0
+
+         ENDWHERE
+    
+         ! row
+         DO p = CC%i(i_), CC%i(i_+1) - 1
+         
+            CC%e(p) = 0
+         
+            IF (CC%j(p) == i_) CC%e(p) = diagE
+         
+         ENDDO
+    
+      ENDDO
+  
+   ENDDO 
+   
+  
+END SUBROUTINE Dirichlet_rc_3d_M
 
 !==============================================================================
 !==============================================================================

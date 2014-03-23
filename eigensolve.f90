@@ -8,7 +8,7 @@ MODULE EigenSolve
    USE sparse_matrix_operations
    USE par_solve_mumps
    USE ISO_C_BINDING
-   USE start_sparse_kit ! needed for the extract subroutine
+   USE miscellaneous_subroutines
 
    IMPLICIT NONE
 
@@ -712,8 +712,8 @@ SUBROUTINE structuralSensitivity(M, left_eigenvector, right_eigenvector, &
    normalization = ABS(SUM(CONJG(left_eigenvector) * temp))
    
    ! Compute the structural sensitivity
-   CALL complex_extract (left_eigenvector,   u_lvect)
-   CALL complex_extract (right_eigenvector,  u_rvect)
+   CALL extract_cmplx (left_eigenvector,   u_lvect)
+   CALL extract_cmplx (right_eigenvector,  u_rvect)
    
    structuralsens = SQRT(  ABS(u_lvect(1,:)*u_rvect(1,:))**2 &
                          + ABS(u_lvect(1,:)*u_rvect(2,:))**2 &
@@ -731,36 +731,6 @@ SUBROUTINE structuralSensitivity(M, left_eigenvector, right_eigenvector, &
    DEALLOCATE(u_lvect, u_rvect)
 
 END SUBROUTINE structuralSensitivity
-
-!------------------------------------------------------------------------------
-
-SUBROUTINE complex_extract (xx,  uu,  ppL)
-
-   IMPLICIT NONE
-    
-   COMPLEX(KIND=8), DIMENSION(:),   INTENT(IN)  :: xx
-   COMPLEX(KIND=8), DIMENSION(:,:), INTENT(OUT) :: uu
-   COMPLEX(KIND=8), DIMENSION(:),   INTENT(OUT), OPTIONAL :: ppL
-   
-   INTEGER :: np, np_L
- 
-   np = SIZE(uu, 2)
-   
-   uu(1,:) = xx(1:np) 
-  
-   uu(2,:) = xx(np+1 : 2*np)
-
-   uu(3,:) = xx(2*np + 1 : 3*np)
-  
-   IF (PRESENT(ppL)) THEN 
-     
-      np_L = SIZE(ppL)
-     
-      ppL = xx(3*np+1 : 3*np + np_L) 
- 
-   ENDIF
- 
-END SUBROUTINE complex_extract
 
 !==============================================================================
 

@@ -110,7 +110,7 @@ loca_wrappers.o: loca_parameters.o           \
 
 eigensolve.o: sparse_matrix_profiles.o   \
               sparse_matrix_operations.o \
-              start_sparse_kit.o
+              miscellaneous_subroutines.o
 
 transient_growth.o: dynamic_structures.o        \
                     sparse_matrix_profiles.o    \
@@ -118,7 +118,6 @@ transient_growth.o: dynamic_structures.o        \
                     global_variables.o          \
                     miscellaneous_subroutines.o \
                     prep_mesh_p1p2_sp.o         \
-                    start_sparse_kit.o          \
                     dirichlet_neumann.o         \
                     qc_sp_m.o                   \
                     qv_sp.o                     \

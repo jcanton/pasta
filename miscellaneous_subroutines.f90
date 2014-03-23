@@ -10,6 +10,119 @@ CONTAINS
 
 !------------------------------------------------------------------------------
 
+SUBROUTINE collect (uu, ppL,  xx)
+
+   IMPLICIT NONE
+   
+   REAL(KIND=8), DIMENSION(:,:), INTENT(IN)  :: uu
+   REAL(KIND=8), DIMENSION(:),   INTENT(IN)  :: ppL
+   
+   REAL(KIND=8), DIMENSION(:),   INTENT(OUT) :: xx
+
+   INTEGER :: np, np_L
+ 
+   np   = SIZE(uu, 2)
+   np_L = SIZE(ppL)
+   
+   xx(1:np) = uu(1,:)
+  
+   xx(np+1 : 2*np) = uu(2,:)
+   
+   xx(2*np + 1 : 3*np) = uu(3,:)
+  
+   xx(3*np + 1 : 3*np + np_L) = ppL
+ 
+END SUBROUTINE collect
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE extract (xx,  uu,  ppL)
+
+   IMPLICIT NONE
+    
+   REAL(KIND=8), DIMENSION(:),   INTENT(IN)  :: xx
+   REAL(KIND=8), DIMENSION(:,:), INTENT(OUT) :: uu
+   REAL(KIND=8), DIMENSION(:),   INTENT(OUT), OPTIONAL :: ppL
+   
+   INTEGER :: np, np_L
+ 
+   np = SIZE(uu, 2)
+   
+   uu(1,:) = xx(1:np) 
+  
+   uu(2,:) = xx(np+1 : 2*np)
+  
+   uu(3,:) = xx(2*np+1 : 3*np)
+ 
+   IF (PRESENT(ppL)) THEN 
+     
+      np_L = SIZE(ppL)
+     
+      ppL = xx(3*np+1 : 3*np + np_L) 
+ 
+   ENDIF
+ 
+END SUBROUTINE extract
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE collect_cmplx (uu, ppL,  xx)
+
+   IMPLICIT NONE
+   
+   COMPLEX(KIND=8), DIMENSION(:,:), INTENT(IN)  :: uu
+   COMPLEX(KIND=8), DIMENSION(:),   INTENT(IN)  :: ppL
+   
+   COMPLEX(KIND=8), DIMENSION(:),   INTENT(OUT) :: xx
+
+   INTEGER :: np, np_L
+ 
+   np   = SIZE(uu, 2)
+   np_L = SIZE(ppL)
+   
+   xx(1:np) = uu(1,:)
+  
+   xx(np+1 : 2*np) = uu(2,:)
+   
+   xx(2*np + 1 : 3*np) = uu(3,:)
+  
+   xx(3*np + 1 : 3*np + np_L) = ppL
+ 
+END SUBROUTINE collect_cmplx
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE extract_cmplx (xx,  uu,  ppL)
+
+   IMPLICIT NONE
+    
+   COMPLEX(KIND=8), DIMENSION(:),   INTENT(IN)  :: xx
+   COMPLEX(KIND=8), DIMENSION(:,:), INTENT(OUT) :: uu
+   COMPLEX(KIND=8), DIMENSION(:),   INTENT(OUT), OPTIONAL :: ppL
+   
+   INTEGER :: np, np_L
+ 
+   np = SIZE(uu, 2)
+   
+   uu(1,:) = xx(1:np) 
+  
+   uu(2,:) = xx(np+1 : 2*np)
+  
+   uu(3,:) = xx(2*np+1 : 3*np)
+ 
+   IF (PRESENT(ppL)) THEN 
+     
+      np_L = SIZE(ppL)
+     
+      ppL = xx(3*np+1 : 3*np + np_L) 
+ 
+   ENDIF
+ 
+END SUBROUTINE extract_cmplx
+
+
+!------------------------------------------------------------------------------
+
 SUBROUTINE intToChar6 (intNumber, sixCharString)
 !
 ! Author: Jacopo Canton

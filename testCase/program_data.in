@@ -1,14 +1,14 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # program data
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-5                                 # prog_analysis                              see comments at the end of this file
+1                                 # prog_analysis                              see comments at the end of this file
 15                                # newt_maxit                                 max number of Newton iterations
 1e-10                             # newt_tol                                   tolerance for Newton's method
-'../mesh3-h5-l40' 'coaxialTubes'  # mesh_directory and mesh_name
+'./mesh' 'coaxialTubes'           # mesh_directory and mesh_name
 './plots/'                        # plot_directory
 './restart/'                      # restart_directory
-'restartRe750-ru0.5.io' 'restartRe750-ru0.5.io' # input_restart_file and output_restart_file
-.t. .f.                           # read_restart_flag and write_restart_flag
+'restart.io' 'restart.io'         # input_restart_file and output_restart_file
+.f. .t.                           # read_restart_flag and write_restart_flag
 .f.                               # write_QP_restart_flag
 .f.                               # write_BVS_flag
 .t.                               # write_plots_flag
@@ -36,7 +36,7 @@
 2                                 # trgrowth_method                            2=CrNi, 3=imEul
 2                                 # trgrowth_initguess                         transient growth initial guess (see comments at the end of this file)
 1                                 # trgrowth_BC                                transient growth boundary conditions (see comments at the end of this file)
-2     # tau (end time)
+2                                 # tau (end time)
 0.05                              # trgrowth_dt                                transient growth dt 
 50                                # trgrowth_maxit                             max number of iterations
 1d-10                             # trgrowth_tol                               tolerance for ARPACK

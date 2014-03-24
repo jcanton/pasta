@@ -1,4 +1,4 @@
-750 0.5   # Reynolds, vRatio
+100 0.5   # Reynolds, vRatio
 #
 .t. .t. .t.  .f. .f. # 1  IN center tube
 .t. .t. .t.  .f. .f. # 2

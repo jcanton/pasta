@@ -1,0 +1,41 @@
+0.5   # R  = central jet radius
+0.1   # S  = distance between jets
+0.4   # H  = lateral jet height
+5     # L1 = tubes length
+5     # L4 = mesh height
+40    # L3 = mesh length
+#
+0.1   # hTb       = mesh characteristic dimension on the borders of the tubes
+0.3   # hTc       = mesh characteristic dimension on the centerline of the tubes
+0.1   # BL        = boundary layer in the tubes
+0.3   # hA        = mesh characteristic dimension on the axis
+1.0   # hB        = mesh characteristic dimension on the borders
+6     # nS        = number of elements on the wall between the tubes
+0.1   # Lf        = refinement length
+0     # alphaWake = angle of the wake behind the wall (-90 turns it off ) [deg]
+1.    # expWake   = exponent for the characteristic dimension of the mesh in the wake
+#
+1     # laplSmooth: laplacian smoothing Y/N?
+
+
+!==============================================================================
+! geometry definitions
+!
+! (X) : border number
+!                     _____________________L3_(8)______________________
+!                     |                                                |
+!                     L2 (7)                                           |
+!                     |                                                |
+!      _______L1_(6)__|                                                |
+!      |                                                               |
+!      H (5)                                                           |
+!      |_______(4)____                                                 |
+!      _______________|S (3)                                           L4 (9)
+!      |       (2)                                                     |
+!      |                                                               |
+!      R (1)                                                           |
+!      |                                                               |
+!  __ .| __ . __ . __ . __ . __ . __ . __ . __ . __ . __ . __ . __ . __| . __ 
+!                     (0,0)        axis of symmetry (10)
+!
+!==============================================================================

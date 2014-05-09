@@ -79,12 +79,12 @@ prep_mesh_p1p2_sp.o: gauss_points_2d_l.o    \
                      dirichlet_neumann.o    \
                      fem_2d_grid.o
 
-vtk_plot.o: start_sparse_kit.o
+vtk_plot.o: miscellaneous_subroutines.o
 
 restart_io.o: sparse_matrix_profiles.o \
               global_variables.o       \
               prep_mesh_p1p2_sp.o      \
-              start_sparse_kit.o
+              miscellaneous_subroutines.o
 
 axisym_boundary_values.o: global_variables.o   \
                           dynamic_structures.o \

@@ -1361,43 +1361,91 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
    ENDDO
 
    ! (2)
-   ! update the Jacobian matrix with the solution received in input AND apply
-   ! boundary conditions
-   !
-   Jacobian%e = 0
-   CALL extract(x_vec, u0)
-   
-   WRITE(*,*) '*check*'
-   WRITE(*,*) '    Re = ', Re
-   CALL ComputeJacobianMatrix (np, mm, jj, jj_L, js_Axis, js_D_eigen, DESINGULARIZE_eigen, Jacobian, Re, u0)
-   CALL Dirichlet_rc_M (np, js_Axis, js_D_eigen, 1d0,  Jacobian)
-
-
-   WRITE(*,*) '--> Creating complex matrices'
-
-   ! (3)
    ! allocate the complex matrices
    !
-   ALLOCATE( Jacobian_cmplx%i      (SIZE(Jacobian%i))       )
-   ALLOCATE( Jacobian_cmplx%i_mumps(SIZE(Jacobian%i_mumps)) )
-   ALLOCATE( Jacobian_cmplx%j      (SIZE(Jacobian%j))       )
-   ALLOCATE( Jacobian_cmplx%e      (SIZE(Jacobian%e))       )
+   WRITE(*,*) '--> Creating complex matrices'
+
+   ALLOCATE( Jacobian_cmplx%i      (SIZE(Jacobian%i))       ); Jacobian_cmplx%i       = Jacobian%i
+   ALLOCATE( Jacobian_cmplx%i_mumps(SIZE(Jacobian%i_mumps)) ); Jacobian_cmplx%i_mumps = Jacobian%i_mumps
+   ALLOCATE( Jacobian_cmplx%j      (SIZE(Jacobian%j))       ); Jacobian_cmplx%j       = Jacobian%j
+   ALLOCATE( Jacobian_cmplx%e      (SIZE(Jacobian%e))       ); Jacobian_cmplx%e       = CMPLX(0d0, 0d0,KIND=8)
 
    ALLOCATE( Mass_cmplx%i      (SIZE(Jacobian%i))       )
    ALLOCATE( Mass_cmplx%i_mumps(SIZE(Jacobian%i_mumps)) )
    ALLOCATE( Mass_cmplx%j      (SIZE(Jacobian%j))       )
    ALLOCATE( Mass_cmplx%e      (SIZE(Jacobian%e))       )
 
+   ! (3)
+   ! fill the jacobian matrix
+   !
+write(*,*) '*check*'
+write(*,*) '    Re   = ', Re
+write(*,*) '    beta = ', beta
+
+   CALL extract(x_vec, u0)
    ! (4)
    ! convert the elements of the real Jacobian matrix (Jacobian) to Complex type
    ! copying them into the new CRS_MUMPS_Complex_Matrix Jacobian_cmplx AND
    ! change its sign as the eigenvalue problem we are solving is: 
    ! lambda*Mass*x = -Jacobian*x
    !
-   Jacobian_cmplx%i       = Jacobian%i
-   Jacobian_cmplx%i_mumps = Jacobian%i_mumps
-   Jacobian_cmplx%j       = Jacobian%j
-   Jacobian_cmplx%e       = CMPLX(-Jacobian%e, 0d0,KIND=8)
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+!   Jacobian%e = 0
+!   
+!   CALL qc_1y1_sp_gg_M  (mm, jj,                  1d0/Re, Jacobian) ! stifness (GRAD:GRAD)
+!   CALL qc_oseen2y_sp_M (mm, jj,                   u0,    Jacobian) ! + linearized terms
+!   CALL qc_1y0_sp_M     (mm, jj, jj_L,           -1d0,    Jacobian) ! + pressure gradient (ibp)
+!   CALL qc_0y1_sp_M     (mm, jj, jj_L,           -1d0,    Jacobian) ! - velocity divergence
+!   CALL Dirichlet_rc_M  (np, js_Axis, js_D_eigen, 1d0,    Jacobian) ! Dirichlet BCs
+!   IF (DESINGULARIZE_eigen) THEN
+!      ! column
+!      WHERE (Jacobian%j == Nx)
+!         Jacobian%e = 0d0
+!      ENDWHERE
+!      ! row
+!      DO i = Jacobian%i(Nx), Jacobian%i(Nx + 1) - 1
+!         Jacobian%e(i) = 0d0
+!         IF (Jacobian%j(i) == Nx) Jacobian%e(i) = 1d0
+!      ENDDO
+!   ENDIF
+!   Jacobian_cmplx%e = CMPLX(-Jacobian%e, -0d0,KIND=8)
+!
+!open( UNIT = 20, FILE = 'real', FORM = 'formatted', STATUS = 'unknown')
+!do k = 1, Nx
+!   write(20,*) DBLE(Jacobian_cmplx%e(k)), AIMAG(Jacobian_cmplx%e(k))
+!enddo
+!close(20)
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Jacobian_cmplx%e = CMPLX(0d0, 0d0,KIND=8)
+
+   CALL qc_1y1_sp_gg_3d_M  (mm, jj,                  1d0/Re, beta,  Jacobian_cmplx) ! stifness (GRAD:GRAD)
+   CALL qc_oseen2y_sp_3d_M (mm, jj,                   u0,    beta,  Jacobian_cmplx) ! + linearized terms
+   CALL qc_1y0_sp_3d_M     (mm, jj, jj_L,           -1d0,    beta,  Jacobian_cmplx) ! + pressure gradient (ibp)
+   CALL qc_0y1_sp_3d_M     (mm, jj, jj_L,           -1d0,    beta,  Jacobian_cmplx) ! - velocity divergence
+   CALL Dirichlet_rc_3d_M  (np, js_Axis, js_D_eigen, 1d0,           Jacobian_cmplx) ! Dirichlet BCs
+   Jacobian_cmplx%e = - Jacobian_cmplx%e
+
+   IF (DESINGULARIZE_eigen) THEN
+      ! column
+      WHERE (Jacobian_cmplx%j == Nx)
+         Jacobian_cmplx%e = CMPLX(0d0,0d0,KIND=8)
+      ENDWHERE
+      ! row
+      DO i = Jacobian_cmplx%i(Nx), Jacobian_cmplx%i(Nx + 1) - 1
+         Jacobian_cmplx%e(i) = CMPLX(0d0,0d0,KIND=8)
+         IF (Jacobian_cmplx%j(i) == Nx) Jacobian_cmplx%e(i) = CMPLX(1d0,0d0,KIND=8)
+      ENDDO
+   ENDIF
+!
+!open( UNIT = 20, FILE = 'complex', FORM = 'formatted', STATUS = 'unknown')
+!do k = 1, Nx
+!   write(20,*) DBLE(Jacobian_cmplx%e(k)), AIMAG(Jacobian_cmplx%e(k))
+!enddo
+!close(20)
+!write(*,*) 'done'
+!stop
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
    ! (5)
    ! create the real Mass matrix with qc_0y0_zero_sp_M and

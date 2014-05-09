@@ -235,9 +235,10 @@ SUBROUTINE eigensComplexShiftInvert(nev, maxit, tol, sigma, A, M, directAdjoint,
 !     | has been exceeded.                           |
 !     %----------------------------------------------%
 !
-      CALL znaupd  ( ido, bmat, n, which, nev, tol, resid, ncv, &
-                     v, n, iparam, ipntr, workd, workl, lworkl, &
-                     rwork, info )
+      CALL znaupd  ( ido  , bmat , n     , which, &
+                     nev  , tol  , resid , ncv,   &
+                     v    , n    , iparam, ipntr, &
+                     workd, workl, lworkl, rwork, info )
 
       ! WRITE(*,*) 'Eigensolve, requested action ', ido
 

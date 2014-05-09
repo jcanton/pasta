@@ -2,7 +2,7 @@ MODULE transient_growth
 !
 ! Author: Jacopo Canton
 ! E-mail: jcanton@mech.kth.se
-! Last revision: 16/03/2014
+! Last revision: 4/5/2014
 !
    USE dynamic_structures
    USE sparse_matrix_profiles
@@ -51,7 +51,7 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
    COMPLEX(KIND=8)                              :: Ek0_s, Ek_s    ! kinetic energy
    ! local variables
    INTEGER      :: nsv
-   REAL(KIND=8) :: sigma
+   COMPLEX(KIND=8) :: sigma
    INTEGER      :: nSteps
    INTEGER      :: i, k, ii
    LOGICAL      :: existFlag
@@ -78,6 +78,24 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
    WRITE(*,*) ''
 !----------------------------------------------------
 
+!!!!----------------------------------------------------
+!!!!----------------------------------------------------
+!!!!----------------------------------------------------
+!!!   Ek0_s = 0*1
+!!!   write(*,*) Ek0_s
+!!!   Ek0_s = CMPLX(0d0,0d0,KIND=8)
+!!!   write(*,*) Ek0_s
+!!!   Ek0_s = Ek0_s + 1
+!!!   write(*,*) Ek0_s
+!!!   Ek0_s = CMPLX(0d0,0d0,KIND=8) + CMPLX(0d0,1d0,KIND=8) * 0.2d0
+!!!   write(*,*) Ek0_s
+!!!   stop
+!!!   write(*,*) Ek0_s
+!!!   write(*,*) Ek0_s
+!!!
+!!!!----------------------------------------------------
+!!!!----------------------------------------------------
+!!!!----------------------------------------------------
    ALLOCATE (uu_tg(velCmpnnts, np), u0_tg(velCmpnnts, np))
    ALLOCATE (pp_tg(np_L),           p0_tg(np_L))
    ALLOCATE (xx_tg(Nx),             x0_tg(Nx))
@@ -86,7 +104,7 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
 ! DEFINE HERE SOME PARAMETERS WHICH SHOULD NOT BE CHANGED
 
    nsv   = 1   ! we only want the largest singular value
-   sigma = 0d0 ! and we don't use any real shift
+   sigma = CMPLX(0d0,0d0,KIND=8) ! and we don't use any shift
 
 !--------------------------------------------------
 ! PREPARE MATRICES FOR THE TRANSIENT GROWTH PROBLEM
@@ -94,8 +112,8 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
    ! (1)
    ! prepare boundary conditions
    !
-   WRITE(*,*) '*check*'
-   WRITE(*,*) '    beta = ', beta
+!   WRITE(*,*) '*check*'
+!   WRITE(*,*) '    beta = ', beta
 !   WRITE(*,*) '    number_of_sides = ', number_of_sides
 
    ALLOCATE ( Dir_tg(velCmpnnts, number_of_sides) )
@@ -139,7 +157,7 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
    ! (2b)
    ! create the MassV matrix (non-singolar mass only for the velocity)
    !
-   CALL zEssM (CMPLX(Mass%e,0d0,KIND=8), Mass%j, Mass%i, velCmpnnts*np, &
+   CALL zEssM (CMPLX(Mass%e,0d0,KIND=8), Mass%j,  Mass%i,  velCmpnnts*np, &
                                 MassV%e, MassV%j, MassV%i, MassV%i_mumps)
 
    CALL par_mumps_master (INITIALIZATION, 9, MassV, 0)
@@ -250,7 +268,8 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
 
    WRITE(*,*)
 
-   ! look for restart file
+   ! look for restart file (this feauture is not implemented at the moment due to work in
+   !                        progress on the 3d formulation, restart files are never saved)
    !
    tauNameTemp = NINT(p_in%tranGrowth_tau*1e3)
    CALL intToChar6 (tauNameTemp,  tauName)
@@ -324,7 +343,9 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
       END SELECT
 
    ENDIF
-   !CALL vtk_plot_P2 (rr, jj, jj_L, uInitGuess, 0*p0_tg, './tranGrowthOut/tranGrowthInitGuess.vtk')
+   p0_tg = CMPLX(0d0,0d0,KIND=8)
+   !CALL vtk_plot_P2 (rr, jj, jj_L,  DBLE(uInitGuess), 0*p0, './tranGrowthOut/tranGrowthInitGuess_Re.vtk')
+   !CALL vtk_plot_P2 (rr, jj, jj_L, AIMAG(uInitGuess), 0*p0, './tranGrowthOut/tranGrowthInitGuess_Im.vtk')
 
 
 !--------------------
@@ -393,6 +414,8 @@ DO ii = 1, tausNumber
                IF (Lns_cmplx%j(i) == Nx) Lns_cmplx%e(i) = CMPLX(1d0,0d0,KIND=8)
             ENDDO
          ENDIF
+write(*,*) 'maxvals0d ', MAXVAL(DBLE(Lns_cmplx%e)), MAXVAL(AIMAG(Lns_cmplx%e))
+write(*,*) 'minvals0d ', MINVAL(DBLE(Lns_cmplx%e)), MINVAL(AIMAG(Lns_cmplx%e))
          CALL zAlinB_s (CMPLX(1d0/dtH,0d0,KIND=8), Mass_cmplx%e, &
                         CMPLX(0.5d0,0d0,KIND=8),   Lns_cmplx%e,  Wd%e)
          CALL par_mumps_master (NUMER_FACTOR, 5, Wd, 0)
@@ -485,6 +508,8 @@ DO ii = 1, tausNumber
          IF (Lns_cmplx%j(i) == Nx) Lns_cmplx%e(i) = CMPLX(1d0,0d0,KIND=8)
       ENDDO
    ENDIF
+write(*,*) 'maxvals00 ', MAXVAL(DBLE(Lns_cmplx%e)), MAXVAL(AIMAG(Lns_cmplx%e))
+write(*,*) 'minvals00 ', MINVAL(DBLE(Lns_cmplx%e)), MINVAL(AIMAG(Lns_cmplx%e))
    CALL zAlinB_s (CMPLX(1d0/dtE,0d0,KIND=8), Mass_cmplx%e, &
                   CMPLX(1d0,0d0,KIND=8),     Lns_cmplx%e,  W0%e)
    CALL par_mumps_master (NUMER_FACTOR, 6, W0, 0)
@@ -688,7 +713,7 @@ SUBROUTINE singularValueDecomposition(nsv, uInitGuess, maxit, tol, sigma, nSteps
 !          
 !                        (A'*A)*v = sigma*v
 ! 
-!     where A is an m by n real matrix.
+!     where A is an m by n COMPLEX matrix.
 !     %------------------------------------------------------%
 !     | Storage Declarations:                                |
 !     |                                                      |
@@ -712,17 +737,18 @@ SUBROUTINE singularValueDecomposition(nsv, uInitGuess, maxit, tol, sigma, nSteps
 !  %-----------------%
 !  | Input variables |
 !  %-----------------%
-   REAL(KIND=8), DIMENSION(:,:), INTENT(IN) :: uInitGuess
-   INTEGER,                      INTENT(IN) :: nsv, maxit
-   REAL(KIND=8),                 INTENT(IN) :: tol, sigma
-   INTEGER,                      INTENT(IN) :: nSteps
+   COMPLEX(KIND=8), DIMENSION(:,:), INTENT(IN) :: uInitGuess
+   INTEGER,                         INTENT(IN) :: nsv, maxit
+   REAL(KIND=8),                    INTENT(IN) :: tol
+   COMPLEX(KIND=8),                 INTENT(IN) :: sigma
+   INTEGER,                         INTENT(IN) :: nSteps
 
 !  %------------------%
 !  | Output variables |
 !  %------------------%
-   REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: singularValues
-   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: singularVectors
-   INTEGER                                   :: iteNum
+   COMPLEX(KIND=8), DIMENSION(:),   ALLOCATABLE :: singularValues
+   COMPLEX(KIND=8), DIMENSION(:,:), ALLOCATABLE :: singularVectors
+   INTEGER                                      :: iteNum
 
 !  %--------------%
 !  | Local Arrays |
@@ -732,8 +758,10 @@ SUBROUTINE singularValueDecomposition(nsv, uInitGuess, maxit, tol, sigma, nSteps
    
    LOGICAL, DIMENSION(:), ALLOCATABLE :: lselect
    
-   REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: Ax, workl, workd, workev, resid
-   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: v, s
+   COMPLEX(KIND=8), DIMENSION(:),   ALLOCATABLE :: Ax, d, workd, workev, resid, workl
+   COMPLEX(KIND=8), DIMENSION(:,:), ALLOCATABLE :: v
+   REAL(KIND=8),    DIMENSION(:),   ALLOCATABLE :: rwork
+   REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: rd
 
 !  %---------------%
 !  | Local Scalars |
@@ -742,7 +770,7 @@ SUBROUTINE singularValueDecomposition(nsv, uInitGuess, maxit, tol, sigma, nSteps
    CHARACTER(LEN=2) :: which
 
    INTEGER          :: ido, m, n, ncv, lworkl, info, ierr, &
-                       i, nconv
+                       i, j, nconv
 
    LOGICAL          :: rvec
 
@@ -753,7 +781,7 @@ SUBROUTINE singularValueDecomposition(nsv, uInitGuess, maxit, tol, sigma, nSteps
 !  %-----------------------------%
 !  | BLAS & LAPACK routines used |
 !  %-----------------------------%
-   REAL(KIND=8), EXTERNAL :: dnrm2, daxpy, dcopy, dscal
+   REAL(KIND=8), EXTERNAL :: dznrm2, zaxpy, dlapy2
 
 !-----------------------------------------------------------------------
 !
@@ -835,8 +863,9 @@ SUBROUTINE singularValueDecomposition(nsv, uInitGuess, maxit, tol, sigma, nSteps
 !  | illustrated below.                                  |
 !  %-----------------------------------------------------%
 !
-   !lworkl = ncv*(ncv+8)   ! SYMMETRIC     -> DSAUPD
-   lworkl = 3*ncv**2+6*ncv ! NON SYMMETRIC -> DNAUPD
+   !lworkl = ncv*(ncv+8)    ! SYMMETRIC     -> DSAUPD
+   !lworkl = 3*ncv**2+6*ncv ! NON SYMMETRIC -> DNAUPD
+   lworkl = 3*ncv**2+5*ncv  ! SYMMETRIC -> ZNAUPD
    ido    = 0
    SELECT CASE ( p_in%tranGrowth_initGuess )
       CASE (1)
@@ -852,8 +881,9 @@ SUBROUTINE singularValueDecomposition(nsv, uInitGuess, maxit, tol, sigma, nSteps
    END SELECT
 
    ALLOCATE(lselect(ncv))
-   ALLOCATE(Ax(m), workl(lworkl), workd(3*n), workev(3*ncv), resid(n))
-   ALLOCATE(v(n,ncv), s(ncv,3))
+   ALLOCATE(Ax(m), d(ncv), workd(3*n), workev(2*ncv), resid(n), workl(lworkl))
+   ALLOCATE(v(n,ncv))
+   ALLOCATE(rwork(ncv), rd(ncv,3))
 !
 !  %---------------------------------------------------%
 !  | Specification of the initial guess                |
@@ -900,9 +930,11 @@ SUBROUTINE singularValueDecomposition(nsv, uInitGuess, maxit, tol, sigma, nSteps
 !
 !
 !
-   tauNameTemp = NINT(p_in%tranGrowth_tau*1e3)
-   CALL intToChar6 (tauNameTemp,  tauName)
-   WRITE(restart_name, '(A)') './tranGrowthOut/tranGrowthRestart-tau'//trim(tauName)//'.bin'
+   ! tentative restart, does not work
+   !
+   !tauNameTemp = NINT(p_in%tranGrowth_tau*1e3)
+   !CALL intToChar6 (tauNameTemp,  tauName)
+   !WRITE(restart_name, '(A)') './tranGrowthOut/tranGrowthRestart-tau'//trim(tauName)//'.bin'
 
    i = 0
    DO
@@ -911,16 +943,16 @@ SUBROUTINE singularValueDecomposition(nsv, uInitGuess, maxit, tol, sigma, nSteps
       WRITE(*,*) 'SVD, iteration n. ', i
 !
 !     %---------------------------------------------%
-!     | Repeatedly call the routine DSAUPD and take | 
+!     | Repeatedly call the routine ZNAUPD and take | 
 !     | actions indicated by parameter IDO until    |
 !     | either convergence is indicated or maxit    |
 !     | has been exceeded.                          |
 !     %---------------------------------------------%
 !
-      CALL dnaupd ( ido  , bmat , n     , which, &
+      CALL znaupd ( ido  , bmat , n     , which, &
                     nsv  , tol  , resid , ncv,   &
                     v    , n    , iparam, ipntr, &
-                    workd, workl, lworkl, info )
+                    workd, workl, lworkl, rwork, info )
 
       IF (ido .eq. -1 .OR. ido .eq. 1) THEN
 !
@@ -944,8 +976,8 @@ SUBROUTINE singularValueDecomposition(nsv, uInitGuess, maxit, tol, sigma, nSteps
 !        | L O O P   B A C K to call DSAUPD again. |
 !        %-----------------------------------------%
 
-         ! save "restart"
-         CALL write_restart_bin (workd(ipntr(2):ipntr(2)+n-1), p_in%tranGrowth_tau, i, maxit, restart_name)
+         ! save "restart", does not work
+         !CALL write_restart_bin (workd(ipntr(2):ipntr(2)+n-1), p_in%tranGrowth_tau, i, maxit, restart_name)
 !
          CYCLE
 
@@ -971,13 +1003,13 @@ SUBROUTINE singularValueDecomposition(nsv, uInitGuess, maxit, tol, sigma, nSteps
 !     %--------------------------%
 !
       WRITE(*,*) ' Error with DSAUPD, info = ', info
-      STOP       ' Check the documentation of DSAUPD.'
+      STOP       ' Check the documentation of ZNAUPD.'
 !
    ELSE ! We made it.
 !
 !     %--------------------------------------------%
 !     | No fatal errors occurred.                  |
-!     | Post-Process using DSEUPD.                 |
+!     | Post-Process using ZNEUPD.                 |
 !     |                                            |
 !     | Computed singular values may be extracted. |  
 !     |                                            |
@@ -990,11 +1022,11 @@ SUBROUTINE singularValueDecomposition(nsv, uInitGuess, maxit, tol, sigma, nSteps
 !        
       rvec = .true.
 
-      CALL dneupd ( rvec , 'A'  , lselect, s     , s(1,2), &
-                    v    , n    , sigma  , 0     , workev, &
-                    bmat , n    , which  , nsv   , tol,    &
-                    resid, ncv  , v      , n     , iparam, &
-                    ipntr, workd, workl  , lworkl, ierr )
+      CALL zneupd ( rvec , 'A'   , lselect, d     , v,      &
+                    n    , sigma , workev , bmat  , n,      &
+                    which, nsv   , tol    , resid , ncv,    &
+                    v    , n     , iparam , ipntr , workd,  &
+                    workl, lworkl, rwork  , ierr )
 !
 !     %-----------------------------------------------%
 !     | Singular values are returned in the first     |
@@ -1011,7 +1043,7 @@ SUBROUTINE singularValueDecomposition(nsv, uInitGuess, maxit, tol, sigma, nSteps
 !        | Check the documentation of DSEUPD. |
 !        %------------------------------------%
 !
-         WRITE(*,*) ' Error with DSEUPD, info = ', ierr
+         WRITE(*,*) ' Error with ZNEUPD, info = ', ierr
          STOP       ' Check the documentation of DSEUPD.'
 
       ELSE
@@ -1022,58 +1054,41 @@ SUBROUTINE singularValueDecomposition(nsv, uInitGuess, maxit, tol, sigma, nSteps
          ALLOCATE(singularValues(nconv))
          ALLOCATE(singularVectors(n,nconv))
 
-         singularValues  = s(1:nconv,1)
+         singularValues  = d(1:nconv)
          singularVectors = v(:,1:nconv)
 
-
-!   compute left singular vectors, not used for now
+! compute the residual norm, not used for now
 !!!           do 20 j=1, nconv
 !!!
-!!!              s(j,1) = sqrt(s(j,1))
+!!!                %---------------------------%
+!!!                | Compute the residual norm |
+!!!                |                           |
+!!!                |   ||  A*x - lambda*x ||   |
+!!!                |                           |
+!!!                | for the NCONV accurately  |
+!!!                | computed eigenvalues and  |
+!!!                | eigenvectors.  (iparam(5) |
+!!!                | indicates how many are    |
+!!!                | accurate to the requested |
+!!!                | tolerance)                |
+!!!                %---------------------------%
 !!!
-!!!              %-----------------------------%
-!!!              | Compute the left singular   |
-!!!              | vectors from the formula    |
-!!!              |                             |
-!!!              |     u = Av/sigma            |
-!!!              |                             |
-!!!              | u should have norm 1 so     |
-!!!              | divide by norm(Av) instead. |
-!!!              %-----------------------------%
-!!!
-!!!              call av(m, n, v(1,j), ax)
-!!!              call dcopy(m, ax, 1, u(1,j), 1)
-!!!              temp = one/dnrm2(m, u(1,j), 1)
-!!!              call dscal(m, temp, u(1,j), 1)
-!!!
-!!!              %---------------------------%
-!!!              |                           |
-!!!              | Compute the residual norm |
-!!!              |                           |
-!!!              |   ||  A*v - sigma*u ||    |
-!!!              |                           |
-!!!              | for the NCONV accurately  |
-!!!              | computed singular values  |
-!!!              | and vectors.  (iparam(5)  |
-!!!              | indicates how many are    |
-!!!              | accurate to the requested |
-!!!              | tolerance).               |
-!!!              | Store the result in 2nd   |
-!!!              | column of array S.        |
-!!!              %---------------------------%
-!!!
-!!!              call daxpy(m, -s(j,1), u(1,j), 1, ax, 1)
-!!!              s(j,2) = dnrm2(m, ax, 1)
-!!!
-!!!20         continue
+!!!                call av(nx, v(1,j), ax)
+!!!                call zaxpy (n, -d(j), v(1,j), 1, ax, 1)
+!!!                rd(j,1) = dble (d(j))
+!!!                rd(j,2) = dimag (d(j))
+!!!                rd(j,3) = dznrm2 (n, ax, 1)
+!!!                rd(j,3) = rd(j,3) / dlapy2 (rd(j,1),rd(j,2))
+!!!20          continue
+
 
 !
 !        %-------------------------------%
 !        | Display computed residuals    |
 !        %-------------------------------%
 !
-         CALL dmout(6, nconv, 2, s, ncv, -6, &
-                   'Singular values and direct residuals')
+         CALL dmout(6, nconv, 3, rd, ncv, -6, &
+                   'Ritz values (Real, Imag) and realtive residuals')
       END IF
 !
 !     %------------------------------------------%
@@ -1110,8 +1125,9 @@ SUBROUTINE singularValueDecomposition(nsv, uInitGuess, maxit, tol, sigma, nSteps
 
    END IF
 
-   DEALLOCATE(v, s)
-   DEALLOCATE(Ax, workl, workd, workev, resid)
+   DEALLOCATE(rwork, rd)
+   DEALLOCATE(v)
+   DEALLOCATE(Ax, d, workd, workev, resid, workl)
    DEALLOCATE(lselect)
 
 
@@ -1131,53 +1147,48 @@ SUBROUTINE timeStepper (u0v, nSteps, dirAdj,  u1v)
 !
    IMPLICIT NONE
    ! input variables
-   REAL(KIND=8), DIMENSION(:), INTENT(IN) :: u0v
-   INTEGER,                    INTENT(IN) :: nSteps
-   INTEGER,                    INTENT(IN) :: dirAdj ! 1=direct, 2=adjoint
+   COMPLEX(KIND=8), DIMENSION(:), INTENT(IN) :: u0v
+   INTEGER,                       INTENT(IN) :: nSteps
+   INTEGER,                       INTENT(IN) :: dirAdj ! 1=direct, 2=adjoint
    ! output variable
-   REAL(KIND=8), DIMENSION(:) :: u1v
+   COMPLEX(KIND=8), DIMENSION(:) :: u1v
    ! local variables
    INTEGER           :: i, k
    ! temp
    CHARACTER(LEN=12) :: counter
 
    ! executable statements
+!+++
+if ( testForNaN(DBLE(u0v)).OR.testForNaN(AIMAG(u0v)) ) then
+   write(*,*) 'NaN detected'
+   write(*,*) 'in u0v'
+   stop
+endif
+!+++
 
    ! (0)
+   ! rebuild the usual velocity vector
    !
-   IF ( dirAdj == 1 ) THEN
-      !
-      ! rebuild the usual velocity vector
-      !
-      DO k = 1, velCmpnnts
-         u0_tg(k,:) = u0v( (k-1)*np+1 : k*np )
-      ENDDO
+   DO k = 1, velCmpnnts
+      u0_tg(k,:) = u0v( (k-1)*np+1 : k*np )
+   ENDDO
 
-   ELSEIF ( dirAdj == 2 ) THEN
-!      !
-!      ! "scale" with MassV'
-!      !
-!      CALL dAtimx_T (u1v, MassV%e, MassV%j, MassV%i, u0v)
-!      !
-!      ! rebuild the usual velocity vector
-!      !
-!      DO k = 1, velCmpnnts
-!         u0_tg(k,:) = u1v( (k-1)*np+1 : k*np )
-!      ENDDO
-      DO k = 1, velCmpnnts
-         u0_tg(k,:) = u0v( (k-1)*np+1 : k*np )
-      ENDDO
-
-   ENDIF
 
    ! (1)
    ! build a full unknowns vector x0_tg = (u0_tg, p0_tg)
    !
-   CALL collect (u0_tg, 0*p0_tg,  x0_tg) !!! p0_tg ??? At the moment this is ok
-                                         ! because the first time step is computed
-                                         ! with implicit Euler which doesn't
-                                         ! need the pressure
+   CALL collect_cmplx (u0_tg, 0d0*p0_tg,  x0_tg) !!! p0_tg ??? At the moment this is ok
+                                                 ! because the first time step is computed
+                                                 ! with implicit Euler which doesn't
+                                                 ! need the pressure
 
+!!+++
+!if ( testForNaN(DBLE(x0_tg)).OR.testForNaN(AIMAG(x0_tg)) ) then
+!   write(*,*) 'NaN detected'
+!   write(*,*) 'in x0_tg collect'
+!   stop
+!endif
+!!+++
    ! (2)
    ! time steps
    !
@@ -1191,14 +1202,18 @@ SUBROUTINE timeStepper (u0v, nSteps, dirAdj,  u1v)
       WRITE(*,*) '    DIR - time = ', dtE
       ! (a)
       ! assemble RHS
-      CALL dAtimx (xx_tg, Z0%e, Z0%j, Z0%i, x0_tg)
+write(*,*) 'maxvals1 ', MAXVAL(DBLE(x0_tg)), MAXVAL(AIMAG(x0_tg))
+      CALL zAtimx (xx_tg, Z0%e, Z0%j, Z0%i, x0_tg)
+write(*,*) 'maxvals2 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
       ! (b)
       ! impose homogeneous Dirichlet BC on RHS
-      CALL Dirichlet_c (np, js_Axis, js_D_tg, zero_bvs_D_tg,  xx_tg)
+      CALL Dirichlet_c_3d (np, js_Axis, js_D_tg, zero_bvs_D_tg,  xx_tg)
+write(*,*) 'maxvals3 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
       IF (DESINGULARIZE_tg) xx_tg(Nx) = 0d0
       ! (c)
       ! solve system
       CALL par_mumps_master (DIRECT_SOLUTION, 6, W0, 0, xx_tg)
+write(*,*) 'maxvals4 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
       ! (d)
       ! update solution
       x0_tg = xx_tg
@@ -1208,14 +1223,18 @@ SUBROUTINE timeStepper (u0v, nSteps, dirAdj,  u1v)
          WRITE(*,*) '    DIR - time = ', dtE + i*dtH
          ! (a)
          ! assemble RHS
-         CALL dAtimx (xx_tg, Zd%e, Zd%j, Zd%i, x0_tg)
+write(*,*) 'maxvals5 ', MAXVAL(DBLE(x0_tg)), MAXVAL(AIMAG(x0_tg))
+         CALL zAtimx (xx_tg, Zd%e, Zd%j, Zd%i, x0_tg)
+write(*,*) 'maxvals6 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
          ! (b)
          ! impose homogeneous Dirichlet BC on RHS
-         CALL Dirichlet_c (np, js_Axis, js_D_tg, zero_bvs_D_tg,  xx_tg)
+         CALL Dirichlet_c_3d (np, js_Axis, js_D_tg, zero_bvs_D_tg,  xx_tg)
+write(*,*) 'maxvals7 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
          IF (DESINGULARIZE_tg) xx_tg(Nx) = 0d0
          ! (c)
          ! solve system
          CALL par_mumps_master (DIRECT_SOLUTION, 5, Wd, 0, xx_tg)
+write(*,*) 'maxvals8 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
          ! (d)
          ! update solution
          x0_tg = xx_tg
@@ -1236,10 +1255,10 @@ SUBROUTINE timeStepper (u0v, nSteps, dirAdj,  u1v)
       WRITE(*,*) '    DIR - time = ', dtE
       ! (a)
       ! assemble RHS
-      CALL dAtimx_T (xx_tg, Z0%e, Z0%j, Z0%i, x0_tg)
+      CALL zAtimx_T (xx_tg, Z0%e, Z0%j, Z0%i, x0_tg)
       ! (b)
       ! impose homogeneous Dirichlet BC on RHS
-      CALL Dirichlet_c (np, js_Axis, js_D_tg, zero_bvs_D_tg,  xx_tg)
+      CALL Dirichlet_c_3d (np, js_Axis, js_D_tg, zero_bvs_D_tg,  xx_tg)
       IF (DESINGULARIZE_tg) xx_tg(Nx) = 0d0
       ! (c)
       ! solve system
@@ -1253,10 +1272,10 @@ SUBROUTINE timeStepper (u0v, nSteps, dirAdj,  u1v)
          WRITE(*,*) '    ADJ - time = ', dtE + i*dtH
          ! (a)
          ! assemble RHS
-         CALL dAtimx_T (xx_tg, Za%e, Za%j, Za%i, x0_tg)
+         CALL zAtimx_T (xx_tg, Za%e, Za%j, Za%i, x0_tg)
          ! (b)
          ! impose homogeneous Dirichlet BC on RHS
-         CALL Dirichlet_c (np, js_Axis, js_D_tg, zero_bvs_D_tg,  xx_tg)
+         CALL Dirichlet_c_3d (np, js_Axis, js_D_tg, zero_bvs_D_tg,  xx_tg)
          IF (DESINGULARIZE_tg) xx_tg(Nx) = 0d0
          ! (c)
          ! solve system
@@ -1277,27 +1296,26 @@ SUBROUTINE timeStepper (u0v, nSteps, dirAdj,  u1v)
    ! output only the velocity field in single column format
    ! and extract the pressure field so that it can be used for the next steps
    !
-   CALL extract (xx_tg,  uu_tg, p0_tg)
+   CALL extract_cmplx (xx_tg,  uu_tg, p0_tg)
    DO k = 1, velCmpnnts
       u1v( (k-1)*np+1 : k*np ) = uu_tg(k,:)
    ENDDO
 
 
-!   IF ( dirAdj == 2 ) THEN
-!      !
-!      ! "scale" with inv(MassV')
-!      !
-!      CALL par_mumps_master (TRANSP_SOLUTION, 9, MassV, 0, u1v)
-!
-!   ENDIF
-
    ! temporary
    ! plot results to check for mistakes
-   !IF ( dirAdj == 1 ) THEN
-   !   CALL vtk_plot_P2 (rr, jj, jj_L, uu_tg, p0_tg, './tranGrowthOut/tranGrowthDir.vtk')
-   !ELSEIF ( dirAdj == 2 ) THEN
-   !   CALL vtk_plot_P2 (rr, jj, jj_L, uu_tg, p0_tg, './tranGrowthOut/tranGrowthAdj.vtk')
-   !ENDIF
+   IF ( dirAdj == 1 ) THEN
+      CALL vtk_plot_P2 (rr, jj, jj_L,  DBLE(uu_tg),  DBLE(p0_tg), &
+           './tranGrowthOut/'//'tranGrowthDir_Re.vtk')
+      CALL vtk_plot_P2 (rr, jj, jj_L, AIMAG(uu_tg), AIMAG(p0_tg), &
+           './tranGrowthOut/'//'tranGrowthDir_Im.vtk')
+   STOP
+   ELSEIF ( dirAdj == 2 ) THEN
+      CALL vtk_plot_P2 (rr, jj, jj_L,  DBLE(uu_tg),  DBLE(p0_tg), &
+           './tranGrowthOut/'//'tranGrowthAdj_Re.vtk')
+      CALL vtk_plot_P2 (rr, jj, jj_L, AIMAG(uu_tg), AIMAG(p0_tg), &
+           './tranGrowthOut/'//'tranGrowthAdj_Im.vtk')
+   ENDIF
 
    WRITE(*,*)
 
@@ -1410,7 +1428,7 @@ SUBROUTINE projectDiv (u_approx,  uDiv)
    !
    tmpVel = 0d0
    CALL qv_0y0_sp (mm, jj, u_approx, 1d0,  tmpVel) ! alternatively CALL qv_mass_grad_sp (mm, jj, u_approx, 0*uu_tg,  tmpVel)
-   CALL collect (tmpVel, 0*p0_tg,  rhsSol)
+   CALL collect (tmpVel, 0*p0,  rhsSol)
    CALL Dirichlet_c (np, js_Axis, js_D_tg, zero_bvs_D_tg,  rhsSol)
 
    ! (3)
@@ -1452,215 +1470,217 @@ END SUBROUTINE projectDiv
 
 !------------------------------------------------------------------------------
 
-SUBROUTINE evolve_transientGrowth(x_vec)
-
-   IMPLICIT NONE
-
-   ! input variables
-   REAL(KIND=8), DIMENSION(:), INTENT(IN) :: x_vec   ! computed base flow
-   ! "output" variables
-   REAL(KIND=8), DIMENSION(np) :: Ek0, Ek     ! kinetic energy fields
-   REAL(KIND=8)                :: Ek0_s, Ek_s ! kinetic energy
-   REAL(KIND=8), DIMENSION(Nx) :: x_opt       ! computed optimal perturbation
-   ! local variables
-   REAL(KIND=8), DIMENSION(Nx) :: x_bfl   ! computed base flow SAVE
-   REAL(KIND=8), DIMENSION(Nx) :: x_optE  ! already evolved optimal perturbation (may not be used)
-   REAL(KIND=8), DIMENSION(velCmpnnts,np) :: uE
-   REAL(KIND=8), DIMENSION(np_L)          :: pE
-   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: tmpVector
-   LOGICAL :: existFlag
-   INTEGER :: i
-   INTEGER           :: time_plot=0
-   CHARACTER(LEN=12) :: counter
-   REAL(KIND=8) :: dummy
-   CHARACTER(LEN=128) :: restart_name
-
-!----------------------------------------------------
-   WRITE(*,*) ''
-   WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
-   WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
-   WRITE(*,*) '--> CALL to evolve_transientGrowth'
-   WRITE(*,*) ''
-!----------------------------------------------------
-
-!---------------
-! SAVE BASE FLOW
-
-   x_bfl = x_vec
-
-!--------------------------
-! READ OPTIMAL PERTURBATION
-
-   CALL vtk_read_P2 (p_in%etg_opt_perturb, rr, jj, jj_L,  u0_tg)
-   CALL collect (u0_tg, p0_tg,  x_opt)
-
-!-------------------------------------------
-! CHECK IF THE EVOLUTION HAS ALREADY STARTED
-
-   time_plot = NINT( p_in%dns_dtPlot*1d3 )
-   CALL intToChar6 (time_plot,  counter)
-   INQUIRE (FILE=trim(p_in%dns_output_directory)//'sol'//trim(counter)//'.vtk' , EXIST=existFlag)
-
-   IF ( existFlag ) THEN
-
-      DO WHILE ( existFlag )
-         time_plot = time_plot + NINT( p_in%dns_dtPlot*1d3 )
-         CALL intToChar6 (time_plot,  counter)
-         INQUIRE (FILE=trim(p_in%dns_output_directory)//'sol'//trim(counter)//'.vtk' , EXIST=existFlag)
-      ENDDO
-
-      p_in%dns_tInit = time_plot/1d3 - p_in%dns_dtPlot
-
-      time_plot = time_plot - NINT( p_in%dns_dtPlot*1d3 )
-      CALL intToChar6 (time_plot,  counter)
-
-      WRITE(*,*)
-      WRITE(*,*) '    Using restart:'
-      WRITE(*,*) '    starting evolution from time: ', p_in%dns_tInit
-      WRITE(*,*)
-
-      pE  = 0 ! unused
-
-      CALL vtk_read_P2 (trim(p_in%dns_output_directory)//'sol'//trim(counter)//'.vtk', rr, jj, jj_L,  uE)
-      CALL collect (uE, pE,  x_optE)
-
-      !-----------------------------------------------
-      ! x0_tg IS THE ALREADY EVOLVED OPTIMAL PERTURBATION
-      
-      x0_tg = x_optE
-
-      ! read previous time step
-      WRITE(restart_name, '(A)') trim(p_in%dns_output_directory)//'restartDNS.bin'
-      INQUIRE (FILE=restart_name , EXIST=existFlag)
-      IF ( existFlag ) THEN
-         CALL read_restart_bin(x_optE, dummy, trim(restart_name))
-      ELSE
-         WRITE(*,*) '***************************************'
-         WRITE(*,*) '*** Error:                          ***'
-         WRITE(*,*) '*** could not find DNS restart file ***'
-         WRITE(*,*) '*** ', trim(restart_name)
-         WRITE(*,*) '***************************************'
-         WRITE(*,*) 'STOP.'
-         STOP
-      ENDIF
-
-      !---------------------------------------------------
-      ! EVOLVE OPTIMAL PERTURBATION FROM WHERE WE LEFT OFF
-      
-      CALL dns(x0_tg, x_optE)
-
-   ELSE
-
-      !---------------------------------------
-      ! SUM BASE FLOW AND OPTIMAL PERTURBATION
-      
-         x0_tg = x_bfl + x_opt
-
-      !----------------------------
-      ! EVOLVE OPTIMAL PERTURBATION
-      
-         CALL dns(x0_tg)
-
-   ENDIF
-
-   existFlag = .FALSE.
-
-
-!-----------------------
-! CREATE THE MASS MATRIX
-
-   ALLOCATE( Mass%i      (SIZE(Jacobian%i))       ); Mass%i       = Jacobian%i
-   ALLOCATE( Mass%i_mumps(SIZE(Jacobian%i_mumps)) ); Mass%i_mumps = Jacobian%i_mumps
-   ALLOCATE( Mass%j      (SIZE(Jacobian%j))       ); Mass%j       = Jacobian%j
-   ALLOCATE( Mass%e      (SIZE(Jacobian%e))       ); Mass%e       = 0d0
-   CALL qc_0y0_zero_sp_M (mm, jj, 1d0, Mass)
-   ! create the MassV matrix (non-singolar mass only for the velocity)
-   !
-   CALL dEssM (Mass%e, Mass%j, Mass%i, velCmpnnts*np, MassV%e, MassV%j, MassV%i, MassV%i_mumps)
-   !
-   DEALLOCATE( Mass%i, Mass%i_mumps, Mass%j, Mass%e )
-
-!-------------------
-! ALLOCATE tmpVector
-
-   ALLOCATE( tmpVector(velCmpnnts*np, 2) )
-
-!-----------------------
-! COMPUTE KINETIC ENERGY
-
-   ! compute kinetic energy of the optimal perturbation
-   CALL extract (x_opt,  u0_tg)
-   DO i = 1, velCmpnnts
-      tmpVector( (i-1)*np+1 : i*np, 1 ) = u0_tg(i,:)
-   ENDDO
-
-   Ek0 = SQRT(  (u0_tg(1,:)*u0_tg(1,:))**2 &
-              + (u0_tg(1,:)*u0_tg(2,:))**2 &
-              + (u0_tg(1,:)*u0_tg(3,:))**2 &
-              + (u0_tg(2,:)*u0_tg(1,:))**2 &
-              + (u0_tg(2,:)*u0_tg(2,:))**2 &
-              + (u0_tg(2,:)*u0_tg(3,:))**2 &
-              + (u0_tg(3,:)*u0_tg(1,:))**2 &
-              + (u0_tg(3,:)*u0_tg(2,:))**2 &
-              + (u0_tg(3,:)*u0_tg(3,:))**2 ) / 2
-
-   CALL dAtimx (tmpVector(:,2), MassV%e, MassV%j, MassV%i, tmpVector(:,1))
-   Ek0_s = SUM( tmpVector(:,1) * tmpVector(:,2) ) / 2
-
-
-   ! compute kinetic energy of the evolution of the optimal perturbation
-   xx_tg = x0_tg - x_bfl
-   CALL extract (xx_tg,  uu_tg)
-   DO i = 1, velCmpnnts
-      tmpVector( (i-1)*np+1 : i*np, 1 ) = uu_tg(i,:)
-   ENDDO
-
-   Ek = SQRT(  (uu_tg(1,:)*uu_tg(1,:))**2 &
-             + (uu_tg(1,:)*uu_tg(2,:))**2 &
-             + (uu_tg(1,:)*uu_tg(3,:))**2 &
-             + (uu_tg(2,:)*uu_tg(1,:))**2 &
-             + (uu_tg(2,:)*uu_tg(2,:))**2 &
-             + (uu_tg(2,:)*uu_tg(3,:))**2 &
-             + (uu_tg(3,:)*uu_tg(1,:))**2 &
-             + (uu_tg(3,:)*uu_tg(2,:))**2 &
-             + (uu_tg(3,:)*uu_tg(3,:))**2 ) / 2
-   CALL dAtimx (tmpVector(:,2), MassV%e, MassV%j, MassV%i, tmpVector(:,1))
-   Ek_s = SUM( tmpVector(:,1) * tmpVector(:,2) ) / 2
-
-   WRITE(*,*)
-   WRITE(*,*) '    u0''*u0   = ', SUM(Ek0)
-   WRITE(*,*) '    u0''*M*u0 = ', Ek0_s
-   WRITE(*,*) '    uu''*uu   = ', SUM(Ek)
-   WRITE(*,*) '    uu''*M*uu = ', Ek_s
-   WRITE(*,*) '    (uu''*uu) / ( u0''*u0 )  = ', SUM(Ek) / SUM(Ek0)
-   WRITE(*,*) '    (uu''*M*uu) / ( u0''*M*u0 )  = ', Ek_s / Ek0_s
-
-!-------------
-! SAVE RESULTS
-
-   WRITE(*,*)
-   WRITE(*,*) '    Saving results'
-
-   INQUIRE (FILE='./tranGrowthOut/tranGrowthEvolution.dat', EXIST=existFlag)
-   IF (.NOT.existFlag) THEN
-      OPEN(UNIT=20, FILE='./tranGrowthOut/tranGrowthEvolution.dat', STATUS='new', ACTION='write')
-      WRITE(20,*)   '         tau             Ek/Ek0'
-      WRITE(20,*)
-   ELSE
-      OPEN(UNIT=20, FILE='./tranGrowthOut/tranGrowthEvolution.dat', STATUS='old', POSITION='append', ACTION='write')
-   ENDIF
-
-   WRITE(20,*) p_in%dns_tEnd, Ek_s / Ek0_s
-   CLOSE(20)
-
-!---------------------
-! DEALLOCATE VARIABLES
-
-   DEALLOCATE( tmpVector )
-   DEALLOCATE( MassV%i, MassV%i_mumps, MassV%j, MassV%e )
-
-
-END SUBROUTINE evolve_transientGrowth
+! not changed to complex variables yet
+!
+! SUBROUTINE evolve_transientGrowth(x_vec)
+! 
+!    IMPLICIT NONE
+! 
+!    ! input variables
+!    REAL(KIND=8), DIMENSION(:), INTENT(IN) :: x_vec   ! computed base flow
+!    ! "output" variables
+!    REAL(KIND=8), DIMENSION(np) :: Ek0, Ek     ! kinetic energy fields
+!    REAL(KIND=8)                :: Ek0_s, Ek_s ! kinetic energy
+!    REAL(KIND=8), DIMENSION(Nx) :: x_opt       ! computed optimal perturbation
+!    ! local variables
+!    REAL(KIND=8), DIMENSION(Nx) :: x_bfl   ! computed base flow SAVE
+!    REAL(KIND=8), DIMENSION(Nx) :: x_optE  ! already evolved optimal perturbation (may not be used)
+!    REAL(KIND=8), DIMENSION(velCmpnnts,np) :: uE
+!    REAL(KIND=8), DIMENSION(np_L)          :: pE
+!    REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: tmpVector
+!    LOGICAL :: existFlag
+!    INTEGER :: i
+!    INTEGER           :: time_plot=0
+!    CHARACTER(LEN=12) :: counter
+!    REAL(KIND=8) :: dummy
+!    CHARACTER(LEN=128) :: restart_name
+! 
+! !----------------------------------------------------
+!    WRITE(*,*) ''
+!    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+!    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+!    WRITE(*,*) '--> CALL to evolve_transientGrowth'
+!    WRITE(*,*) ''
+! !----------------------------------------------------
+! 
+! !---------------
+! ! SAVE BASE FLOW
+! 
+!    x_bfl = x_vec
+! 
+! !--------------------------
+! ! READ OPTIMAL PERTURBATION
+! 
+!    CALL vtk_read_P2 (p_in%etg_opt_perturb, rr, jj, jj_L,  u0_tg)
+!    CALL collect (u0_tg, p0_tg,  x_opt)
+! 
+! !-------------------------------------------
+! ! CHECK IF THE EVOLUTION HAS ALREADY STARTED
+! 
+!    time_plot = NINT( p_in%dns_dtPlot*1d3 )
+!    CALL intToChar6 (time_plot,  counter)
+!    INQUIRE (FILE=trim(p_in%dns_output_directory)//'sol'//trim(counter)//'.vtk' , EXIST=existFlag)
+! 
+!    IF ( existFlag ) THEN
+! 
+!       DO WHILE ( existFlag )
+!          time_plot = time_plot + NINT( p_in%dns_dtPlot*1d3 )
+!          CALL intToChar6 (time_plot,  counter)
+!          INQUIRE (FILE=trim(p_in%dns_output_directory)//'sol'//trim(counter)//'.vtk' , EXIST=existFlag)
+!       ENDDO
+! 
+!       p_in%dns_tInit = time_plot/1d3 - p_in%dns_dtPlot
+! 
+!       time_plot = time_plot - NINT( p_in%dns_dtPlot*1d3 )
+!       CALL intToChar6 (time_plot,  counter)
+! 
+!       WRITE(*,*)
+!       WRITE(*,*) '    Using restart:'
+!       WRITE(*,*) '    starting evolution from time: ', p_in%dns_tInit
+!       WRITE(*,*)
+! 
+!       pE  = 0 ! unused
+! 
+!       CALL vtk_read_P2 (trim(p_in%dns_output_directory)//'sol'//trim(counter)//'.vtk', rr, jj, jj_L,  uE)
+!       CALL collect (uE, pE,  x_optE)
+! 
+!       !-----------------------------------------------
+!       ! x0_tg IS THE ALREADY EVOLVED OPTIMAL PERTURBATION
+!       
+!       x0_tg = x_optE
+! 
+!       ! read previous time step
+!       WRITE(restart_name, '(A)') trim(p_in%dns_output_directory)//'restartDNS.bin'
+!       INQUIRE (FILE=restart_name , EXIST=existFlag)
+!       IF ( existFlag ) THEN
+!          CALL read_restart_bin(x_optE, dummy, trim(restart_name))
+!       ELSE
+!          WRITE(*,*) '***************************************'
+!          WRITE(*,*) '*** Error:                          ***'
+!          WRITE(*,*) '*** could not find DNS restart file ***'
+!          WRITE(*,*) '*** ', trim(restart_name)
+!          WRITE(*,*) '***************************************'
+!          WRITE(*,*) 'STOP.'
+!          STOP
+!       ENDIF
+! 
+!       !---------------------------------------------------
+!       ! EVOLVE OPTIMAL PERTURBATION FROM WHERE WE LEFT OFF
+!       
+!       CALL dns(x0_tg, x_optE)
+! 
+!    ELSE
+! 
+!       !---------------------------------------
+!       ! SUM BASE FLOW AND OPTIMAL PERTURBATION
+!       
+!          x0_tg = x_bfl + x_opt
+! 
+!       !----------------------------
+!       ! EVOLVE OPTIMAL PERTURBATION
+!       
+!          CALL dns(x0_tg)
+! 
+!    ENDIF
+! 
+!    existFlag = .FALSE.
+! 
+! 
+! !-----------------------
+! ! CREATE THE MASS MATRIX
+! 
+!    ALLOCATE( Mass%i      (SIZE(Jacobian%i))       ); Mass%i       = Jacobian%i
+!    ALLOCATE( Mass%i_mumps(SIZE(Jacobian%i_mumps)) ); Mass%i_mumps = Jacobian%i_mumps
+!    ALLOCATE( Mass%j      (SIZE(Jacobian%j))       ); Mass%j       = Jacobian%j
+!    ALLOCATE( Mass%e      (SIZE(Jacobian%e))       ); Mass%e       = 0d0
+!    CALL qc_0y0_zero_sp_M (mm, jj, 1d0, Mass)
+!    ! create the MassV matrix (non-singolar mass only for the velocity)
+!    !
+!    CALL dEssM (Mass%e, Mass%j, Mass%i, velCmpnnts*np, MassV%e, MassV%j, MassV%i, MassV%i_mumps)
+!    !
+!    DEALLOCATE( Mass%i, Mass%i_mumps, Mass%j, Mass%e )
+! 
+! !-------------------
+! ! ALLOCATE tmpVector
+! 
+!    ALLOCATE( tmpVector(velCmpnnts*np, 2) )
+! 
+! !-----------------------
+! ! COMPUTE KINETIC ENERGY
+! 
+!    ! compute kinetic energy of the optimal perturbation
+!    CALL extract (x_opt,  u0_tg)
+!    DO i = 1, velCmpnnts
+!       tmpVector( (i-1)*np+1 : i*np, 1 ) = u0_tg(i,:)
+!    ENDDO
+! 
+!    Ek0 = SQRT(  (u0_tg(1,:)*u0_tg(1,:))**2 &
+!               + (u0_tg(1,:)*u0_tg(2,:))**2 &
+!               + (u0_tg(1,:)*u0_tg(3,:))**2 &
+!               + (u0_tg(2,:)*u0_tg(1,:))**2 &
+!               + (u0_tg(2,:)*u0_tg(2,:))**2 &
+!               + (u0_tg(2,:)*u0_tg(3,:))**2 &
+!               + (u0_tg(3,:)*u0_tg(1,:))**2 &
+!               + (u0_tg(3,:)*u0_tg(2,:))**2 &
+!               + (u0_tg(3,:)*u0_tg(3,:))**2 ) / 2
+! 
+!    CALL dAtimx (tmpVector(:,2), MassV%e, MassV%j, MassV%i, tmpVector(:,1))
+!    Ek0_s = SUM( tmpVector(:,1) * tmpVector(:,2) ) / 2
+! 
+! 
+!    ! compute kinetic energy of the evolution of the optimal perturbation
+!    xx_tg = x0_tg - x_bfl
+!    CALL extract (xx_tg,  uu_tg)
+!    DO i = 1, velCmpnnts
+!       tmpVector( (i-1)*np+1 : i*np, 1 ) = uu_tg(i,:)
+!    ENDDO
+! 
+!    Ek = SQRT(  (uu_tg(1,:)*uu_tg(1,:))**2 &
+!              + (uu_tg(1,:)*uu_tg(2,:))**2 &
+!              + (uu_tg(1,:)*uu_tg(3,:))**2 &
+!              + (uu_tg(2,:)*uu_tg(1,:))**2 &
+!              + (uu_tg(2,:)*uu_tg(2,:))**2 &
+!              + (uu_tg(2,:)*uu_tg(3,:))**2 &
+!              + (uu_tg(3,:)*uu_tg(1,:))**2 &
+!              + (uu_tg(3,:)*uu_tg(2,:))**2 &
+!              + (uu_tg(3,:)*uu_tg(3,:))**2 ) / 2
+!    CALL dAtimx (tmpVector(:,2), MassV%e, MassV%j, MassV%i, tmpVector(:,1))
+!    Ek_s = SUM( tmpVector(:,1) * tmpVector(:,2) ) / 2
+! 
+!    WRITE(*,*)
+!    WRITE(*,*) '    u0''*u0   = ', SUM(Ek0)
+!    WRITE(*,*) '    u0''*M*u0 = ', Ek0_s
+!    WRITE(*,*) '    uu''*uu   = ', SUM(Ek)
+!    WRITE(*,*) '    uu''*M*uu = ', Ek_s
+!    WRITE(*,*) '    (uu''*uu) / ( u0''*u0 )  = ', SUM(Ek) / SUM(Ek0)
+!    WRITE(*,*) '    (uu''*M*uu) / ( u0''*M*u0 )  = ', Ek_s / Ek0_s
+! 
+! !-------------
+! ! SAVE RESULTS
+! 
+!    WRITE(*,*)
+!    WRITE(*,*) '    Saving results'
+! 
+!    INQUIRE (FILE='./tranGrowthOut/tranGrowthEvolution.dat', EXIST=existFlag)
+!    IF (.NOT.existFlag) THEN
+!       OPEN(UNIT=20, FILE='./tranGrowthOut/tranGrowthEvolution.dat', STATUS='new', ACTION='write')
+!       WRITE(20,*)   '         tau             Ek/Ek0'
+!       WRITE(20,*)
+!    ELSE
+!       OPEN(UNIT=20, FILE='./tranGrowthOut/tranGrowthEvolution.dat', STATUS='old', POSITION='append', ACTION='write')
+!    ENDIF
+! 
+!    WRITE(20,*) p_in%dns_tEnd, Ek_s / Ek0_s
+!    CLOSE(20)
+! 
+! !---------------------
+! ! DEALLOCATE VARIABLES
+! 
+!    DEALLOCATE( tmpVector )
+!    DEALLOCATE( MassV%i, MassV%i_mumps, MassV%j, MassV%e )
+! 
+! 
+! END SUBROUTINE evolve_transientGrowth
 
 !==============================================================================
 

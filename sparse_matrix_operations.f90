@@ -104,14 +104,14 @@ SUBROUTINE dAtimx (y, a, ja, ia, x)
    ! check dimension consistency
    ! A - x
    IF ( SIZE(x) /= number_of_rows ) THEN
-      WRITE(*,*) '--> zAtimx Error: wrong A - x size' 
+      WRITE(*,*) '--> dAtimx Error: wrong A - x size' 
       WRITE(*,*) '    SIZE(x) = ', SIZE(x), ' SIZE(A,1) = ', number_of_rows
       WRITE(*,*) '    STOP.'
       STOP
    END IF
    ! A - y
    IF ( SIZE(y) /= number_of_rows ) THEN
-      WRITE(*,*) '--> zAtimx Error: wrong A - y size' 
+      WRITE(*,*) '--> dAtimx Error: wrong A - y size' 
       WRITE(*,*) '    SIZE(y) = ', SIZE(y), ' SIZE(A,1) = ', number_of_rows
       WRITE(*,*) '    STOP.'
       STOP
@@ -186,14 +186,14 @@ SUBROUTINE dAtimx_T (y, a, ja, ia, x)
    ! check dimension consistency
    ! A - x
    IF ( SIZE(x) /= number_of_rows ) THEN
-      WRITE(*,*) '--> dAtimx Error: wrong A - x size' 
+      WRITE(*,*) '--> dAtimx_T Error: wrong A - x size' 
       WRITE(*,*) '    SIZE(x) = ', SIZE(x), ' SIZE(A,1) = ', number_of_rows
       WRITE(*,*) '    STOP.'
       STOP
    END IF
    ! A - y
    IF ( SIZE(y) /= number_of_rows ) THEN
-      WRITE(*,*) '--> dAtimx Error: wrong A - y size' 
+      WRITE(*,*) '--> dAtimx_T Error: wrong A - y size' 
       WRITE(*,*) '    SIZE(y) = ', SIZE(y), ' SIZE(A,1) = ', number_of_rows
       WRITE(*,*) '    STOP.'
       STOP
@@ -452,7 +452,7 @@ SUBROUTINE zAtimx (y, a, ja, ia, x)
 
    ! compute the inner product of row i with vector x
 
-      yi = CMPLX( 0d0, 0d0, KIND=8)
+      yi = CMPLX(0d0, 0d0, KIND=8)
 
       DO p = ia(i), ia(i+1)-1
 
@@ -513,14 +513,14 @@ SUBROUTINE zAtimx_T (y, a, ja, ia, x)
    ! check dimension consistency
    ! A - x
    IF ( SIZE(x) /= number_of_rows ) THEN
-      WRITE(*,*) '--> zAtimx Error: wrong A - x size' 
+      WRITE(*,*) '--> zAtimx_T Error: wrong A - x size' 
       WRITE(*,*) '    SIZE(x) = ', SIZE(x), ' SIZE(A,1) = ', number_of_rows
       WRITE(*,*) '    STOP.'
       STOP
    END IF
    ! A - y
    IF ( SIZE(y) /= number_of_rows ) THEN
-      WRITE(*,*) '--> zAtimx Error: wrong A - y size' 
+      WRITE(*,*) '--> zAtimx_T Error: wrong A - y size' 
       WRITE(*,*) '    SIZE(y) = ', SIZE(y), ' SIZE(A,1) = ', number_of_rows
       WRITE(*,*) '    STOP.'
       STOP
@@ -528,7 +528,7 @@ SUBROUTINE zAtimx_T (y, a, ja, ia, x)
    ! not necessary to check x-y consistency because A has to be square
 
    ! compute y <-- A'*x
-   y = CMPLX( 0d0, 0d0, KIND=8)
+   y = CMPLX(0d0, 0d0, KIND=8)
    
 !  $OMP PARALLEL DO &    ! not working yet with big matrices,
 !  $OMP PRIVATE(p)  &    ! don't know why

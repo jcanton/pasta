@@ -16,7 +16,7 @@ MODULE restart_io
 USE ISO_C_BINDING
 USE global_variables
 USE prep_mesh_p1p2_sp ! for some global variables as np
-USE start_sparse_kit  ! for collect and extract subroutines
+USE miscellaneous_subroutines  ! for collect and extract subroutines
 
    IMPLICIT NONE
 

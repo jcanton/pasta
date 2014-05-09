@@ -770,7 +770,9 @@ SUBROUTINE qc_1y1_sp_gg_M (m0, jj, alpha,  CC)
                ! y dwx/dx . dvx/dx  +  y dwx/dy . dvx/dy
                ! y dwx/dx . d_x/dx  +  y dwx/dy . d_x/dy
                           
-               x = alpha_pyJ * SUM(dwl(:,ni) * dwl(:,nj)) / JAC(m)**2
+               !x = alpha_pyJ * SUM(dwl(:,ni) * dwl(:,nj)) / JAC(m)**2
+               x = alpha_pyJ *  ( dwl(1,ni) * dwl(1,nj) / JAC(m)**2  &
+                                + dwl(2,ni) * dwl(2,nj) / JAC(m)**2  )
 
                DO p = CC%i(i),  CC%i(i+1) - 1
                   IF (CC%j(p) == j) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
@@ -796,7 +798,7 @@ SUBROUTINE qc_1y1_sp_gg_M (m0, jj, alpha,  CC)
                ! y dwy/dx . dvy/dx  +  y (dwy/dy . dvy/dy + wy/R . vy/R) 
                ! y dwy/dx . d_y/dx  +  y (dwy/dy . d_y/dy + wy/R . _y/R)
              
-               x = alpha_pyJ *    (dwl(1,ni) * dwl(1,nj) / JAC(m)**2  &
+               x = alpha_pyJ *  (  dwl(1,ni) * dwl(1,nj) / JAC(m)**2  &
                                 +  dwl(2,ni) * dwl(2,nj) / JAC(m)**2  &
                                 +  ww(ni,l)  * ww(nj,l)  / yy_G(l,m)**2)
               
@@ -1613,12 +1615,13 @@ SUBROUTINE qc_1y1_sp_gg_3d_M (m0, jj, alpha, beta,  CC)
 
    REAL(KIND=8), DIMENSION(k_d, n_w) :: dwl
    
-   REAL(KIND=8) :: alpha_pyJ,  x
-   INTEGER      :: np, mm, k, l, m, n, ni, nj, i, j, p, i_, j_
+   REAL(KIND=8)    :: alpha_pyJ
+   COMPLEX(KIND=8) :: x
+   INTEGER         :: np, mm, k, l, m, n, ni, nj, i, j, p, i_, j_
 
    IF (k_d /= 2) THEN
    
-      WRITE (*,*) 'qc_1y1_sp_gg_3d_M  is implemented only for 2d'
+      WRITE (*,*) 'qc_1y1_sp_gg_3d_M  is implemented only for 2d meshes'
       WRITE (*,*) 'STOP.'
       STOP
    
@@ -1647,13 +1650,13 @@ SUBROUTINE qc_1y1_sp_gg_3d_M (m0, jj, alpha, beta,  CC)
                    
                ! diagonal block (1,1)
                
-               ! y * ( dwx/dx . dvx/dx  +  dwx/dy . dvx/dy )  - 1/R * ( beta**2 wx . vx )
-               ! y * ( dwx/dx . d_x/dx  +  dwx/dy . d_x/dy )  - 1/R * ( beta**2 wx . _x )
+               ! y * ( dwx/dx . dvx/dx  +  dwx/dy . dvx/dy )  + 1/R * ( beta**2 wx . vx )
+               ! y * ( dwx/dx . d_x/dx  +  dwx/dy . d_x/dy )  + 1/R * ( beta**2 wx . _x )
                           
                !x = alpha_pyJ * SUM(dwl(:,ni) * dwl(:,nj)) / JAC(m)**2
                x = alpha_pyJ *  (            dwl(1,ni) * dwl(1,nj) / JAC(m)**2  &
                                 +            dwl(2,ni) * dwl(2,nj) / JAC(m)**2  &
-                                -  beta**2 * ww(ni,l)  * ww(nj,l)  / yy_G(l,m)**2)
+                                +  beta**2 * ww(ni,l)  * ww(nj,l)  / yy_G(l,m)**2)
 
                DO p = CC%i(i),  CC%i(i+1) - 1
                   IF (CC%j(p) == j) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
@@ -1676,36 +1679,64 @@ SUBROUTINE qc_1y1_sp_gg_3d_M (m0, jj, alpha, beta,  CC)
               
                j_ = j + np 
               
-               ! y * ( dwy/dx . dvy/dx  +  dwy/dy . dvy/dy )  - 1/R * ( - wy . vy  +  beta**2 wy . vy )
-               ! y * ( dwy/dx . d_y/dx  +  dwy/dy . d_y/dy )  - 1/R * ( - wy . _y  +  beta**2 wy . _y )
+               ! y * ( dwy/dx . dvy/dx  +  dwy/dy . dvy/dy )  + 1/R * ( wy . vy  +  beta**2 wy . vy )
+               ! y * ( dwy/dx . d_y/dx  +  dwy/dy . d_y/dy )  + 1/R * ( wy . _y  +  beta**2 wy . _y )
              
                x = alpha_pyJ *  (            dwl(1,ni) * dwl(1,nj) / JAC(m)**2    &
                                 +            dwl(2,ni) * dwl(2,nj) / JAC(m)**2    &
                                 +            ww(ni,l)  * ww(nj,l)  / yy_G(l,m)**2 &
-                                -  beta**2 * ww(ni,l)  * ww(nj,l)  / yy_G(l,m)**2)
+                                +  beta**2 * ww(ni,l)  * ww(nj,l)  / yy_G(l,m)**2)
               
                DO p = CC%i(i_),  CC%i(i_+1) - 1
                   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
                ENDDO
               
-               ! off-diagonal block (2,3) ZERO 
-              
+               ! off-diagonal block (2,3)
+
+               j_ = j + 2*np
+
+               ! + 1/R * 2 i beta wy . vt )
+               ! + 1/R * 2 i beta wy . _t )
+
+               x = alpha_pyJ * 2 * CMPLX(0d0,1d0,KIND=8) * beta * ww(ni,l)  * ww(nj,l)  / yy_G(l,m)**2
+
+               DO p = CC%i(i_),  CC%i(i_+1) - 1
+                  IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
+               ENDDO
+
                   
                ! THIRD BLOCK-ROW
                !================
               
                i_ = i + 2*np;
                
-               ! off-diagonal block (3,1) ZERO 
+               ! off-diagonal block (3,1) ZERO
                
-               ! off-diagonal block (3,2) ZERO 
-            
-               ! diagonal block (3,3) 
-               
-               j_ = j + 2*np 
-              
-               ! x = idem, vedi sopra
+               ! off-diagonal block (3,2)
 
+               j_ = j + np
+
+               ! - 1/R * 2 i beta wt . vy )
+               ! - 1/R * 2 i beta wt . _y )
+
+               x = - alpha_pyJ * 2 * CMPLX(0d0,1d0,KIND=8) * beta * ww(ni,l)  * ww(nj,l)  / yy_G(l,m)**2
+
+               DO p = CC%i(i_),  CC%i(i_+1) - 1
+                  IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
+               ENDDO
+            
+               ! diagonal block (3,3)
+               
+               j_ = j + 2*np
+
+               ! y * ( dwy/dx . dvy/dx  +  dwy/dy . dvy/dy )  + 1/R * ( wy . vy  +  beta**2 wy . vy )
+               ! y * ( dwy/dx . d_y/dx  +  dwy/dy . d_y/dy )  + 1/R * ( wy . _y  +  beta**2 wy . _y )
+             
+               x = alpha_pyJ *  (            dwl(1,ni) * dwl(1,nj) / JAC(m)**2    &
+                                +            dwl(2,ni) * dwl(2,nj) / JAC(m)**2    &
+                                +            ww(ni,l)  * ww(nj,l)  / yy_G(l,m)**2 &
+                                +  beta**2 * ww(ni,l)  * ww(nj,l)  / yy_G(l,m)**2)
+              
                DO p = CC%i(i_),  CC%i(i_+1) - 1
                   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
                ENDDO
@@ -1755,6 +1786,9 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
                                 ! xo --> off diagonal contribution
    COMPLEX(KIND=8) :: x3 ! azimutal contribution
 
+   WRITE(*,*) '    qc_oseen2y_sp_3d_M'
+   WRITE(*,*) '*** assuming NON SWIRLING and AXISYMMETRIC base flow ***'
+
    np = SIZE(gg, 2)
 
    DO mm = 1, SIZE(m0);  m = m0(mm)
@@ -1797,12 +1831,13 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
                
                ! FIRST BLOCK ROW
                !================
-               
-               ! block (1,1)   xo =  _ dgx/dx - i beta/R * _ gt
+
+                                              ! *** ONLY IF SWIRLING BASE FLOW ***
+               ! block (1,1)   xo =  _ dgx/dx + i beta/R * _ gt
                 
                xo = wij * dglo_py(1,1)
 
-               x3 = - wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(3) * pp_w(l) * JAC(m)
+               x3 = 0d0 !+ wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(3) * pp_w(l) * JAC(m)
                
                DO p = CC%i(i),  CC%i(i+1) - 1
                   IF (CC%j(p) == j) THEN;  CC%e(p) = CC%e(p) + xd + xo + x3;  EXIT;  ENDIF
@@ -1818,15 +1853,16 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
                   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
                ENDDO
                               
-               ! block (1,3)   xo = -i beta/R * _ gx
-
-               j_ = j + np
-
-               x3 = - wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(1) * pp_w(l) * JAC(m)
-               
-               DO p = CC%i(i),  CC%i(i+1) - 1
-                  IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + x3;  EXIT;  ENDIF
-               ENDDO
+               ! *** ONLY IF NON-AXISYMMETRIC BASE FLOW ***
+               ! block (1,3)   xo = + i beta/R * _ gx
+               !
+               !j_ = j + 2*np
+               !
+               !x3 = + wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(1) * pp_w(l) * JAC(m)
+               !
+               !DO p = CC%i(i),  CC%i(i+1) - 1
+               !   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + x3;  EXIT;  ENDIF
+               !ENDDO
              
                   
                ! SECOND BLOCK ROW
@@ -1841,26 +1877,28 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
                   IF (CC%j(p) == j) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
                ENDDO
 
-               ! block (2,2)   xo =  _ dgy/dy - i beta/R * _ gt
+                                              ! *** ONLY IF SWIRLING BASE FLOW ***
+               ! block (2,2)   xo =  _ dgy/dy + i beta/R * _ gt
 
                j_ = j + np
             
                xo = wij * dglo_py(2,2)
 
-               x3 = - wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(3) * pp_w(l) * JAC(m)
+               x3 = 0d0 !+ wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(3) * pp_w(l) * JAC(m)
              
                DO p = CC%i(i_),  CC%i(i_+1) - 1
                   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xd + xo + x3;  EXIT;  ENDIF
                ENDDO
 
-               ! block (2,3)   xo = - 2 _ gt/R - i beta/R * _ gy
-
+               ! *** ONLY IF SWIRLING and NON-AXISYMMETRIC BASE FLOW ***
+               ! block (2,3)   xo = - 2 _ gt/R + i beta/R * _ gy
+               !
                j_ = j + 2*np
-            
+               
                xo = - 2 * wij * gl(3) * pp_w(l) * JAC(m)
-
-               x3 = - wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(2) * pp_w(l) * JAC(m)
-              
+               
+               x3 = 0d0 !+ wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(2) * pp_w(l) * JAC(m)
+               
                DO p = CC%i(i_),  CC%i(i_+1) - 1
                   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xo + x3;  EXIT;  ENDIF
                ENDDO
@@ -1870,32 +1908,35 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
                !================
                i_ = i + 2*np 
             
+               ! *** ONLY IF SWIRLING BASE FLOW ***
                ! block (3,1)   xo = _ dgt/dx
-            
+               
                xo = wij * dglo_py(1,3) 
                
                DO p = CC%i(i_),  CC%i(i_+1) - 1
                   IF (CC%j(p) == j) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
                ENDDO
                
+               ! *** ONLY IF SWIRLING BASE FLOW ***
                ! block (3,2)   xo = _ (dgt/dy + gt/R)  
-            
+               
                j_ = j + np
-            
+               
                xo = wij * (dglo_py(2,3)  +  gl(3) * pp_w(l) * JAC(m)) 
-            
+               
                DO p = CC%i(i_),  CC%i(i_+1) - 1
                   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
                ENDDO
 
             
-               ! block (3,3)   xo = _ gy/R - 2 i beta/R * _ gy
+                                           ! *** ONLY IF SWIRLING BASE FLOW ***
+               ! block (3,3)   xo = _ gy/R + 2 i beta/R * _ gy
 
                j_ = j + 2*np
             
                xo = wij * gl(2) * pp_w(l) * JAC(m)
 
-               x3 = - 2 * wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(3) * pp_w(l) * JAC(m)
+               x3 = 0d0 !+ 2 * wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(3) * pp_w(l) * JAC(m)
 
                DO p = CC%i(i_),  CC%i(i_+1) - 1
                   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xd + xo + x3;  EXIT;  ENDIF
@@ -2007,9 +2048,9 @@ SUBROUTINE qc_1y0_sp_3d_M (m0, jj, jj_L, alpha, beta,  CC)
              
                ! third rectangular off-diagonal block of the last block-column  
 
-               ! x = - alpha * i beta * ww(ni,l) * w_L(nj,l) * pp_w(l) * JAC(m)
+               ! x = alpha * i beta * w_L(nj,l) * pp_w(l) * ww(ni,l) * JAC(m)
               
-               x = - alpha * CMPLX(0d0,1d0,KIND=8) * beta * ww(ni,l) * w_L(nj,l) * pp_w(l) * JAC(m) 
+               x = alpha * CMPLX(0d0,1d0,KIND=8) * beta * w_L(nj,l) * pp_w(l) * ww(ni,l) * JAC(m) 
                
                DO p = CC%i(i+2*np),  CC%i(i+2*np+1) - 1
                   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
@@ -2118,9 +2159,9 @@ SUBROUTINE qc_0y1_sp_3d_M (m0, jj, jj_L, alpha, beta,  CC)
 
                ! third rectangular off-diagonal block of the bottom block-row
 
-               ! x = - alpha * i beta * ww(ni,l) * w_L(nj,l) * pp_w(l) * JAC(m)
+               ! x = alpha * i beta * w_L(ni,l) * pp_w(l) * ww(nj,l) * JAC(m)
               
-               x = - alpha * w_L(nj,l) * pp_w(l) * CMPLX(0d0,1d0,KIND=8) * beta * ww(ni,l) * JAC(m) 
+               x = alpha * CMPLX(0d0,1d0,KIND=8) * beta * w_L(ni,l) * pp_w(l) * ww(nj,l) * JAC(m) 
                
                DO p = CC%i(i_),  CC%i(i_+1) - 1
                   IF (CC%j(p) == j+2*np) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
@@ -2136,6 +2177,92 @@ SUBROUTINE qc_0y1_sp_3d_M (m0, jj, jj_L, alpha, beta,  CC)
    ENDDO
 
 END SUBROUTINE qc_0y1_sp_3d_M
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE Dirichlet_c_3d (np, js_Axis, js_D, us_D,  xx)
+!====================================================
+
+   IMPLICIT NONE
+   
+   INTEGER,                           INTENT(IN)  :: np
+   INTEGER,             DIMENSION(:), INTENT(IN)  :: js_Axis
+   TYPE(dyn_int_line),  DIMENSION(:), INTENT(IN)  :: js_D  
+   TYPE(dyn_real_line), DIMENSION(:), INTENT(IN)  :: us_D  
+   COMPLEX(KIND=8),     DIMENSION(:)              :: xx
+
+   INTEGER :: k
+
+   DO k = 1, 3
+  
+      IF (k == 2  .OR.  k == 3) xx(js_Axis + (k-1)*np) = CMPLX(0d0,0d0,KIND=8)
+  
+      xx(js_D(k)%DIL + (k-1)*np) = us_D(k)%DRL
+  
+   ENDDO 
+
+END SUBROUTINE Dirichlet_c_3d
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE Dirichlet_c_3d_M (np, js_Axis, js_D,  CC)
+!================================================
+
+!  Modification of elements of selected rows of
+!  matrix CC to impose Dirichlet boundary conditions 
+!  at the nodes js_Axis, jsx_D, jsy_D and jst_D
+
+   USE Gauss_points
+
+   IMPLICIT NONE
+  
+   INTEGER,                          INTENT(IN)    :: np 
+   INTEGER,            DIMENSION(:), INTENT(IN)    :: js_Axis
+   TYPE(dyn_int_line), DIMENSION(:), INTENT(IN)    :: js_D   
+   TYPE(CSR_MUMPS_Complex_Matrix)                  :: CC  
+
+   INTEGER :: k, n, i_, p
+
+   
+   DO k = 2, 3
+
+      DO n = 1, SIZE(js_Axis)
+    
+         i_ = js_Axis(n) + (k-1)*np
+    
+         DO p = CC%i(i_), CC%i(i_+1) - 1
+        
+            CC%e(p) = 0d0
+         
+            IF (CC%j(p) == i_) CC%e(p) = 1d0
+                
+         ENDDO  
+         
+      ENDDO
+   
+   ENDDO
+   
+   
+   DO k = 1, 3
+
+      DO n = 1, SIZE(js_D(k)%DIL)
+    
+         i_ = js_D(k)%DIL(n) + (k-1)*np
+    
+         DO p = CC%i(i_), CC%i(i_+1) - 1
+        
+            CC%e(p) = 0d0
+         
+            IF (CC%j(p) == i_) CC%e(p) = 1d0
+         
+         ENDDO
+         
+      ENDDO
+   
+   ENDDO
+   
+   
+END SUBROUTINE Dirichlet_c_3d_M
 
 !------------------------------------------------------------------------------
 
@@ -2167,16 +2294,16 @@ SUBROUTINE Dirichlet_rc_3d_M (np, js_Axis, js_D, diagE,  CC)
          ! column
          WHERE ( CC%j == i_ )
 
-            CC%e = 0
+            CC%e = 0d0
 
          ENDWHERE
     
          ! row
          DO p = CC%i(i_), CC%i(i_+1) - 1
         
-            CC%e(p) = 0
+            CC%e(p) = 0d0
          
-            IF (CC%j(p) == i_) CC%e(p) = 1
+            IF (CC%j(p) == i_) CC%e(p) = 1d0
                 
          ENDDO  
          
@@ -2194,16 +2321,16 @@ SUBROUTINE Dirichlet_rc_3d_M (np, js_Axis, js_D, diagE,  CC)
          ! column
          WHERE ( CC%j == i_ )
 
-            CC%e = 0
+            CC%e = 0d0
 
          ENDWHERE
     
          ! row
          DO p = CC%i(i_), CC%i(i_+1) - 1
          
-            CC%e(p) = 0
+            CC%e(p) = 0d0
          
-            IF (CC%j(p) == i_) CC%e(p) = diagE
+            IF (CC%j(p) == i_) CC%e(p) = CMPLX(diagE, 0d0, KIND=8)
          
          ENDDO
     

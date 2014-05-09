@@ -2,7 +2,7 @@ MODULE vtk_plot
 !
 ! Contains three subroutines to generate .vtk output files.
 !
-USE start_sparse_kit ! needed for the extract subroutine
+USE miscellaneous_subroutines ! needed for the extract subroutine
 !
 !==============================================================================
 

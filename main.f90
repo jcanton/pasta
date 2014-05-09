@@ -302,7 +302,15 @@ IF ( myRank == 0 ) THEN
          WRITE(*,*) 'STOP.'
          STOP
       ENDIF
-      CALL evolve_transientGrowth(x0)
+      WRITE(*,*)
+      WRITE(*,*) '********************************************************'
+      WRITE(*,*) '*** ERROR:                                           ***'
+      WRITE(*,*) '*** evolve_transientGrowth not currently implemented ***'
+      WRITE(*,*) '*** due to work in progress on 3d formulation.       ***'
+      WRITE(*,*) '********************************************************'
+      WRITE(*,*) 'STOP.'
+      STOP
+      !CALL evolve_transientGrowth(x0)
 
    CASE DEFAULT
       WRITE(*,*) '*************************************'
@@ -466,6 +474,7 @@ SUBROUTINE read_and_apply_boundary_conditions(input_file, k_d, rr, mms, jjs,    
    WRITE(*,*) '--> reading input-file ', trim(input_file), ' ...'
    WRITE(*,*) '    Re       = ', Re
    WRITE(*,*) '    velRatio = ', velRatio
+   WRITE(*,*) '    beta     = ', beta
    WRITE(*,*) '    number of boundary segments: ', number_of_sides
 
    DO m = 1, number_of_sides

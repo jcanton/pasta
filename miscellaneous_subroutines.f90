@@ -73,13 +73,13 @@ SUBROUTINE collect_cmplx (uu, ppL,  xx)
    COMPLEX(KIND=8), DIMENSION(:,:), INTENT(IN)  :: uu
    COMPLEX(KIND=8), DIMENSION(:),   INTENT(IN)  :: ppL
    
-   COMPLEX(KIND=8), DIMENSION(:),   INTENT(OUT) :: xx
+   COMPLEX(KIND=8), DIMENSION(:)                :: xx
 
    INTEGER :: np, np_L
  
    np   = SIZE(uu, 2)
    np_L = SIZE(ppL)
-   
+
    xx(1:np) = uu(1,:)
   
    xx(np+1 : 2*np) = uu(2,:)
@@ -88,6 +88,18 @@ SUBROUTINE collect_cmplx (uu, ppL,  xx)
   
    xx(3*np + 1 : 3*np + np_L) = ppL
  
+!   write(*,*) 'collect_cmplx'
+!   write(*,*) 'np   = ', np
+!   write(*,*) 'np_L = ', np_L
+!   write(*,*)
+!   write(*,*) uu(1,:)
+!   write(*,*)
+!   write(*,*) uu(2,:)
+!   write(*,*)
+!   write(*,*) uu(3,:)
+!   write(*,*)
+!   write(*,*) ppL
+   
 END SUBROUTINE collect_cmplx
 
 !------------------------------------------------------------------------------
@@ -97,8 +109,8 @@ SUBROUTINE extract_cmplx (xx,  uu,  ppL)
    IMPLICIT NONE
     
    COMPLEX(KIND=8), DIMENSION(:),   INTENT(IN)  :: xx
-   COMPLEX(KIND=8), DIMENSION(:,:), INTENT(OUT) :: uu
-   COMPLEX(KIND=8), DIMENSION(:),   INTENT(OUT), OPTIONAL :: ppL
+   COMPLEX(KIND=8), DIMENSION(:,:)              :: uu
+   COMPLEX(KIND=8), DIMENSION(:),   OPTIONAL    :: ppL
    
    INTEGER :: np, np_L
  
@@ -162,6 +174,30 @@ SUBROUTINE intToChar6 (intNumber, sixCharString)
    ENDIF
 
 END SUBROUTINE intToChar6
+
+!------------------------------------------------------------------------------
+
+FUNCTION testForNaN (variable) RESULT (flag)
+!
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 4/5/2014
+!
+! variable: real type variable to be tested
+
+   IMPLICIT NONE
+   !
+   REAL(KIND=8), DIMENSION(:) :: variable
+   !
+   LOGICAL :: flag
+
+   IF ( .NOT. ALL(variable.EQ.variable) ) THEN
+      flag = .TRUE.
+   ELSE
+      flag = .FALSE.
+   ENDIF
+
+END FUNCTION
 
 !==============================================================================
 

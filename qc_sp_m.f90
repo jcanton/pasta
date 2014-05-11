@@ -1607,8 +1607,8 @@ SUBROUTINE qc_1y1_sp_gg_3d_M (m0, jj, alpha, beta,  CC)
 
    IMPLICIT NONE
 
-   INTEGER, DIMENSION(:),         INTENT(IN) :: m0
-   INTEGER, DIMENSION(:,:),       INTENT(IN) :: jj
+   INTEGER, DIMENSION(:),         INTENT(IN) :: m0    ! (me)      elements indices
+   INTEGER, DIMENSION(:,:),       INTENT(IN) :: jj    ! (n_w, me) nodes of the parabolic element
    REAL(KIND=8),                  INTENT(IN) :: alpha
    INTEGER,                       INTENT(IN) :: beta
    TYPE(CSR_MUMPS_Complex_Matrix)            :: CC  
@@ -1627,22 +1627,32 @@ SUBROUTINE qc_1y1_sp_gg_3d_M (m0, jj, alpha, beta,  CC)
    
    ENDIF
 
-   np = MAXVAL(jj)  
+   np = MAXVAL(jj) ! number of parabolic nodes
    
+	! outer cycle on elements.  m = current element index
+	!
    DO mm = 1, SIZE(m0);  m = m0(mm)
 
+		! cycle on parabolic Gauss points [ l_G = 7 ]
+		!
       DO l = 1, l_G
 
          DO k = 1, k_d
             DO n = 1, n_w
-               dwl(k,n) = SUM(MNR(k,:,m) * Dw_re(:,n,l))
+               dwl(k,n) = SUM(MNR(k,:,m) * Dw_re(:,n,l)) ! dwl (2,n_w) = derivatives of the parabolic weight functions
             ENDDO
          ENDDO
 
+         ! coefficient
+         !
          alpha_pyJ = alpha * pp_w(l) * yy_G(l,m) * JAC(m)
 
+			! cycle on parabolic nodes of the current element.  i = current node index
+			!
          DO ni = 1, n_w;  i = jj(ni, m)
 
+			   ! cycle on parabolic nodes of the current element.  j = current node index
+			   !
             DO nj = 1, n_w;  j = jj(nj, m)
 
                ! FIRST BLOCK-ROW
@@ -1698,7 +1708,7 @@ SUBROUTINE qc_1y1_sp_gg_3d_M (m0, jj, alpha, beta,  CC)
                ! + 1/R * 2 i beta wy . vt )
                ! + 1/R * 2 i beta wy . _t )
 
-               x = alpha_pyJ * 2 * CMPLX(0d0,1d0,KIND=8) * beta * ww(ni,l)  * ww(nj,l)  / yy_G(l,m)**2
+               x = alpha_pyJ * 2 * CMPLX(0d0,1d0,KIND=8) * beta * ww(ni,l) * ww(nj,l) / yy_G(l,m)**2
 
                DO p = CC%i(i_),  CC%i(i_+1) - 1
                   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
@@ -1768,9 +1778,9 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
 
    IMPLICIT NONE
 
-   INTEGER,      DIMENSION(:),    INTENT(IN) :: m0
-   INTEGER,      DIMENSION(:,:),  INTENT(IN) :: jj
-   REAL(KIND=8), DIMENSION(:,:),  INTENT(IN) :: gg
+   INTEGER,      DIMENSION(:),    INTENT(IN) :: m0   ! (me)      elements indices
+   INTEGER,      DIMENSION(:,:),  INTENT(IN) :: jj   ! (n_w, me) nodes of the parabolic element
+	REAL(KIND=8), DIMENSION(:,:),  INTENT(IN) :: gg   ! (3,np)    vector function known on the parabolic nodes
    INTEGER,                       INTENT(IN) :: beta
    TYPE(CSR_MUMPS_Complex_Matrix)            :: CC  
    
@@ -1789,42 +1799,59 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
    WRITE(*,*) '    qc_oseen2y_sp_3d_M'
    WRITE(*,*) '*** assuming NON SWIRLING and AXISYMMETRIC base flow ***'
 
-   np = SIZE(gg, 2)
+   np = SIZE(gg, 2) ! number of parabolic nodes
 
+
+	! outer cycle on elements.  m = current element index
+	!
    DO mm = 1, SIZE(m0);  m = m0(mm)
 
-      jjm = jj(:,m)
-      ggm = gg(:, jjm)
+      jjm = jj(:,m)    ! jjm (n_w)   = indices of the parabolic nodes of the current element
+		ggm = gg(:, jjm) ! ggm (3,n_w) = vector function known on the parabolic nodes of the current element
 
+		! cycle on parabolic Gauss points [ l_G = 7 ]
+		!
       DO l = 1, l_G
          
          DO k3 = 1, 3
-            gl(k3) = SUM(ggm(k3,:) * ww(:,l))
+				gl(k3) = SUM(ggm(k3,:) * ww(:,l)) ! gl (3) = g integrated over the current element [ ww (n_w,l_G) = weight functions ]
          ENDDO
-         
+
          DO k = 1, k_d
             DO n = 1, n_w
-               dwl(k,n) = SUM(MNR(k,:,m) * Dw_re(:,n,l))
+					dwl(k,n) = SUM(MNR(k,:,m) * Dw_re(:,n,l)) ! dwl (2,n_w) = derivatives of the parabolic weight functions
             ENDDO
          ENDDO
     
          ! nell'operatore d'advezione intervengono solo le prime
          ! due componenti g(1) = gx = gz  e  g(2) = gy = gR
-     
+         !
+			! y * ( g(1) * d_ / dx  +  g(2) * d_ / dy )
+			!
          DO n = 1, n_w
             dgl_py(n) = SUM(gl(1:2) * dwl(:,n)) * pp_w(l) * yy_G(l,m)
          ENDDO
 
+			! dglo_py(:,1) = y  * dgx / dx
+			! dglo_py(:,2) = y  * dgy / dy
+			! dglo_py(:,3) = y  * dgz / dz
+			!
          DO k = 1, k_d
             DO k3 = 1, 3
                dglo_py(k, k3) = SUM(dwl(k,:) * ggm(k3,:)) * pp_w(l) * yy_G(l,m)
             ENDDO
          ENDDO
          
+			! cycle on parabolic nodes of the current element.  i = current node index
+			!
          DO ni = 1, n_w;  i = jjm(ni)
                            
+			   ! cycle on parabolic nodes of the current element.  j = current node index
+				! 
             DO nj = 1, n_w;  j = jjm(nj)
                
+					! xd = y * ( g(1) * w_ * d_ / dx  +  g(2) * w_ * d_ / dy )
+					!
                xd = ww(ni,l) * dgl_py(nj)
 
                wij = ww(ni,l) * ww(nj,l)
@@ -1832,20 +1859,23 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
                ! FIRST BLOCK ROW
                !================
 
-                                              ! *** ONLY IF SWIRLING BASE FLOW ***
-               ! block (1,1)   xo =  _ dgx/dx + i beta/R * _ gt
+               ! block (1,1)
+                                           ! *** ONLY IF SWIRLING BASE FLOW ***
+               ! xd  +  y * vx * ( dgx/dx  +  i beta/R * gt )
                 
                xo = wij * dglo_py(1,1)
 
-               x3 = 0d0 !+ wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(3) * pp_w(l) * JAC(m)
+               x3 = 0d0 !+ CMPLX(0d0,1d0,KIND=8) * beta * wij * gl(3) * pp_w(l) * JAC(m)
                
                DO p = CC%i(i),  CC%i(i+1) - 1
                   IF (CC%j(p) == j) THEN;  CC%e(p) = CC%e(p) + xd + xo + x3;  EXIT;  ENDIF
                ENDDO
 
-               ! block (1,2)   xo =  _ dgx/dy
+               ! block (1,2)
 
                j_ = j + np
+
+               ! y * vy * dgx/dy
 
                xo = wij * dglo_py(2,1)
                
@@ -1854,11 +1884,13 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
                ENDDO
                               
                ! *** ONLY IF NON-AXISYMMETRIC BASE FLOW ***
-               ! block (1,3)   xo = + i beta/R * _ gx
+               ! block (1,3)
                !
                !j_ = j + 2*np
                !
-               !x3 = + wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(1) * pp_w(l) * JAC(m)
+               !! y * i beta/R * vt * gx
+               !
+               !x3 = + CMPLX(0d0,1d0,KIND=8) * beta * wij * gl(1) * pp_w(l) * JAC(m)
                !
                !DO p = CC%i(i),  CC%i(i+1) - 1
                !   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + x3;  EXIT;  ENDIF
@@ -1869,7 +1901,9 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
                !=================
                i_ = i + np 
          
-               ! block (2,1)   xo =  _ dgy/dx 
+               ! block (2,1)
+
+               ! y * vx * dgy/dx 
        
                xo = wij * dglo_py(1,2)     
              
@@ -1877,31 +1911,34 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
                   IF (CC%j(p) == j) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
                ENDDO
 
-                                              ! *** ONLY IF SWIRLING BASE FLOW ***
-               ! block (2,2)   xo =  _ dgy/dy + i beta/R * _ gt
+               ! block (2,2)
 
                j_ = j + np
+                                           ! *** ONLY IF SWIRLING BASE FLOW ***
+               ! xd  +  y * vy * ( dgy/dy  +  i beta/R * gt )
             
                xo = wij * dglo_py(2,2)
 
-               x3 = 0d0 !+ wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(3) * pp_w(l) * JAC(m)
+               x3 = 0d0 !+ CMPLX(0d0,1d0,KIND=8) * beta * wij * gl(3) * pp_w(l) * JAC(m)
              
                DO p = CC%i(i_),  CC%i(i_+1) - 1
                   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xd + xo + x3;  EXIT;  ENDIF
                ENDDO
 
                ! *** ONLY IF SWIRLING and NON-AXISYMMETRIC BASE FLOW ***
-               ! block (2,3)   xo = - 2 _ gt/R + i beta/R * _ gy
+               ! block (2,3)
                !
-               j_ = j + 2*np
-               
-               xo = - 2 * wij * gl(3) * pp_w(l) * JAC(m)
-               
-               x3 = 0d0 !+ wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(2) * pp_w(l) * JAC(m)
-               
-               DO p = CC%i(i_),  CC%i(i_+1) - 1
-                  IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xo + x3;  EXIT;  ENDIF
-               ENDDO
+               !j_ = j + 2*np
+               !
+               !! y * ( - 2 * vt * gt/R  +  i beta/R * vt * gy )
+               !
+               !xo = - 2 * wij * gl(3) * pp_w(l) * JAC(m)
+               !
+               !x3 = + CMPLX(0d0,1d0,KIND=8) * beta * wij * gl(2) * pp_w(l) * JAC(m)
+               !
+               !DO p = CC%i(i_),  CC%i(i_+1) - 1
+               !   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xo + x3;  EXIT;  ENDIF
+               !ENDDO
 
 
                ! THIRD BLOCK ROW
@@ -1909,34 +1946,39 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
                i_ = i + 2*np 
             
                ! *** ONLY IF SWIRLING BASE FLOW ***
-               ! block (3,1)   xo = _ dgt/dx
-               
-               xo = wij * dglo_py(1,3) 
-               
-               DO p = CC%i(i_),  CC%i(i_+1) - 1
-                  IF (CC%j(p) == j) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
-               ENDDO
+               ! block (3,1)
+               !
+               !! y * vx * dgt/dx
+               !
+               !xo = wij * dglo_py(1,3) 
+               !
+               !DO p = CC%i(i_),  CC%i(i_+1) - 1
+               !   IF (CC%j(p) == j) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
+               !ENDDO
                
                ! *** ONLY IF SWIRLING BASE FLOW ***
-               ! block (3,2)   xo = _ (dgt/dy + gt/R)  
-               
-               j_ = j + np
-               
-               xo = wij * (dglo_py(2,3)  +  gl(3) * pp_w(l) * JAC(m)) 
-               
-               DO p = CC%i(i_),  CC%i(i_+1) - 1
-                  IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
-               ENDDO
+               ! block (3,2)
+               !
+               !j_ = j + np
+               !
+               !! y * vy * ( gt/R  +  dgt/dy )
+               !
+               !xo = wij * ( gl(3) * pp_w(l) * JAC(m)  +  dglo_py(2,3)) 
+               !
+               !DO p = CC%i(i_),  CC%i(i_+1) - 1
+               !   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
+               !ENDDO
 
             
-                                           ! *** ONLY IF SWIRLING BASE FLOW ***
-               ! block (3,3)   xo = _ gy/R + 2 i beta/R * _ gy
+               ! block (3,3)
 
                j_ = j + 2*np
+                                         ! *** ONLY IF SWIRLING BASE FLOW ***
+               ! xd  +  y * vt * ( gy/R  +  2 i beta/R * gy )
             
                xo = wij * gl(2) * pp_w(l) * JAC(m)
 
-               x3 = 0d0 !+ 2 * wij * CMPLX(0d0,1d0,KIND=8) * beta * gl(3) * pp_w(l) * JAC(m)
+               x3 = 0d0 !+ 2 * CMPLX(0d0,1d0,KIND=8) * beta * wij * gl(3) * pp_w(l) * JAC(m)
 
                DO p = CC%i(i_),  CC%i(i_+1) - 1
                   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xd + xo + x3;  EXIT;  ENDIF
@@ -1970,7 +2012,7 @@ SUBROUTINE qc_1y0_sp_3d_M (m0, jj, jj_L, alpha, beta,  CC)
 
    IMPLICIT NONE
 
-   INTEGER,      DIMENSION(:),    INTENT(IN) :: m0
+   INTEGER,      DIMENSION(:),    INTENT(IN) :: m0       ! (me)      elements indices
    INTEGER,      DIMENSION(:,:),  INTENT(IN) :: jj, jj_L
    REAL(KIND=8),                  INTENT(IN) :: alpha
    INTEGER,                       INTENT(IN) :: beta
@@ -2007,22 +2049,34 @@ SUBROUTINE qc_1y0_sp_3d_M (m0, jj, jj_L, alpha, beta,  CC)
    END SELECT
 
 
+	! outer cycle on elements.  m = current element index
+	!
    DO mm = 1, SIZE(m0);  m = m0(mm)
 
-      jjm   = jj  (:,m)
-      jjm_L = jj_L(:,m)
+      jjm   = jj  (:,m)    ! jjm   (n_w)     = indices of the parabolic nodes of the current element
+      jjm_L = jj_L(:,m)    ! jjm_L (n_w_L)   = indices of the linear    nodes of the current element
 
+		! cycle on parabolic Gauss points [ l_G = 7 ]
+		!
       DO l = 1, l_G
 
          DO k = 1, k_d
             DO n = 1, n_w
-               dwl(k,n) = SUM(MNR(k,:,m) * Dw_re(:,n,l))
+               dwl(k,n) = SUM(MNR(k,:,m) * Dw_re(:,n,l)) ! dwl (2,n_w) = derivatives of the parabolic weight functions
             ENDDO
          ENDDO
 
+			! cycle on parabolic nodes of the current element.  i = current node index
+			!
          DO ni = 1, n_w;   i = jjm(ni)
-              
-            DO nj = 1, n_w_L;   j = jjm_L(nj);   j_ = j + 3*np
+
+			   ! cycle on linear nodes of the current element.  j = current node index
+				! 
+            DO nj = 1, n_w_L;   j = jjm_L(nj)
+
+               ! last block-column
+               !
+               j_ = j + 3*np
 
                ! first rectangular off-diagonal block of the last block-column  
 
@@ -2048,9 +2102,9 @@ SUBROUTINE qc_1y0_sp_3d_M (m0, jj, jj_L, alpha, beta,  CC)
              
                ! third rectangular off-diagonal block of the last block-column  
 
-               ! x = alpha * i beta * w_L(nj,l) * pp_w(l) * ww(ni,l) * JAC(m)
+               ! x = alpha * i beta * ww(ni,l) * w_L(nj,l) * pp_w(l) * JAC(m)
               
-               x = alpha * CMPLX(0d0,1d0,KIND=8) * beta * w_L(nj,l) * pp_w(l) * ww(ni,l) * JAC(m) 
+               x = alpha * CMPLX(0d0,1d0,KIND=8) * beta * ww(ni,l) * w_L(nj,l) * pp_w(l) * JAC(m) 
                
                DO p = CC%i(i+2*np),  CC%i(i+2*np+1) - 1
                   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
@@ -2083,7 +2137,7 @@ SUBROUTINE qc_0y1_sp_3d_M (m0, jj, jj_L, alpha, beta,  CC)
 
    IMPLICIT NONE
 
-   INTEGER,      DIMENSION(:),    INTENT(IN) :: m0
+   INTEGER,      DIMENSION(:),    INTENT(IN) :: m0      ! (me)      elements indices
    INTEGER,      DIMENSION(:,:),  INTENT(IN) :: jj, jj_L
    REAL(KIND=8),                  INTENT(IN) :: alpha
    INTEGER,                       INTENT(IN) :: beta
@@ -2120,39 +2174,53 @@ SUBROUTINE qc_0y1_sp_3d_M (m0, jj, jj_L, alpha, beta,  CC)
    END SELECT
 
 
+	! outer cycle on elements.  m = current element index
+	!
    DO mm = 1, SIZE(m0);  m = m0(mm)
 
-      jjm   = jj  (:,m)
-      jjm_L = jj_L(:,m)
+      jjm   = jj  (:,m)    ! jjm   (n_w)     = indices of the parabolic nodes of the current element
+      jjm_L = jj_L(:,m)    ! jjm_L (n_w_L)   = indices of the linear    nodes of the current element
 
+		! cycle on parabolic Gauss points [ l_G = 7 ]
+		!
       DO l = 1, l_G
 
          DO k = 1, k_d
             DO n = 1, n_w
-               dwl(k,n) = SUM(MNR(k,:,m) * Dw_re(:,n,l))
+               dwl(k,n) = SUM(MNR(k,:,m) * Dw_re(:,n,l)) ! dwl (2,n_w) = derivatives of the parabolic weight functions
             ENDDO
          ENDDO
  
-         DO ni = 1, n_w_L;   i = jjm_L(ni);   i_ = i + 3*np
+			! cycle on linear nodes of the current element.  i = current node index
+			!
+         DO ni = 1, n_w_L;   i = jjm_L(ni)
 
+            ! bottom block-row
+            !
+            i_ = i + 3*np
+
+			   ! cycle on parabolic nodes of the current element.  j = current node index
+				! 
             DO nj = 1, n_w;   j = jjm(nj)
                
                ! first rectangular off-diagonal block of the bottom block-row  
               
-               x = alpha * w_L(ni,l) * pp_w(l) * yy_G(l,m) * dwl(1,nj) 
+               ! x = alpha * w_L(ni,l) * pp_w(l) * yy_G(l,m) * dwl(1,nj)
+
+               x = alpha * w_L(ni,l) * pp_w(l) * yy_G(l,m) * dwl(1,nj)
                  
                DO p = CC%i(i_),  CC%i(i_+1) - 1
                   IF (CC%j(p) == j) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
                ENDDO
   
                ! second rectangular off-diagonal block of the bottom block-row
-                 
-               ! x1 = alpha * w_L(ni,l) * pp_w(l) * yy_G(l,m) * dwl(2,nj)             
+
+               ! x1 = alpha * w_L(ni,l) * pp_w(l) * yy_G(l,m) * dwl(2,nj)
                ! x2 = alpha * w_L(ni,l) * pp_w(l) *  ww(nj,l) * JAC(m)
-                
+
                x = alpha * w_L(ni,l) * pp_w(l)  &
                          * (dwl(2,nj) * yy_G(l,m)  +  ww(nj,l) * JAC(m))
-                 
+
                DO p = CC%i(i_),  CC%i(i_+1) - 1
                   IF (CC%j(p) == j+np) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
                ENDDO
@@ -2160,14 +2228,13 @@ SUBROUTINE qc_0y1_sp_3d_M (m0, jj, jj_L, alpha, beta,  CC)
                ! third rectangular off-diagonal block of the bottom block-row
 
                ! x = alpha * i beta * w_L(ni,l) * pp_w(l) * ww(nj,l) * JAC(m)
-              
-               x = alpha * CMPLX(0d0,1d0,KIND=8) * beta * w_L(ni,l) * pp_w(l) * ww(nj,l) * JAC(m) 
-               
+
+               x = alpha * CMPLX(0d0,1d0,KIND=8) * beta * w_L(ni,l) * pp_w(l) * ww(nj,l) * JAC(m)
+
                DO p = CC%i(i_),  CC%i(i_+1) - 1
                   IF (CC%j(p) == j+2*np) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF
                ENDDO
- 
-              
+
             ENDDO
 
          ENDDO

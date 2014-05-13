@@ -1370,59 +1370,27 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
    ALLOCATE( Jacobian_cmplx%j      (SIZE(Jacobian%j))       ); Jacobian_cmplx%j       = Jacobian%j
    ALLOCATE( Jacobian_cmplx%e      (SIZE(Jacobian%e))       ); Jacobian_cmplx%e       = CMPLX(0d0, 0d0,KIND=8)
 
-   ALLOCATE( Mass_cmplx%i      (SIZE(Jacobian%i))       )
-   ALLOCATE( Mass_cmplx%i_mumps(SIZE(Jacobian%i_mumps)) )
-   ALLOCATE( Mass_cmplx%j      (SIZE(Jacobian%j))       )
-   ALLOCATE( Mass_cmplx%e      (SIZE(Jacobian%e))       )
+   ALLOCATE( Mass_cmplx%i      (SIZE(Jacobian%i))       ); Mass_cmplx%i       = Jacobian%i
+   ALLOCATE( Mass_cmplx%i_mumps(SIZE(Jacobian%i_mumps)) ); Mass_cmplx%i_mumps = Jacobian%i_mumps
+   ALLOCATE( Mass_cmplx%j      (SIZE(Jacobian%j))       ); Mass_cmplx%j       = Jacobian%j
+   ALLOCATE( Mass_cmplx%e      (SIZE(Jacobian%e))       ); Mass_cmplx%e       = CMPLX(0d0, 0d0, KIND=8)
 
    ! (3)
    ! fill the jacobian matrix
-   !
-write(*,*) '*check*'
-write(*,*) '    Re   = ', Re
-write(*,*) '    beta = ', beta
-
-   CALL extract(x_vec, u0)
-   ! (4)
-   ! convert the elements of the real Jacobian matrix (Jacobian) to Complex type
-   ! copying them into the new CRS_MUMPS_Complex_Matrix Jacobian_cmplx AND
-   ! change its sign as the eigenvalue problem we are solving is: 
+   ! NOTE: the sign of the Jacobian matrix has to be changed
+   ! since the problem we are solving is:
    ! lambda*Mass*x = -Jacobian*x
    !
-!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-!   Jacobian%e = 0
-!   
-!   CALL qc_1y1_sp_gg_M  (mm, jj,                  1d0/Re, Jacobian) ! stifness (GRAD:GRAD)
-!   CALL qc_oseen2y_sp_M (mm, jj,                   u0,    Jacobian) ! + linearized terms
-!   CALL qc_1y0_sp_M     (mm, jj, jj_L,           -1d0,    Jacobian) ! + pressure gradient (ibp)
-!   CALL qc_0y1_sp_M     (mm, jj, jj_L,           -1d0,    Jacobian) ! - velocity divergence
-!   CALL Dirichlet_rc_M  (np, js_Axis, js_D_eigen, 1d0,    Jacobian) ! Dirichlet BCs
-!   IF (DESINGULARIZE_eigen) THEN
-!      ! column
-!      WHERE (Jacobian%j == Nx)
-!         Jacobian%e = 0d0
-!      ENDWHERE
-!      ! row
-!      DO i = Jacobian%i(Nx), Jacobian%i(Nx + 1) - 1
-!         Jacobian%e(i) = 0d0
-!         IF (Jacobian%j(i) == Nx) Jacobian%e(i) = 1d0
-!      ENDDO
-!   ENDIF
-!   Jacobian_cmplx%e = CMPLX(-Jacobian%e, -0d0,KIND=8)
-!
-!open( UNIT = 20, FILE = 'real', FORM = 'formatted', STATUS = 'unknown')
-!do k = 1, Nx
-!   write(20,*) DBLE(Jacobian_cmplx%e(k)), AIMAG(Jacobian_cmplx%e(k))
-!enddo
-!close(20)
-!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Jacobian_cmplx%e = CMPLX(0d0, 0d0,KIND=8)
-
+!write(*,*) '*check*'
+!write(*,*) '    Re   = ', Re
+!write(*,*) '    beta = ', beta
+   CALL extract(x_vec, u0)
    CALL qc_1y1_sp_gg_3d_M  (mm, jj,                  1d0/Re, beta,  Jacobian_cmplx) ! stifness (GRAD:GRAD)
    CALL qc_oseen2y_sp_3d_M (mm, jj,                   u0,    beta,  Jacobian_cmplx) ! + linearized terms
    CALL qc_1y0_sp_3d_M     (mm, jj, jj_L,           -1d0,    beta,  Jacobian_cmplx) ! + pressure gradient (ibp)
    CALL qc_0y1_sp_3d_M     (mm, jj, jj_L,           -1d0,    beta,  Jacobian_cmplx) ! - velocity divergence
    CALL Dirichlet_rc_3d_M  (np, js_Axis, js_D_eigen, 1d0,           Jacobian_cmplx) ! Dirichlet BCs
+
    Jacobian_cmplx%e = - Jacobian_cmplx%e
 
    IF (DESINGULARIZE_eigen) THEN
@@ -1436,18 +1404,8 @@ write(*,*) '    beta = ', beta
          IF (Jacobian_cmplx%j(i) == Nx) Jacobian_cmplx%e(i) = CMPLX(1d0,0d0,KIND=8)
       ENDDO
    ENDIF
-!
-!open( UNIT = 20, FILE = 'complex', FORM = 'formatted', STATUS = 'unknown')
-!do k = 1, Nx
-!   write(20,*) DBLE(Jacobian_cmplx%e(k)), AIMAG(Jacobian_cmplx%e(k))
-!enddo
-!close(20)
-!write(*,*) 'done'
-!stop
-!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-
-   ! (5)
+   ! (4)
    ! create the real Mass matrix with qc_0y0_zero_sp_M and
    ! convert the elements of the real Mass matrix (Mass) to Complex type
    ! copying them into the new CRS_MUMPS_Complex_Matrix Mass_cmplx
@@ -1461,10 +1419,7 @@ write(*,*) '    beta = ', beta
    ! impose boundary conditions on the Mass Matrix
    CALL Dirichlet_rc_M (np, js_Axis, js_D_eigen, 0d0,  Jacobian)
 
-   Mass_cmplx%i       = Jacobian%i
-   Mass_cmplx%i_mumps = Jacobian%i_mumps
-   Mass_cmplx%j       = Jacobian%j
-   Mass_cmplx%e       = CMPLX(Jacobian%e, 0d0, KIND=8)
+   Mass_cmplx%e = CMPLX(Jacobian%e, 0d0, KIND=8)
 
 
 !+++

@@ -37,7 +37,7 @@ CC = mpicc
 F90CMP = $(FC) -c
 F90LNK = $(FC)
 F90OPT = -O3 -fopenmp
-F90DEB = #-g -Wall #-fcheck=all
+F90DEB = -g -Wall -Wextra -pedantic -fcheck=all
 F90FLAGS = $(F90OPT) $(F90DEB)
 
 CCMP   = $(CC) -c

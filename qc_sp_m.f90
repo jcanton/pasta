@@ -1544,7 +1544,7 @@ SUBROUTINE ComputeJacobianMatrix_3d(np, mm, jj, jj_L, js_Axis, js_D, DESINGULARI
    REAL(KIND=8), OPTIONAL, DIMENSION(:,:), INTENT(IN) :: UU
    !-----------------------------------------------------------------------!
 
-   REAL(KIND=8), PARAMETER :: zero = 0,  one = 1
+   REAL(KIND=8), PARAMETER :: one = 1d0
    INTEGER :: Nx, p
    
 
@@ -1780,7 +1780,7 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
 
    INTEGER,      DIMENSION(:),    INTENT(IN) :: m0   ! (me)      elements indices
    INTEGER,      DIMENSION(:,:),  INTENT(IN) :: jj   ! (n_w, me) nodes of the parabolic element
-	REAL(KIND=8), DIMENSION(:,:),  INTENT(IN) :: gg   ! (3,np)    vector function known on the parabolic nodes
+   REAL(KIND=8), DIMENSION(:,:),  INTENT(IN) :: gg   ! (3,np)    vector function known on the parabolic nodes
    INTEGER,                       INTENT(IN) :: beta
    TYPE(CSR_MUMPS_Complex_Matrix)            :: CC  
    
@@ -1807,19 +1807,19 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
    DO mm = 1, SIZE(m0);  m = m0(mm)
 
       jjm = jj(:,m)    ! jjm (n_w)   = indices of the parabolic nodes of the current element
-		ggm = gg(:, jjm) ! ggm (3,n_w) = vector function known on the parabolic nodes of the current element
+      ggm = gg(:, jjm) ! ggm (3,n_w) = vector function known on the parabolic nodes of the current element
 
 		! cycle on parabolic Gauss points [ l_G = 7 ]
 		!
       DO l = 1, l_G
          
          DO k3 = 1, 3
-				gl(k3) = SUM(ggm(k3,:) * ww(:,l)) ! gl (3) = g integrated over the current element [ ww (n_w,l_G) = weight functions ]
+            gl(k3) = SUM(ggm(k3,:) * ww(:,l)) ! gl (3) = g integrated over the current element [ ww (n_w,l_G) = weight functions ]
          ENDDO
 
          DO k = 1, k_d
             DO n = 1, n_w
-					dwl(k,n) = SUM(MNR(k,:,m) * Dw_re(:,n,l)) ! dwl (2,n_w) = derivatives of the parabolic weight functions
+               dwl(k,n) = SUM(MNR(k,:,m) * Dw_re(:,n,l)) ! dwl (2,n_w) = derivatives of the parabolic weight functions
             ENDDO
          ENDDO
     

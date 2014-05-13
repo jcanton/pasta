@@ -57,7 +57,7 @@ MODULE par_solve_mumps
    INTEGER, PARAMETER :: CMPL_FLAG =  2
 
    ! memory parameters
-   REAL(KIND=8), PARAMETER :: memRelax = 5
+   INTEGER, PARAMETER :: memRelax = 5
 
 
    ! interface for real/complex matrix and rhs

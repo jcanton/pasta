@@ -320,7 +320,7 @@ SUBROUTINE  start_coupled_system_axisym (np, np_L, jj, js,  CC)
    
    INTEGER, DIMENSION(:),   ALLOCATABLE :: RR_j, RT_j        
     
-   INTEGER, DIMENSION(:,:), ALLOCATABLE :: RR
+!   INTEGER, DIMENSION(:,:), ALLOCATABLE :: RR
      
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ! 2 modifiche fatte da Auteri

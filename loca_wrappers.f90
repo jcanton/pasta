@@ -939,12 +939,12 @@ SUBROUTINE shifted_matrix_fill_conwrap (sigma_loca) &
  
    REAL(KIND=C_DOUBLE), INTENT(IN) :: sigma_loca
 
-   INTEGER :: i
-
-   WRITE(*,*)
-   WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
-   WRITE(*,*) '--> CALL to shifted_matrix_fill_conwrap'
-   WRITE(*,*)
+!   INTEGER :: i
+!
+!   WRITE(*,*)
+!   WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+!   WRITE(*,*) '--> CALL to shifted_matrix_fill_conwrap'
+!   WRITE(*,*)
 ! 
 !   DO i = 1, SIZE(Jacobian%e)
 !         ! we can do this as J and M have the same sparsity pattern 

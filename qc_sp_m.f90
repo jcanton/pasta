@@ -2092,9 +2092,9 @@ SUBROUTINE qc_1y0_sp_3d_M (m0, jj, jj_L, alpha, beta,  CC)
              
                ! third rectangular off-diagonal block of the last block-column  
 
-               ! x = alpha * i beta * ww(ni,l) * w_L(nj,l) * pp_w(l) * JAC(m)
+               ! x = - alpha * i beta * ww(ni,l) * w_L(nj,l) * pp_w(l) * JAC(m)
               
-               x = alpha * CMPLX(0d0,1d0,KIND=8) * beta * ww(ni,l) * w_L(nj,l) * pp_w(l) * JAC(m) 
+               x = - alpha * CMPLX(0d0,1d0,KIND=8) * beta * ww(ni,l) * w_L(nj,l) * pp_w(l) * JAC(m) 
                
                DO p = CC%i(i+2*np),  CC%i(i+2*np+1) - 1
                   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + x;  EXIT;  ENDIF

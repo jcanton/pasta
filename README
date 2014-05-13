@@ -7,17 +7,23 @@
 #
 #   a software for Parallel Stability Analysis
 #
-# Created by Jacopo Canton <jcanton@mech.kth.se>
-# under the supervision of Franco Auteri and Marco Carini,
-# based on Luigi Quartapelle's subroutines for FEM discretization.
+# Created by Jacopo Canton under the supervision of Franco Auteri and Marco
+# Carini, based on Luigi Quartapelle's subroutines for FEM discretization.
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 # FEATURES:
-#  - base flow computation
+#  - axisymmetric base flow computation
 #  - continuation of solutions and bifurcation tracking (LOCA library)
-#  - eigenvalues and eigenvectors computation (ARPACK library)
-#  - structural sensitivity computation
-#  - computation of the optimal linear perturbations (transient growth)
+#  - eigenvalues and eigenvectors computation -3d- (ARPACK library)
+#  - structural sensitivity computation -3d-
+#  - computation of the optimal linear perturbations -3d- (transient growth)
 #  - DNS
 #  - evolution of optimal linear perturbations on the nonlinear system
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+# CONTACTS:
+#  jcanton@mech.kth.se
+#  franco.auteri@polimi.it
+#  marco.carini@polimi.it
+#  luigi.quartapelle@polimi.it
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

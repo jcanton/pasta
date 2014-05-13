@@ -1887,14 +1887,6 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
                ! block (1,3)
                !
                !j_ = j + 2*np
-               !
-               !! y * i beta/R * vt * gx
-               !
-               !x3 = + CMPLX(0d0,1d0,KIND=8) * beta * wij * gl(1) * pp_w(l) * JAC(m)
-               !
-               !DO p = CC%i(i),  CC%i(i+1) - 1
-               !   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + x3;  EXIT;  ENDIF
-               !ENDDO
              
                   
                ! SECOND BLOCK ROW
@@ -1925,19 +1917,17 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
                   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xd + xo + x3;  EXIT;  ENDIF
                ENDDO
 
-               ! *** ONLY IF SWIRLING and NON-AXISYMMETRIC BASE FLOW ***
+               ! *** ONLY IF SWIRLING (and NON-AXISYMMETRIC) BASE FLOW ***
                ! block (2,3)
                !
                !j_ = j + 2*np
                !
-               !! y * ( - 2 * vt * gt/R  +  i beta/R * vt * gy )
+               !! y * ( - 2 * vt * gt/R )
                !
                !xo = - 2 * wij * gl(3) * pp_w(l) * JAC(m)
                !
-               !x3 = + CMPLX(0d0,1d0,KIND=8) * beta * wij * gl(2) * pp_w(l) * JAC(m)
-               !
                !DO p = CC%i(i_),  CC%i(i_+1) - 1
-               !   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xo + x3;  EXIT;  ENDIF
+               !   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
                !ENDDO
 
 
@@ -1974,11 +1964,11 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
 
                j_ = j + 2*np
                                          ! *** ONLY IF SWIRLING BASE FLOW ***
-               ! xd  +  y * vt * ( gy/R  +  2 i beta/R * gy )
+               ! xd  +  y * vt * ( gy/R  +  i beta/R * gy )
             
                xo = wij * gl(2) * pp_w(l) * JAC(m)
 
-               x3 = 0d0 !+ 2 * CMPLX(0d0,1d0,KIND=8) * beta * wij * gl(3) * pp_w(l) * JAC(m)
+               x3 = 0d0 !+ CMPLX(0d0,1d0,KIND=8) * beta * wij * gl(3) * pp_w(l) * JAC(m)
 
                DO p = CC%i(i_),  CC%i(i_+1) - 1
                   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xd + xo + x3;  EXIT;  ENDIF

@@ -42,6 +42,8 @@ MODULE global_variables
    REAL(KIND=8) :: Re, velRatio                          ! when used inside F they
    INTEGER      :: beta, Nx                              ! behave in the same way
 
+   REAL(KIND=8), DIMENSION(3) :: volumeForcing
+
    LOGICAL :: DESINGULARIZE
 
    LOGICAL, ALLOCATABLE, DIMENSION(:)      :: Dir_psi

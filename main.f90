@@ -41,6 +41,8 @@ PROGRAM  main
 
    INTEGER      :: k, m
    REAL(KIND=8) :: dummy
+   REAL(KIND=8), ALLOCATABLE, DIMENSION(:,:) :: u_avg
+
 
 !-------------END OF DECLARATIONS----------------------------------------------
 !------------------------------------------------------------------------------
@@ -183,6 +185,26 @@ IF ( myRank == 0 ) THEN
          ! WRITE RESTART FILE
          CALL write_restart(xx, Re, ite_num, p_in%nwtn_maxite, p_in%output_restart_file, LEN(trim(p_in%output_restart_file)))
       END IF
+
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      ALLOCATE (u_avg(velCmpnnts, np)); u_avg = 0d0
+
+      CALL qv_0y0_sp (mm, jj, uu, 1d0, u_avg)
+      u0 = 1d0
+      uu = 0d0
+      CALL qv_0y0_sp (mm, jj, u0, 1d0, uu)
+
+      write(*,*)
+      write(*,*) '--> Average quantities'
+      write(*,*) '    avg(u_z) = ', sum(u_avg(1,:)) / sum(uu(1,:))
+      write(*,*) '    avg(u_r) = ', sum(u_avg(2,:)) / sum(uu(1,:))
+      write(*,*) '    avg(u_t) = ', sum(u_avg(3,:)) / sum(uu(1,:))
+
+      DEALLOCATE(u_avg)
+
+      CALL extract (xx,  uu, pp)
+      write(*,*) '    mmm(u_t) = ', sum(uu(3,:)) / np
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
       ! WRITE QP RESTART FILE
       CALL write_QP_restart(xx, 'suiteSteadyState.QPrestart', 26)
@@ -497,6 +519,17 @@ SUBROUTINE read_and_apply_boundary_conditions(input_file, k_d, rr, mms, jjs,    
 
     ENDDO
    
+   READ(21,*) ! jump one line
+   ! volume forcing along the three directions
+   READ(21,*) volumeForcing(1)
+   READ(21,*) volumeForcing(2)
+   READ(21,*) volumeForcing(3)
+
+   WRITE(*,*) '    f_z     = ', volumeForcing(1)
+   WRITE(*,*) '    f_r     = ', volumeForcing(2)
+   WRITE(*,*) '    f_theta = ', volumeForcing(3)
+
+
 !+++
 ! coaxial jets
    IF (velRatio /= 0d0) THEN
@@ -629,9 +662,9 @@ SUBROUTINE compute_Stokes_initial_guess(np, mm, jj, jj_L, jjs, iis, js_D, bvs_D,
    CALL qc_ty0_sp_s (ms_2, jjs, iis,  c_2,  vv)  !  cumulative
    CALL qc_ny0_sp_s (ms_3, jjs, iis, -q_3,  vv)  !  cumulative
 
-   u0(1,:) = 0d0
-   u0(2,:) = 0d0
-   u0(3,:) = 1d0
+   u0(1,:) = volumeForcing(1)
+   u0(2,:) = volumeForcing(2)
+   u0(3,:) = volumeForcing(3)
    CALL qv_0y0_sp   (mm, jj, u0, 1d0, vv)
    
    CALL collect (vv, 0*p0,  x0) ! here x0 is the RHS

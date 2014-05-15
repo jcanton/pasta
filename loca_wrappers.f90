@@ -192,9 +192,9 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
    CALL qc_ty0_sp_s (ms_2, jjs, iis,  c_2,  vv)  !  cumulative
    CALL qc_ny0_sp_s (ms_3, jjs, iis, -q_3,  vv)  !  cumulative
 
-   u0(1,:) = 0d0
-   u0(2,:) = 0d0
-   u0(3,:) = 1d0
+   u0(1,:) = volumeForcing(1)
+   u0(2,:) = volumeForcing(2)
+   u0(3,:) = volumeForcing(3)
    CALL qv_0y0_sp   (mm, jj, u0, 1d0, vv)
 
    ww = 0
@@ -1196,6 +1196,8 @@ SUBROUTINE param_output(param) &
    ! local variables
    INTEGER           :: fid = 22
    CHARACTER(LEN=50) :: filenm
+   REAL(KIND=8), ALLOCATABLE, DIMENSION(:,:) :: u_avg, ones
+
 
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
@@ -1221,12 +1223,31 @@ SUBROUTINE param_output(param) &
    WRITE(fid,*) param
    CLOSE(fid)
 
+   CALL extract (xx,  uu)
+   ALLOCATE (u_avg(velCmpnnts, np),ones(velCmpnnts, np)); u_avg = 0d0
+   CALL qv_0y0_sp (mm, jj, uu, 1d0, u_avg)
+   ones = 1d0
+   uu   = 0d0
+   CALL qv_0y0_sp (mm, jj, ones, 1d0, uu)
+
+   write(*,*)
+   write(*,*) '--> Average quantities'
+   write(*,*) '    avg(u_z) = ', sum(u_avg(1,:)) / sum(uu(1,:))
+   write(*,*) '    avg(u_r) = ', sum(u_avg(2,:)) / sum(uu(1,:))
+   write(*,*) '    avg(u_t) = ', sum(u_avg(3,:)) / sum(uu(1,:))
+
+
    ! print all parameters to file
    filenm = './locaOut/all.dat'
    OPEN(UNIT= fid, FILE= trim(filenm), ACCESS= 'APPEND')
    WRITE(*,*) 'writing file: ', trim(filenm)
-   WRITE(fid,*) pd%reynolds, pd%vRatio, pd%mu, pd%alpha
+   WRITE(fid,*) pd%reynolds, pd%vRatio, pd%mu, pd%alpha, &
+                sum(u_avg(1,:)) / sum(uu(1,:)), &
+                sum(u_avg(2,:)) / sum(uu(2,:)), &
+                sum(u_avg(3,:)) / sum(uu(3,:))
    CLOSE(fid)
+
+   DEALLOCATE (u_avg, ones)
 
 END SUBROUTINE param_output
 

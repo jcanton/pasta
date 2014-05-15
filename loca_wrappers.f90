@@ -1223,6 +1223,7 @@ SUBROUTINE param_output(param) &
    WRITE(fid,*) param
    CLOSE(fid)
 
+   ! compute average quantities
    CALL extract (xx,  uu)
    ALLOCATE (u_avg(velCmpnnts, np),ones(velCmpnnts, np)); u_avg = 0d0
    CALL qv_0y0_sp (mm, jj, uu, 1d0, u_avg)
@@ -1233,9 +1234,8 @@ SUBROUTINE param_output(param) &
    write(*,*)
    write(*,*) '--> Average quantities'
    write(*,*) '    avg(u_z) = ', sum(u_avg(1,:)) / sum(uu(1,:))
-   write(*,*) '    avg(u_r) = ', sum(u_avg(2,:)) / sum(uu(1,:))
-   write(*,*) '    avg(u_t) = ', sum(u_avg(3,:)) / sum(uu(1,:))
-
+   write(*,*) '    avg(u_r) = ', sum(u_avg(2,:)) / sum(uu(2,:))
+   write(*,*) '    avg(u_t) = ', sum(u_avg(3,:)) / sum(uu(3,:))
 
    ! print all parameters to file
    filenm = './locaOut/all.dat'

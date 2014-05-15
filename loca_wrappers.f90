@@ -186,10 +186,17 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
    ! rhs <---  (u0 \dot \nabla)u0
    !           0
    vv = 0
-   CALL extract (x0,  u0, p0)
+!   CALL extract (x0,  u0, p0)
+   CALL extract (x0,  u0)
    CALL qv_0y01_sp (mm, jj, u0,  vv)
    CALL qc_ty0_sp_s (ms_2, jjs, iis,  c_2,  vv)  !  cumulative
    CALL qc_ny0_sp_s (ms_3, jjs, iis, -q_3,  vv)  !  cumulative
+
+   u0(1,:) = 0d0
+   u0(2,:) = 0d0
+   u0(3,:) = 1d0
+   CALL qv_0y0_sp   (mm, jj, u0, 1d0, vv)
+
    ww = 0
    CALL collect (vv, ww,  dx) ! here dx is the RHS
    !------------------------------------------------------------------
@@ -205,8 +212,9 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
    !-------------OF THE COUPLED EQUATION SYSTEM-----------------------
    !             Jacobian  <--- [(u0.V)_ + (_.V)u0)]  +  K_  +  V_ (ibp)
    !
-   WRITE(*,*) '*check*'
-   WRITE(*,*) '    Re = ', Re
+!write(*,*) '*check*'
+!write(*,*) '    Re = ', Re
+   CALL extract (x0,  u0)
    CALL ComputeJacobianMatrix (np, mm, jj, jj_L, js_Axis, js_D, DESINGULARIZE, Jacobian, Re, u0)
    CALL par_mumps_master (NUMER_FACTOR, 1, Jacobian, 0)
    !------------------------------------------------------------------
@@ -279,11 +287,11 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
 
       IF (DESINGULARIZE) dx(Nx) = 0d0
 
-      WRITE(*,*) '*check*'
-      DO ii = 1, SIZE(du0, 1)
-         WRITE(*,*) 'MAXdelta_bvs_D = ', MAXVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
-         WRITE(*,*) 'MINdelta_bvs_D = ', MINVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
-      ENDDO
+!write(*,*) '*check*'
+!do ii = 1, SIZE(du0, 1)
+!   write(*,*) 'MAXdelta_bvs_D = ', MAXVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
+!   write(*,*) 'MINdelta_bvs_D = ', MINVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
+!enddo
    
       !------------------------------------------------------------------
       !-------------COMPUTE RESIDUAL-------------------------------------
@@ -314,8 +322,8 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
       !             Jacobian  <--- [(u0.V)_ + (_.V)u0)]  +  K_  +  V_ (ibp)
       !
 
-      WRITE(*,*) '*check*'
-      WRITE(*,*) '    Re = ', Re
+!write(*,*) '*check*'
+!write(*,*) '    Re = ', Re
       CALL ComputeJacobianMatrix (np, mm, jj, jj_L, js_Axis, js_D, DESINGULARIZE, Jacobian, Re, u0)
       CALL par_mumps_master (NUMER_FACTOR, 1, Jacobian, 0)
 
@@ -1269,7 +1277,7 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
    REAL(KIND=C_DOUBLE), VALUE         :: shiftIm
 
    ! local variables
-   TYPE(CSR_MUMPS_Complex_Matrix)         :: Jacobian_cmplx, Mass_cmplx
+   TYPE(CSR_MUMPS_Complex_Matrix)     :: Jacobian_cmplx, Mass_cmplx
 
    LOGICAL, DIMENSION(velCmpnnts, number_of_sides) :: Dir_eigen
    TYPE(dyn_int_line), DIMENSION(velCmpnnts)       :: js_D_eigen
@@ -1277,7 +1285,7 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
 
    REAL(KIND=8), DIMENSION(SIZE(Jacobian%e)) :: Jacobian_save
 
-   INTEGER :: i, k
+   INTEGER :: i, k, eigen_plotNum
 
    COMPLEX(KIND=8), DIMENSION(:),   ALLOCATABLE :: directEigenvalues,  adjointEigenvalues
    COMPLEX(KIND=8), DIMENSION(:,:), ALLOCATABLE :: directEigenvectors, adjointEigenvectors
@@ -1518,10 +1526,16 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
          !
          IF ( p_in%write_plots_flag ) THEN
 
-            CALL vtk_plot_eigenvectors (rr, jj,  DBLE(directEigenvectors(:,1:p_in%eigen_plotNumber)), &
+            IF ( SIZE(directEigenvectors,2) .LT. p_in%eigen_plotNumber ) THEN
+               eigen_plotNum = SIZE(directEigenvectors,2)
+            ELSE
+               eigen_plotNum = p_in%eigen_plotNumber
+            ENDIF
+
+            CALL vtk_plot_eigenvectors (rr, jj,  DBLE(directEigenvectors(:,1:eigen_plotNum)), &
                                         trim(p_in%plot_directory)// &
                                         'directEigenvectorsRe'//filenm(1:filenmLen)//trim(shiftName)//'.vtk')
-            CALL vtk_plot_eigenvectors (rr, jj, AIMAG(directEigenvectors(:,1:p_in%eigen_plotNumber)), &
+            CALL vtk_plot_eigenvectors (rr, jj, AIMAG(directEigenvectors(:,1:eigen_plotNum)), &
                                         trim(p_in%plot_directory)// &
                                         'directEigenvectorsIm'//filenm(1:filenmLen)//trim(shiftName)//'.vtk')
          ENDIF
@@ -1575,10 +1589,16 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
          !
          IF ( p_in%write_plots_flag ) THEN
 
-            CALL vtk_plot_eigenvectors (rr, jj,  DBLE(adjointEigenvectors(:,1:p_in%eigen_plotNumber)), &
+            IF ( SIZE(adjointEigenvectors,2) .LT. p_in%eigen_plotNumber ) THEN
+               eigen_plotNum = SIZE(adjointEigenvectors,2)
+            ELSE
+               eigen_plotNum = p_in%eigen_plotNumber
+            ENDIF
+
+            CALL vtk_plot_eigenvectors (rr, jj,  DBLE(adjointEigenvectors(:,1:eigen_plotNum)), &
                                         trim(p_in%plot_directory)// &
                                         'adjointEigenvectorsRe'//filenm(1:filenmLen)//trim(shiftName)//'.vtk')
-            CALL vtk_plot_eigenvectors (rr, jj, AIMAG(adjointEigenvectors(:,1:p_in%eigen_plotNumber)), &
+            CALL vtk_plot_eigenvectors (rr, jj, AIMAG(adjointEigenvectors(:,1:eigen_plotNum)), &
                                         trim(p_in%plot_directory)// &
                                         'adjointEigenvectorsIm'//filenm(1:filenmLen)//trim(shiftName)//'.vtk')
          ENDIF

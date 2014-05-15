@@ -624,10 +624,15 @@ SUBROUTINE compute_Stokes_initial_guess(np, mm, jj, jj_L, jjs, iis, js_D, bvs_D,
    !------------------------------------------------------------------
    !-------------COMPUTE THE RIGHT-HAND SIDE--------------------------
     
-   vv = 0
+   vv = 0d0
    
    CALL qc_ty0_sp_s (ms_2, jjs, iis,  c_2,  vv)  !  cumulative
    CALL qc_ny0_sp_s (ms_3, jjs, iis, -q_3,  vv)  !  cumulative
+
+   u0(1,:) = 0d0
+   u0(2,:) = 0d0
+   u0(3,:) = 1d0
+   CALL qv_0y0_sp   (mm, jj, u0, 1d0, vv)
    
    CALL collect (vv, 0*p0,  x0) ! here x0 is the RHS
 

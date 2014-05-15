@@ -414,8 +414,8 @@ DO ii = 1, tausNumber
                IF (Lns_cmplx%j(i) == Nx) Lns_cmplx%e(i) = CMPLX(1d0,0d0,KIND=8)
             ENDDO
          ENDIF
-write(*,*) 'maxvals0d ', MAXVAL(DBLE(Lns_cmplx%e)), MAXVAL(AIMAG(Lns_cmplx%e))
-write(*,*) 'minvals0d ', MINVAL(DBLE(Lns_cmplx%e)), MINVAL(AIMAG(Lns_cmplx%e))
+!write(*,*) 'maxvals0d ', MAXVAL(DBLE(Lns_cmplx%e)), MAXVAL(AIMAG(Lns_cmplx%e))
+!write(*,*) 'minvals0d ', MINVAL(DBLE(Lns_cmplx%e)), MINVAL(AIMAG(Lns_cmplx%e))
          CALL zAlinB_s (CMPLX(1d0/dtH,0d0,KIND=8), Mass_cmplx%e, &
                         CMPLX(0.5d0,0d0,KIND=8),   Lns_cmplx%e,  Wd%e)
          CALL par_mumps_master (NUMER_FACTOR, 5, Wd, 0)
@@ -508,8 +508,8 @@ write(*,*) 'minvals0d ', MINVAL(DBLE(Lns_cmplx%e)), MINVAL(AIMAG(Lns_cmplx%e))
          IF (Lns_cmplx%j(i) == Nx) Lns_cmplx%e(i) = CMPLX(1d0,0d0,KIND=8)
       ENDDO
    ENDIF
-write(*,*) 'maxvals00 ', MAXVAL(DBLE(Lns_cmplx%e)), MAXVAL(AIMAG(Lns_cmplx%e))
-write(*,*) 'minvals00 ', MINVAL(DBLE(Lns_cmplx%e)), MINVAL(AIMAG(Lns_cmplx%e))
+!write(*,*) 'maxvals00 ', MAXVAL(DBLE(Lns_cmplx%e)), MAXVAL(AIMAG(Lns_cmplx%e))
+!write(*,*) 'minvals00 ', MINVAL(DBLE(Lns_cmplx%e)), MINVAL(AIMAG(Lns_cmplx%e))
    CALL zAlinB_s (CMPLX(1d0/dtE,0d0,KIND=8), Mass_cmplx%e, &
                   CMPLX(1d0,0d0,KIND=8),     Lns_cmplx%e,  W0%e)
    CALL par_mumps_master (NUMER_FACTOR, 6, W0, 0)
@@ -614,12 +614,12 @@ write(*,*) 'minvals00 ', MINVAL(DBLE(Lns_cmplx%e)), MINVAL(AIMAG(Lns_cmplx%e))
       ! plot evolution of the optimal perturbation
       IF ( p_in%write_plots_flag ) THEN
          ! PLOT OUTPUT IN VTK FORMAT
-         CALL vtk_plot_P2        (rr, jj, jj_L, DBLE(uu_tg), DBLE(0*pp_tg), &
+         CALL vtk_plot_P2        (rr, jj, jj_L, DBLE(uu_tg), DBLE(pp_tg), &
               './tranGrowthOut/'//'tranGrowthShape1-tau_'//trim(tauName)//trim(filenm)//'_Re.vtk')
          CALL vtk_plot_scalar_P2 (rr, jj,       DBLE(Ek),       &
               './tranGrowthOut/'//'tranGrowthEk1-tau_'//trim(tauName)//trim(filenm)//'_Re.vtk')
 
-         CALL vtk_plot_P2        (rr, jj, jj_L, AIMAG(uu_tg), AIMAG(0*pp_tg), &
+         CALL vtk_plot_P2        (rr, jj, jj_L, AIMAG(uu_tg), AIMAG(pp_tg), &
               './tranGrowthOut/'//'tranGrowthShape1-tau_'//trim(tauName)//trim(filenm)//'_Im.vtk')
          CALL vtk_plot_scalar_P2 (rr, jj,       AIMAG(Ek),       &
               './tranGrowthOut/'//'tranGrowthEk1-tau_'//trim(tauName)//trim(filenm)//'_Im.vtk')
@@ -631,12 +631,9 @@ write(*,*) 'minvals00 ', MINVAL(DBLE(Lns_cmplx%e)), MINVAL(AIMAG(Lns_cmplx%e))
 
    WRITE(*,*) '    |res|_L-infty = ', resLinfty
    WRITE(*,*)
-   WRITE(*,*) '    u0''*u0   = ', SUM(Ek0)
-   WRITE(*,*) '    u0''*M*u0 = ', Ek0_s
-   WRITE(*,*) '    uu''*uu   = ', SUM(Ek)
-   WRITE(*,*) '    uu''*M*uu = ', Ek_s
-   WRITE(*,*) '    (uu''*uu) / ( u0''*u0 )  = ', SUM(Ek) / SUM(Ek0)
-   WRITE(*,*) '    (uu''*M*uu) / ( u0''*M*u0 )  = ', Ek_s / Ek0_s
+   WRITE(*,*) '    Ek_0        = u0''*M*u0 = ', Ek0_s
+   WRITE(*,*) '    Ek_1        = uu''*M*uu = ', Ek_s
+   WRITE(*,*) '    Ek_1 / Ek_0 = (uu''*M*uu) / ( u0''*M*u0 )  = ', Ek_s / Ek0_s
 
 !-------------
 ! SAVE RESULTS
@@ -1202,18 +1199,18 @@ endif
       WRITE(*,*) '    DIR - time = ', dtE
       ! (a)
       ! assemble RHS
-write(*,*) 'maxvals1 ', MAXVAL(DBLE(x0_tg)), MAXVAL(AIMAG(x0_tg))
+!write(*,*) 'maxvals1 ', MAXVAL(DBLE(x0_tg)), MAXVAL(AIMAG(x0_tg))
       CALL zAtimx (xx_tg, Z0%e, Z0%j, Z0%i, x0_tg)
-write(*,*) 'maxvals2 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
+!write(*,*) 'maxvals2 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
       ! (b)
       ! impose homogeneous Dirichlet BC on RHS
       CALL Dirichlet_c_3d (np, js_Axis, js_D_tg, zero_bvs_D_tg,  xx_tg)
-write(*,*) 'maxvals3 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
+!write(*,*) 'maxvals3 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
       IF (DESINGULARIZE_tg) xx_tg(Nx) = 0d0
       ! (c)
       ! solve system
       CALL par_mumps_master (DIRECT_SOLUTION, 6, W0, 0, xx_tg)
-write(*,*) 'maxvals4 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
+!write(*,*) 'maxvals4 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
       ! (d)
       ! update solution
       x0_tg = xx_tg
@@ -1223,18 +1220,18 @@ write(*,*) 'maxvals4 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
          WRITE(*,*) '    DIR - time = ', dtE + i*dtH
          ! (a)
          ! assemble RHS
-write(*,*) 'maxvals5 ', MAXVAL(DBLE(x0_tg)), MAXVAL(AIMAG(x0_tg))
+!write(*,*) 'maxvals5 ', MAXVAL(DBLE(x0_tg)), MAXVAL(AIMAG(x0_tg))
          CALL zAtimx (xx_tg, Zd%e, Zd%j, Zd%i, x0_tg)
-write(*,*) 'maxvals6 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
+!write(*,*) 'maxvals6 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
          ! (b)
          ! impose homogeneous Dirichlet BC on RHS
          CALL Dirichlet_c_3d (np, js_Axis, js_D_tg, zero_bvs_D_tg,  xx_tg)
-write(*,*) 'maxvals7 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
+!write(*,*) 'maxvals7 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
          IF (DESINGULARIZE_tg) xx_tg(Nx) = 0d0
          ! (c)
          ! solve system
          CALL par_mumps_master (DIRECT_SOLUTION, 5, Wd, 0, xx_tg)
-write(*,*) 'maxvals8 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
+!write(*,*) 'maxvals8 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
          ! (d)
          ! update solution
          x0_tg = xx_tg
@@ -1304,18 +1301,18 @@ write(*,*) 'maxvals8 ', MAXVAL(DBLE(xx_tg)), MAXVAL(AIMAG(xx_tg))
 
    ! temporary
    ! plot results to check for mistakes
-   IF ( dirAdj == 1 ) THEN
-      CALL vtk_plot_P2 (rr, jj, jj_L,  DBLE(uu_tg),  DBLE(p0_tg), &
-           './tranGrowthOut/'//'tranGrowthDir_Re.vtk')
-      CALL vtk_plot_P2 (rr, jj, jj_L, AIMAG(uu_tg), AIMAG(p0_tg), &
-           './tranGrowthOut/'//'tranGrowthDir_Im.vtk')
-   STOP
-   ELSEIF ( dirAdj == 2 ) THEN
-      CALL vtk_plot_P2 (rr, jj, jj_L,  DBLE(uu_tg),  DBLE(p0_tg), &
-           './tranGrowthOut/'//'tranGrowthAdj_Re.vtk')
-      CALL vtk_plot_P2 (rr, jj, jj_L, AIMAG(uu_tg), AIMAG(p0_tg), &
-           './tranGrowthOut/'//'tranGrowthAdj_Im.vtk')
-   ENDIF
+   !IF ( dirAdj == 1 ) THEN
+   !   CALL vtk_plot_P2 (rr, jj, jj_L,  DBLE(uu_tg),  DBLE(p0_tg), &
+   !        './tranGrowthOut/'//'tranGrowthDir_Re.vtk')
+   !   CALL vtk_plot_P2 (rr, jj, jj_L, AIMAG(uu_tg), AIMAG(p0_tg), &
+   !        './tranGrowthOut/'//'tranGrowthDir_Im.vtk')
+   !STOP
+   !ELSEIF ( dirAdj == 2 ) THEN
+   !   CALL vtk_plot_P2 (rr, jj, jj_L,  DBLE(uu_tg),  DBLE(p0_tg), &
+   !        './tranGrowthOut/'//'tranGrowthAdj_Re.vtk')
+   !   CALL vtk_plot_P2 (rr, jj, jj_L, AIMAG(uu_tg), AIMAG(p0_tg), &
+   !        './tranGrowthOut/'//'tranGrowthAdj_Im.vtk')
+   !ENDIF
 
    WRITE(*,*)
 

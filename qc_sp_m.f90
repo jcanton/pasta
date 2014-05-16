@@ -1865,7 +1865,7 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
                 
                xo = wij * dglo_py(1,1)
 
-               x3 = 0d0 !+ CMPLX(0d0,1d0,KIND=8) * beta * wij * gl(3) * pp_w(l) * JAC(m)
+               x3 = + CMPLX(0d0,1d0,KIND=8) * beta * wij * gl(3) * pp_w(l) * JAC(m)
                
                DO p = CC%i(i),  CC%i(i+1) - 1
                   IF (CC%j(p) == j) THEN;  CC%e(p) = CC%e(p) + xd + xo + x3;  EXIT;  ENDIF
@@ -1911,7 +1911,7 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
             
                xo = wij * dglo_py(2,2)
 
-               x3 = 0d0 !+ CMPLX(0d0,1d0,KIND=8) * beta * wij * gl(3) * pp_w(l) * JAC(m)
+               x3 = + CMPLX(0d0,1d0,KIND=8) * beta * wij * gl(3) * pp_w(l) * JAC(m)
              
                DO p = CC%i(i_),  CC%i(i_+1) - 1
                   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xd + xo + x3;  EXIT;  ENDIF
@@ -1919,16 +1919,16 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
 
                ! *** ONLY IF SWIRLING (and NON-AXISYMMETRIC) BASE FLOW ***
                ! block (2,3)
-               !
-               !j_ = j + 2*np
-               !
-               !! y * ( - 2 * vt * gt/R )
-               !
-               !xo = - 2 * wij * gl(3) * pp_w(l) * JAC(m)
-               !
-               !DO p = CC%i(i_),  CC%i(i_+1) - 1
-               !   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
-               !ENDDO
+
+               j_ = j + 2*np
+               
+               ! y * ( - 2 * vt * gt/R )
+               
+               xo = - 2 * wij * gl(3) * pp_w(l) * JAC(m)
+               
+               DO p = CC%i(i_),  CC%i(i_+1) - 1
+                  IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
+               ENDDO
 
 
                ! THIRD BLOCK ROW
@@ -1937,27 +1937,27 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
             
                ! *** ONLY IF SWIRLING BASE FLOW ***
                ! block (3,1)
-               !
-               !! y * vx * dgt/dx
-               !
-               !xo = wij * dglo_py(1,3) 
-               !
-               !DO p = CC%i(i_),  CC%i(i_+1) - 1
-               !   IF (CC%j(p) == j) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
-               !ENDDO
+
+               ! y * vx * dgt/dx
+               
+               xo = wij * dglo_py(1,3) 
+               
+               DO p = CC%i(i_),  CC%i(i_+1) - 1
+                  IF (CC%j(p) == j) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
+               ENDDO
                
                ! *** ONLY IF SWIRLING BASE FLOW ***
                ! block (3,2)
                !
-               !j_ = j + np
-               !
-               !! y * vy * ( gt/R  +  dgt/dy )
-               !
-               !xo = wij * ( gl(3) * pp_w(l) * JAC(m)  +  dglo_py(2,3)) 
-               !
-               !DO p = CC%i(i_),  CC%i(i_+1) - 1
-               !   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
-               !ENDDO
+               j_ = j + np
+               
+               ! y * vy * ( gt/R  +  dgt/dy )
+               
+               xo = wij * ( gl(3) * pp_w(l) * JAC(m)  +  dglo_py(2,3)) 
+               
+               DO p = CC%i(i_),  CC%i(i_+1) - 1
+                  IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF
+               ENDDO
 
             
                ! block (3,3)
@@ -1968,7 +1968,7 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
             
                xo = wij * gl(2) * pp_w(l) * JAC(m)
 
-               x3 = 0d0 !+ CMPLX(0d0,1d0,KIND=8) * beta * wij * gl(3) * pp_w(l) * JAC(m)
+               x3 = + CMPLX(0d0,1d0,KIND=8) * beta * wij * gl(3) * pp_w(l) * JAC(m)
 
                DO p = CC%i(i_),  CC%i(i_+1) - 1
                   IF (CC%j(p) == j_) THEN;  CC%e(p) = CC%e(p) + xd + xo + x3;  EXIT;  ENDIF

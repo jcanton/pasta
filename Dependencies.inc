@@ -50,7 +50,10 @@ global_variables.o: read_input_files.o   \
                     dynamic_structures.o \
                     sparse_matrix_profiles.o
 
-miscellaneous_subroutines.o:
+miscellaneous_subroutines.o: prep_mesh_p1p2_sp.o    \
+                             global_variables.o     \
+                             gauss_points_2d_p_sp.o \
+                             gauss_points_2d_l.o
 
 par_solve_mumps.o: global_variables.o \
                    sparse_matrix_profiles.o

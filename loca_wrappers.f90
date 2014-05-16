@@ -1196,7 +1196,7 @@ SUBROUTINE param_output(param) &
    ! local variables
    INTEGER           :: fid = 22
    CHARACTER(LEN=50) :: filenm
-   REAL(KIND=8), ALLOCATABLE, DIMENSION(:,:) :: u_avg, ones
+   REAL(KIND=8), DIMENSION(velCmpnnts) :: u_avg
 
 
    WRITE(*,*)
@@ -1225,29 +1225,21 @@ SUBROUTINE param_output(param) &
 
    ! compute average quantities
    CALL extract (xx,  uu)
-   ALLOCATE (u_avg(velCmpnnts, np),ones(velCmpnnts, np)); u_avg = 0d0
-   CALL qv_0y0_sp (mm, jj, uu, 1d0, u_avg)
-   ones = 1d0
-   uu   = 0d0
-   CALL qv_0y0_sp (mm, jj, ones, 1d0, uu)
-
-   write(*,*)
-   write(*,*) '--> Average quantities'
-   write(*,*) '    avg(u_z) = ', sum(u_avg(1,:)) / sum(uu(1,:))
-   write(*,*) '    avg(u_r) = ', sum(u_avg(2,:)) / sum(uu(2,:))
-   write(*,*) '    avg(u_t) = ', sum(u_avg(3,:)) / sum(uu(3,:))
+   CALL computeFieldAverage(uu,  u_avg)
+   WRITE(*,*)
+   WRITE(*,*) '--> Average quantities'
+   WRITE(*,*) '    avg(u_z) = ', u_avg(1)
+   WRITE(*,*) '    avg(u_r) = ', u_avg(2)
+   WRITE(*,*) '    avg(u_t) = ', u_avg(3)
 
    ! print all parameters to file
    filenm = './locaOut/all.dat'
    OPEN(UNIT= fid, FILE= trim(filenm), ACCESS= 'APPEND')
    WRITE(*,*) 'writing file: ', trim(filenm)
    WRITE(fid,*) pd%reynolds, pd%vRatio, pd%mu, pd%alpha, &
-                sum(u_avg(1,:)) / sum(uu(1,:)), &
-                sum(u_avg(2,:)) / sum(uu(2,:)), &
-                sum(u_avg(3,:)) / sum(uu(3,:))
+                            u_avg(1), u_avg(2), u_avg(3)
+                            
    CLOSE(fid)
-
-   DEALLOCATE (u_avg, ones)
 
 END SUBROUTINE param_output
 

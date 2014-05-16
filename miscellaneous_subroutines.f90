@@ -2,9 +2,17 @@ MODULE miscellaneous_subroutines
 !
 ! Contains subroutines which did not fit anywhere else
 !
+   USE prep_mesh_p1p2_sp ! for some global variables as mm, jj
+   USE global_variables
+   USE Gauss_points ! needed for the field average subroutine
+!
 !==============================================================================
 
    IMPLICIT NONE
+
+   INTERFACE computeFieldAverage
+      MODULE PROCEDURE computeFieldAverage_rv
+   END INTERFACE computeFieldAverage
 
 CONTAINS
 
@@ -183,7 +191,7 @@ FUNCTION testForNaN (variable) RESULT (flag)
 ! E-mail: jcanton@mech.kth.se
 ! Last revision: 4/5/2014
 !
-! variable: real type variable to be tested
+! - variable: real type variable to be tested
 
    IMPLICIT NONE
    !
@@ -198,6 +206,62 @@ FUNCTION testForNaN (variable) RESULT (flag)
    ENDIF
 
 END FUNCTION
+
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+
+SUBROUTINE computeFieldAverage_rv (fld,  avgFld_v)
+!
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 16/5/2014
+!
+! - fld          : field to be averaged
+!
+! - avgFld_v     : averaged values of the field
+
+   IMPLICIT NONE
+   ! input variables
+   REAL(KIND=8), DIMENSION(velCmpnnts,np), INTENT(IN) :: fld
+   ! output variable
+   REAL(KIND=8), DIMENSION(velCmpnnts) :: avgFld_v
+   ! local variables
+   REAL(KIND=8), DIMENSION(velCmpnnts,np) :: avgFld, ones, weights
+   INTEGER :: mi, m, l, k
+
+
+   ones = 1d0
+
+	! outer cycle on elements.  m = current element index
+	!
+   DO mi = 1, SIZE(mm);  m = mm(mi)
+
+		! cycle on parabolic Gauss points [ l_G = 7 ]
+		!
+      DO l = 1, l_G
+
+         ! cycle on velocity components
+         !
+         DO k = 1, velCmpnnts
+
+            avgFld(k, jj(:,m))  = SUM(fld(k, jj(:,m))  * ww(:,l)) * JAC(m) * pp_w(l) * yy_G(l,m)
+
+            weights(k, jj(:,m)) = SUM(ones(k, jj(:,m)) * ww(:,l)) * JAC(m) * pp_w(l) * yy_G(l,m)
+
+         ENDDO
+
+      ENDDO
+
+   ENDDO
+
+   DO k = 1, velCmpnnts
+
+      avgFld_v(k) = SUM(avgFld(k,:)) / SUM(weights(k,:))
+
+   ENDDO
+
+
+END SUBROUTINE computeFieldAverage_rv
 
 !==============================================================================
 

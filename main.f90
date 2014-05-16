@@ -41,7 +41,7 @@ PROGRAM  main
 
    INTEGER      :: k, m
    REAL(KIND=8) :: dummy
-   REAL(KIND=8), ALLOCATABLE, DIMENSION(:,:) :: u_avg
+   REAL(KIND=8), DIMENSION(velCmpnnts) :: u_avg
 
 
 !-------------END OF DECLARATIONS----------------------------------------------
@@ -187,23 +187,14 @@ IF ( myRank == 0 ) THEN
       END IF
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-      ALLOCATE (u_avg(velCmpnnts, np)); u_avg = 0d0
 
-      CALL qv_0y0_sp (mm, jj, uu, 1d0, u_avg)
-      u0 = 1d0
-      uu = 0d0
-      CALL qv_0y0_sp (mm, jj, u0, 1d0, uu)
-
-      write(*,*)
-      write(*,*) '--> Average quantities'
-      write(*,*) '    avg(u_z) = ', sum(u_avg(1,:)) / sum(uu(1,:))
-      write(*,*) '    avg(u_r) = ', sum(u_avg(2,:)) / sum(uu(1,:))
-      write(*,*) '    avg(u_t) = ', sum(u_avg(3,:)) / sum(uu(1,:))
-
-      DEALLOCATE(u_avg)
-
-      CALL extract (xx,  uu, pp)
-      write(*,*) '    mmm(u_t) = ', sum(uu(3,:)) / np
+      CALL computeFieldAverage(uu,  u_avg)
+      WRITE(*,*)
+      WRITE(*,*) '--> Average quantities'
+      WRITE(*,*) '    avg(u_z) = ', u_avg(1)
+      WRITE(*,*) '    avg(u_r) = ', u_avg(2)
+      WRITE(*,*) '    avg(u_t) = ', u_avg(3)
+      
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
       ! WRITE QP RESTART FILE

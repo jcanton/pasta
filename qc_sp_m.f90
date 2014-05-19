@@ -1797,7 +1797,7 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
    COMPLEX(KIND=8) :: x3 ! azimutal contribution
 
    WRITE(*,*) '    qc_oseen2y_sp_3d_M'
-   WRITE(*,*) '*** assuming NON SWIRLING and AXISYMMETRIC base flow ***'
+   WRITE(*,*) '*** assuming AXISYMMETRIC base flow ***'
 
    np = SIZE(gg, 2) ! number of parabolic nodes
 
@@ -1940,7 +1940,7 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
 
                ! y * vx * dgt/dx
                
-               xo = wij * dglo_py(1,3) 
+               xo = wij * dglo_py(1,3)
                
                DO p = CC%i(i_),  CC%i(i_+1) - 1
                   IF (CC%j(p) == j) THEN;  CC%e(p) = CC%e(p) + xo;  EXIT;  ENDIF

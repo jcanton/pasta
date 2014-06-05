@@ -192,10 +192,15 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
    CALL qc_ty0_sp_s (ms_2, jjs, iis,  c_2,  vv)  !  cumulative
    CALL qc_ny0_sp_s (ms_3, jjs, iis, -q_3,  vv)  !  cumulative
 
-   u0(1,:) = volumeForcing(1)
-   u0(2,:) = volumeForcing(2)
-   u0(3,:) = volumeForcing(3)
+   u0(1,:) = volumeForcing(1,1)
+   u0(2,:) = volumeForcing(2,1)
+   u0(3,:) = volumeForcing(3,1)
    CALL qv_0y0_sp   (mm, jj, u0, 1d0, vv)
+
+   u0(1,:) = volumeForcing(1,2)
+   u0(2,:) = volumeForcing(2,2)
+   u0(3,:) = volumeForcing(3,2)
+   CALL qv_0y0_dR_sp(mm, jj, u0, 1d0, vv)
 
    ww = 0
    CALL collect (vv, ww,  dx) ! here dx is the RHS

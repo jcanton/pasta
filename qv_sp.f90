@@ -28,7 +28,6 @@ SUBROUTINE qv_0y0_sp (m0, jj, gg, alpha,  v0)
    REAL(KIND=8) :: gkl
    INTEGER      :: mm, m, l, k
 
-!   v0 = 0
 
    DO mm = 1, SIZE(m0);  m = m0(mm)
 
@@ -47,6 +46,45 @@ SUBROUTINE qv_0y0_sp (m0, jj, gg, alpha,  v0)
    ENDDO
 
 END SUBROUTINE qv_0y0_sp
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE qv_0y0_dR_sp (m0, jj, gg, alpha,  v0)
+!====================================
+
+!  alpha << w, g >>   ===>   v0
+
+   USE Gauss_points
+
+   IMPLICIT NONE
+
+   INTEGER,      DIMENSION(:),   INTENT(IN)  :: m0
+   INTEGER,      DIMENSION(:,:), INTENT(IN)  :: jj
+   REAL(KIND=8), DIMENSION(:,:), INTENT(IN)  :: gg
+   REAL(KIND=8),                 INTENT(IN)  :: alpha
+   REAL(KIND=8), DIMENSION(:,:)              :: v0
+
+   REAL(KIND=8) :: gkl
+   INTEGER      :: mm, m, l, k
+
+
+   DO mm = 1, SIZE(m0);  m = m0(mm)
+
+      DO l = 1, l_G
+
+         DO k = 1, 3
+
+            gkl = SUM(gg(k, jj(:,m)) * ww(:,l)) * JAC(m) * pp_w(l)
+
+            v0(k, jj(:,m)) = v0(k, jj(:,m)) + alpha * ww(:,l) * gkl
+
+         ENDDO
+
+      ENDDO
+
+   ENDDO
+
+END SUBROUTINE qv_0y0_dR_sp
 
 !------------------------------------------------------------------------------
 

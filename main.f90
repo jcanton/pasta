@@ -512,13 +512,13 @@ SUBROUTINE read_and_apply_boundary_conditions(input_file, k_d, rr, mms, jjs,    
    
    READ(21,*) ! jump one line
    ! volume forcing along the three directions
-   READ(21,*) volumeForcing(1)
-   READ(21,*) volumeForcing(2)
-   READ(21,*) volumeForcing(3)
+   READ(21,*) volumeForcing(1,1), volumeForcing(1,2)
+   READ(21,*) volumeForcing(2,1), volumeForcing(2,2)
+   READ(21,*) volumeForcing(3,1), volumeForcing(3,2)
 
-   WRITE(*,*) '    f_z     = ', volumeForcing(1)
-   WRITE(*,*) '    f_r     = ', volumeForcing(2)
-   WRITE(*,*) '    f_theta = ', volumeForcing(3)
+   WRITE(*,*) '    f_z     = ', volumeForcing(1,1), volumeForcing(1,2)
+   WRITE(*,*) '    f_r     = ', volumeForcing(2,1), volumeForcing(2,2)
+   WRITE(*,*) '    f_theta = ', volumeForcing(3,1), volumeForcing(3,2)
 
 
 !+++
@@ -619,6 +619,8 @@ SUBROUTINE compute_Stokes_initial_guess(np, mm, jj, jj_L, jjs, iis, js_D, bvs_D,
    INTEGER :: Nx
    REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: vv
 
+   TYPE(CSR_MUMPS_Matrix) :: MassV
+   REAL(KIND=8), DIMENSION(np) :: tmpvect
 
    ! executable statements
 
@@ -653,12 +655,44 @@ SUBROUTINE compute_Stokes_initial_guess(np, mm, jj, jj_L, jjs, iis, js_D, bvs_D,
    CALL qc_ty0_sp_s (ms_2, jjs, iis,  c_2,  vv)  !  cumulative
    CALL qc_ny0_sp_s (ms_3, jjs, iis, -q_3,  vv)  !  cumulative
 
-   u0(1,:) = volumeForcing(1)
-   u0(2,:) = volumeForcing(2)
-   u0(3,:) = volumeForcing(3)
+   u0(1,:) = volumeForcing(1,1)
+   u0(2,:) = volumeForcing(2,1)
+   u0(3,:) = volumeForcing(3,1)
    CALL qv_0y0_sp   (mm, jj, u0, 1d0, vv)
-   
+
+   u0(1,:) = volumeForcing(1,2)
+   u0(2,:) = volumeForcing(2,2)
+   u0(3,:) = volumeForcing(3,2)
+   CALL qv_0y0_dR_sp(mm, jj, u0, 1d0, vv)
+
    CALL collect (vv, 0*p0,  x0) ! here x0 is the RHS
+
+!+++
+! check the forcing
+!   ALLOCATE( Mass%i      (SIZE(Jacobian%i))       ); Mass%i       = Jacobian%i
+!   ALLOCATE( Mass%i_mumps(SIZE(Jacobian%i_mumps)) ); Mass%i_mumps = Jacobian%i_mumps
+!   ALLOCATE( Mass%j      (SIZE(Jacobian%j))       ); Mass%j       = Jacobian%j
+!   ALLOCATE( Mass%e      (SIZE(Jacobian%e))       ); Mass%e       = 0d0
+!   
+!   CALL qc_0y0_zero_sp_M (mm, jj, 1d0, Mass)
+!   CALL dEssM ( Mass%e, Mass%j,  Mass%i,  np, &
+!               MassV%e, MassV%j, MassV%i, MassV%i_mumps)
+!
+!   CALL par_mumps_master (INITIALIZATION, 9, MassV, 0)
+!   CALL par_mumps_master (SYMBO_FACTOR,   9, MassV, 0)
+!   CALL par_mumps_master (NUMER_FACTOR,   9, MassV, 0)
+!
+!   tmpvect = vv(3,:)
+!   CALL par_mumps_master (DIRECT_SOLUTION, 9, MassV, 0, tmpvect)
+!
+!   vv(3,:) = tmpvect
+!   CALL vtk_plot_P2 (rr, jj, jj_L, vv, 0*p0, trim(p_in%plot_directory) // 'STOKESforcing.vtk')
+!
+!   CALL par_mumps_master (DEALLOCATION, 9, MassV, 0)
+!   DEALLOCATE( MassV%i, MassV%i_mumps, MassV%j, MassV%e )
+!
+!   stop
+!+++
 
    !------------------------------------------------------------------
    !-------------ENFORCING NONHOMOGENEOUS DIRICHLET BOUNDARY VALUES---
@@ -681,7 +715,7 @@ SUBROUTINE compute_Stokes_initial_guess(np, mm, jj, jj_L, jjs, iis, js_D, bvs_D,
    WRITE (*,*) '    End of the Stokes initial guess'       
    WRITE (*,*)
    
-!   CALL vtk_plot_P2 (rr, jj, jj_L, u0, p0, trim(p_in%plot_directory) // 'steadyStateSTOKES.vtk')
+!   CALL vtk_plot_P2 (rr, jj, jj_L, u0, p0, trim(p_in%plot_directory) // 'STOKESsolution.vtk')
    
    ! END STOKES INITIAL GUESS
    !=========================

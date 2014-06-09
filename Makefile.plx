@@ -53,13 +53,14 @@ CINCDIR   = -I libLOCA
 # Libraries
 LIBARPACK = -L/cineca/prod/libraries/arpack/96/gnu--4.5.2/lib -larpack
 LIBLAPACK = -L$(LAPACK_LIB) -llapack
+LIBSCALAPACK = -L$(SCALAPACK_LIB) -lscalapack
 LIBBLAS   = -L$(BLAS_LIB) -lblas
 LIBSCOTCH = -L$(SCOTCH_HOME)/lib -lptscotch -lptesmumps -lptscotcherr
-LIBMKL    = -L${MKL_LIB} -lmkl_scalapack_lp64 -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lmkl_blacs_intelmpi_lp64
+LIBMKL       = -L$(MKL_LIB) -lmkl_gf_lp64 -lmkl_core -lmkl_sequential -lpthread -lm
 LIBMUMPS  = -L$(MUMPS_LIB) -ldmumps -lzmumps -lpord -lmumps_common -lpord
 LIBMPI    = -L$(OPENMPI_HOME)/lib -lmpi
 LIBLOCA   = -L./libLOCA/ -lloca
-LIBS      = $(LIBMUMPS) $(LIBMPI) $(LIBLOCA) $(LIBARPACK) $(LIBSCOTCH) $(LIBMKL) $(LIBLAPACK) $(LIBBLAS) $(LIBMUMPS) $(LIBSCOTCH)
+LIBS      = $(LIBMUMPS) $(LIBMPI) $(LIBLOCA) $(LIBARPACK) $(LIBSCOTCH) $(LIBSCALAPACK) $(LIBMKL) $(LIBLAPACK) $(LIBBLAS) $(LIBMUMPS) $(LIBSCOTCH)
 
 FOLDER = $(HOME)/software/bin/
 NAME   = pasta_axi

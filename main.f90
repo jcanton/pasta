@@ -155,7 +155,7 @@ IF ( myRank == 0 ) THEN
 
    ELSE
 
-      u0 = 0
+      u0 = 0d0
 
       CALL compute_Stokes_initial_guess(np, mm, jj, jj_L, jjs, iis, js_D, bvs_D, &
                 ms_2, ms_3, c_2, q_3, DESINGULARIZE, Re,   Jacobian, u0, p0, x0)
@@ -619,8 +619,8 @@ SUBROUTINE compute_Stokes_initial_guess(np, mm, jj, jj_L, jjs, iis, js_D, bvs_D,
    INTEGER :: Nx
    REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: vv
 
-   TYPE(CSR_MUMPS_Matrix) :: MassV
-   REAL(KIND=8), DIMENSION(np) :: tmpvect
+!   TYPE(CSR_MUMPS_Matrix) :: MassV
+!   REAL(KIND=8), DIMENSION(np) :: tmpvect
 
    ! executable statements
 

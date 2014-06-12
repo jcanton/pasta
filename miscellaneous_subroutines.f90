@@ -244,9 +244,9 @@ SUBROUTINE computeFieldAverage_rv (fld,  avgFld_v)
          !
          DO k = 1, velCmpnnts
 
-            avgFld(k, jj(:,m))  = SUM(fld(k, jj(:,m))  * ww(:,l)) * JAC(m) * pp_w(l) * yy_G(l,m)
+            avgFld(k, jj(:,m))  = SUM(fld(k, jj(:,m))  * ww(:,l)) * JAC(m) * pp_w(l) !* yy_G(l,m)
 
-            weights(k, jj(:,m)) = SUM(ones(k, jj(:,m)) * ww(:,l)) * JAC(m) * pp_w(l) * yy_G(l,m)
+            weights(k, jj(:,m)) = SUM(ones(k, jj(:,m)) * ww(:,l)) * JAC(m) * pp_w(l) !* yy_G(l,m)
 
          ENDDO
 

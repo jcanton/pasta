@@ -73,6 +73,49 @@ END SUBROUTINE case_preprocess
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+SUBROUTINE case_newton_iteprocess()
+!
+! Author:
+! E-mail:
+! Last revision:
+!
+! This routine is called inside the nonlinear solver (Newton's method) before
+! the generation of the right-hand side and Jacobian matrix
+
+   IMPLICIT NONE
+   ! input variables
+   ! output variables
+   ! local variables
+   REAL(KIND=8) :: Ub
+   REAL(KIND=8), DIMENSION(velCmpnnts) :: u_avg
+   REAL(KIND=8), SAVE :: f0, Ub0=313d0
+
+   ! executable statements
+   WRITE(*,*) '--> call to: case_newton_iteprocess'
+
+   !***torus
+   Ub = 1d0
+   CALL computeFieldAverage(u0,  u_avg)
+   WRITE(*,*) '--> Average velocity field'
+   WRITE(*,*) '    avg(u_z) = ', u_avg(1)
+   WRITE(*,*) '    avg(u_r) = ', u_avg(2)
+   WRITE(*,*) '    avg(u_t) = ', u_avg(3)
+   IF (Ub0 /= 313d0) THEN
+      ! secant method
+      volumeForcing(3,2) = volumeForcing(3,2) - u_avg(3)*(volumeForcing(3,2)-f0)/(u_avg(3)-Ub0)
+   ELSE
+      volumeForcing(3,2) = volumeForcing(3,2) + (Ub - u_avg(3)) * 0.1
+   ENDIF
+   f0  = volumeForcing(3,2)
+   Ub0 = u_avg(3)
+   WRITE(*,*) '    force = ', f0
+
+   WRITE(*,*) '    done: case_newton_iteprocess'
+   WRITE(*,*)
+END SUBROUTINE case_newton_iteprocess
+
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 SUBROUTINE case_postprocess_analysis1()
 !
 ! Author: Jacopo Canton

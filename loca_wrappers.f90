@@ -143,8 +143,8 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
    ! local variables
    INTEGER                                   :: n
    REAL(KIND=8)                              :: residual
-   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: du0,     vv
-   REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dx0, dx, ww
+   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE ::     vv
+   REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dx, ww
 
 
    INTEGER(KIND=C_INT)                       :: continuation_converged=0
@@ -163,10 +163,8 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
    WRITE(*,*)
 
 
-   ALLOCATE ( du0(velCmpnnts, np) )
    ALLOCATE ( vv (velCmpnnts, np) )
    ALLOCATE ( ww (np_L) )
-   ALLOCATE ( dx0(Nx) )
    ALLOCATE ( dx (Nx) )
 
 
@@ -174,80 +172,11 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
    xx = x_vec
 
 
-
-   !============================================
-   ! start of FIRST STEP IN NON-INCREMENTAL FORM
-   !
-   WRITE(*,*) '    First step in NON-INCREMENTAL form'
-   !
-   !------------------------------------------------------------------
-   !-------------GENERATION OF THE RIGHT-HAND SIDE--------------------
-   !
-   ! NON-INCREMENTAL FORM
-   ! rhs <---  (u0 \dot \nabla)u0
-   !           0
-   vv = 0
-!   CALL extract (x0,  u0, p0)
-   CALL extract (x0,  u0)
-   CALL qv_0y01_sp (mm, jj, u0,  vv)
-!   CALL qc_ty0_sp_s (ms_2, jjs, iis,  c_2,  vv)  !  cumulative
-!   CALL qc_ny0_sp_s (ms_3, jjs, iis, -q_3,  vv)  !  cumulative
-
-   u0(1,:) = volumeForcing(1,1)
-   u0(2,:) = volumeForcing(2,1)
-   u0(3,:) = volumeForcing(3,1)
-   CALL qv_0y0_sp   (mm, jj, u0, 1d0, vv)
-
-   u0(1,:) = volumeForcing(1,2)
-   u0(2,:) = volumeForcing(2,2)
-   u0(3,:) = volumeForcing(3,2)
-   CALL qv_0y0_dR_sp(mm, jj, u0, 1d0, vv)
-
-   ww = 0
-   CALL collect (vv, ww,  dx) ! here dx is the RHS
-   !------------------------------------------------------------------
-   !-------------ENFORCING DIRICHLET BOUNDARY CONDITIONS ON THE RHS---
-   !
-   ! NON-INCREMENTAL FORM
-   ! non-homogeneous boundary conditions
-   !
-   CALL Dirichlet_c (np, js_Axis, js_D, bvs_D,  dx)
-   IF (DESINGULARIZE) dx(Nx) = 0d0
-   !------------------------------------------------------------------
-   !-------------GENERATION OF THE JACOBIAN MATRIX--------------------
-   !-------------OF THE COUPLED EQUATION SYSTEM-----------------------
-   !             Jacobian  <--- [(u0.V)_ + (_.V)u0)]  +  K_  +  V_ (ibp)
-   !
-!write(*,*) '*check*'
-!write(*,*) '    Re = ', Re
-   CALL extract (x0,  u0)
-   CALL ComputeJacobianMatrix (np, mm, jj, jj_L, js_Axis, js_D, DESINGULARIZE, Jacobian, Re, u0)
-   CALL par_mumps_master (NUMER_FACTOR, 1, Jacobian, 0)
-   !------------------------------------------------------------------
-   !-------------DIRECT SOLUTION OF THE COUPLED SYSTEM----------------
-   CALL par_mumps_master (DIRECT_SOLUTION, 1, Jacobian, 0, dx)
-   ! as the first step is done in NON-INCREMENTAL FORM,
-   ! we actually compute x_1 even though we call it dx,
-   ! dx has then to be computed as dx = x_1 - x_0
-   !
-   dx = dx - x0
-   !------------------------------------------------------------------
-   !-------------UPDATE SOLUTION VECTOR-------------------------------
-   x_vec = x0 + dx 
-   x0  = x_vec
-   dx0 = dx
-   !
-   ! end of FIRST STEP IN NON-INCREMENTAL FORM
-   !============================================
-
-
-   WRITE(*,*)
-
    !=============================================================
-   ! start of NEWTON'S ITERATIONS IN BI-INCREMENTAL FORM
+   ! start of NEWTON'S ITERATIONS IN NON-INCREMENTAL FORM
    !
    WRITE(*,*) '    Start of Newton''s iterations'
-   WRITE(*,*) '    in BI-INCREMENTAL form'
+   WRITE(*,*) '    in NON-INCREMENTAL form'
    !
    DO n = 1, p_in%nwtn_maxite
       
@@ -262,43 +191,50 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
       
       ENDIF
       
-      CALL extract (x0,  u0, p0)
+      CALL extract (x0,  u0)
 
+!      CALL extract (x0,  u0, p0)
 !      CALL vtk_plot_P2 (rr, jj, jj_L, u0, p0, trim(p_in%plot_directory) // 'iteSol.vtk')
+
+      !------------------------------------------------------------------
+      ! call case dependent subroutine
+      !
+      CALL case_newton_iteprocess()
 
       !------------------------------------------------------------------
       !-------------GENERATION OF THE RIGHT-HAND SIDE--------------------
       !
-      ! BI-INCREMENTAL FORM
-      ! rhs  <---  - (du0 \dot \nabla)du0
-      !            0
-      !
+      ! NON-INCREMENTAL FORM
+      ! rhs <---  (u0 \dot \nabla)u0 + f
+      !           0
       vv = 0
-      CALL extract (dx0,  du0)
-      CALL qv_0y01_sp (mm, jj, du0,  vv)
+!      CALL extract (x0,  u0)
+      CALL qv_0y01_sp (mm, jj, u0,  vv)
+!      CALL qc_ty0_sp_s (ms_2, jjs, iis,  c_2,  vv)  !  cumulative
+!      CALL qc_ny0_sp_s (ms_3, jjs, iis, -q_3,  vv)  !  cumulative
 
+      u0(1,:) = volumeForcing(1,1)
+      u0(2,:) = volumeForcing(2,1)
+      u0(3,:) = volumeForcing(3,1)
+      CALL qv_0y0_sp   (mm, jj, u0, 1d0, vv)
+
+      u0(1,:) = volumeForcing(1,2)
+      u0(2,:) = volumeForcing(2,2)
+      u0(3,:) = volumeForcing(3,2)
+      CALL qv_0y0_dR_sp(mm, jj, u0, 1d0, vv)
+      
       ww = 0
+      CALL collect (vv, ww,  dx) ! here dx is the RHS
 
-      CALL collect (-vv, ww,  dx) ! here dx is the RHS
-    
       !------------------------------------------------------------------
       !-------------ENFORCING DIRICHLET BOUNDARY CONDITIONS ON THE RHS---
       !
-      ! BI-INCREMENTAL FORM
-      ! differential type boundary conditions
-      ! (homogeneous if not calling LOCA)
+      ! NON-INCREMENTAL FORM
+      ! non-homogeneous boundary conditions
       !
-      CALL extract_Dirichlet_c (np, js_Axis, js_D, x0,  old_bvs_D)
-      CALL Dirichlet_c_DIFF (np, js_Axis, js_D, bvs_D, old_bvs_D,  dx)
-
+      CALL Dirichlet_c (np, js_Axis, js_D, bvs_D,  dx)
       IF (DESINGULARIZE) dx(Nx) = 0d0
 
-!write(*,*) '*check*'
-!do ii = 1, SIZE(du0, 1)
-!   write(*,*) 'MAXdelta_bvs_D = ', MAXVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
-!   write(*,*) 'MINdelta_bvs_D = ', MINVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
-!enddo
-   
       !------------------------------------------------------------------
       !-------------COMPUTE RESIDUAL-------------------------------------
 
@@ -330,6 +266,7 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
 
 !write(*,*) '*check*'
 !write(*,*) '    Re = ', Re
+      CALL extract (x0,  u0)
       CALL ComputeJacobianMatrix (np, mm, jj, jj_L, js_Axis, js_D, DESINGULARIZE, Jacobian, Re, u0)
       CALL par_mumps_master (NUMER_FACTOR, 1, Jacobian, 0)
 
@@ -337,6 +274,11 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
       !-------------DIRECT SOLUTION OF THE COUPLED SYSTEM----------------
 
       CALL par_mumps_master (DIRECT_SOLUTION, 1, Jacobian, 0, dx)
+      ! as Newton's method is implemented in NON-INCREMENTAL FORM,
+      ! we actually compute x_n even though we call it dx,
+      ! dx has then to be computed as dx = x_n - x_n-1
+      !
+      dx = dx - x0
 
       !------------------------------------------------------------------
       !-------------LOCA'S STUFF-----------------------------------------
@@ -374,7 +316,6 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
       x_vec = x0 + dx 
 
       x0  = x_vec
-      dx0 = dx
 
    ENDDO
    !
@@ -398,7 +339,7 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
    ENDIF
 
 
-   DEALLOCATE( du0, vv, ww, dx0, dx )
+   DEALLOCATE( vv, ww, dx )
 
 
 END FUNCTION nonlinear_solver_conwrap

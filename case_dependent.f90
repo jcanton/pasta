@@ -75,7 +75,7 @@ END SUBROUTINE case_preprocess
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-SUBROUTINE case_newton_iteprocess()
+SUBROUTINE case_newton_iteprocess(ite)
 !
 ! Author:
 ! E-mail:
@@ -86,11 +86,13 @@ SUBROUTINE case_newton_iteprocess()
 
    IMPLICIT NONE
    ! input variables
+   INTEGER, INTENT(IN) :: ite
    ! output variables
    ! local variables
    REAL(KIND=8) :: Ub
    REAL(KIND=8), DIMENSION(velCmpnnts) :: u_avg
-   REAL(KIND=8), SAVE :: f0, Ub0=313d0
+   REAL(KIND=8), SAVE :: fn1, Ubn1, fn2, Ubn2
+
 
    ! executable statements
    WRITE(*,*)
@@ -99,19 +101,25 @@ SUBROUTINE case_newton_iteprocess()
    !***torus
    Ub = 1d0
    CALL computeFieldAverage(u0,  u_avg)
-   WRITE(*,*) '--> Average velocity field'
-   WRITE(*,*) '    avg(u_z) = ', u_avg(1)
-   WRITE(*,*) '    avg(u_r) = ', u_avg(2)
+!   WRITE(*,*) '--> Average velocity field'
+!   WRITE(*,*) '    avg(u_z) = ', u_avg(1)
+!   WRITE(*,*) '    avg(u_r) = ', u_avg(2)
    WRITE(*,*) '    avg(u_t) = ', u_avg(3)
-   IF (Ub0 /= 313d0) THEN
+   fn1  = volumeForcing(3,2)
+   Ubn1 = u_avg(3)
+   IF (ite>1) THEN
       ! secant method
-      volumeForcing(3,2) = volumeForcing(3,2) - u_avg(3)*(volumeForcing(3,2)-f0)/(u_avg(3)-Ub0)
+      volumeForcing(3,2) = fn1 - (Ubn1-Ub)*(fn1-fn2)/(Ubn1-Ubn2)
+!      write(*,*) 'secant', fn1, Ubn1, fn2, Ubn2
    ELSE
-      volumeForcing(3,2) = volumeForcing(3,2) + (Ub - u_avg(3)) * 0.1
+      volumeForcing(3,2) = fn1 + (Ub - Ubn1) * 0.1
+!      write(*,*) 'stupid', fn1, Ubn1, fn2, Ubn2
    ENDIF
-   f0  = volumeForcing(3,2)
-   Ub0 = u_avg(3)
-   WRITE(*,*) '    force = ', f0
+
+   fn2  = fn1
+   Ubn2 = Ubn1
+
+   WRITE(*,*) '    force    = ', volumeForcing(3,2)
 
    WRITE(*,*) '    done: case_newton_iteprocess'
    WRITE(*,*)

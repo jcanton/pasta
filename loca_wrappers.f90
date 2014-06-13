@@ -144,7 +144,7 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
    INTEGER                                   :: n
    REAL(KIND=8)                              :: residual
    REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE ::     vv
-   REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dx, ww
+   REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dx, ww, rhs, dx0
 
 
    INTEGER(KIND=C_INT)                       :: continuation_converged=0
@@ -166,6 +166,9 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
    ALLOCATE ( vv (velCmpnnts, np) )
    ALLOCATE ( ww (np_L) )
    ALLOCATE ( dx (Nx) )
+   ALLOCATE ( rhs (Nx) )
+   ALLOCATE ( dx0 (Nx) )
+   dx0 = 1.29
 
 
    x0 = x_vec
@@ -199,7 +202,7 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
       !------------------------------------------------------------------
       ! call case dependent subroutine
       !
-      CALL case_newton_iteprocess()
+      CALL case_newton_iteprocess(n)
 
       !------------------------------------------------------------------
       !-------------GENERATION OF THE RIGHT-HAND SIDE--------------------
@@ -238,7 +241,17 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
       !------------------------------------------------------------------
       !-------------COMPUTE RESIDUAL-------------------------------------
 
-      residual = MAXVAL(ABS(dx))
+      ! rhs <-- (du0 \dot \nabla)du0
+      !         div{u0}
+      vv = 0
+      CALL extract (dx0,  u0)
+      CALL qv_0y01_sp   (mm, jj, u0, vv)
+      ww = 0
+      CALL collect (vv, ww,  rhs)
+      CALL Dirichlet_c (np, js_Axis, js_D, zero_bvs_D,  rhs)
+      IF (DESINGULARIZE) rhs(Nx) = 0d0
+
+      residual = MAXVAL(ABS(rhs))
       
       WRITE(*,*)
       WRITE(*,*) '    n = ', n
@@ -313,13 +326,15 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
       !------------------------------------------------------------------
       !-------------UPDATE SOLUTION VECTOR-------------------------------
 
-      x_vec = x0 + dx 
+      x_vec = x0 + dx
 
       x0  = x_vec
 
+      dx0 = dx
+
    ENDDO
    !
-   ! end of NEWTON'S ITERATIONS IN BI-INCREMENTAL FORM
+   ! end of NEWTON'S ITERATIONS IN NON-INCREMENTAL FORM
    !=============================================================
 
 
@@ -339,7 +354,7 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
    ENDIF
 
 
-   DEALLOCATE( vv, ww, dx )
+   DEALLOCATE( vv, ww, dx, dx0, rhs )
 
 
 END FUNCTION nonlinear_solver_conwrap
@@ -593,8 +608,8 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
       ! INCREMENTAL FORM
       ! rhs <-- - (u0 \dot \nabla)u0 + 1/Re lapl{u0} - grad{p0}
       !         - div{u0}
-      WRITE(*,*) '*check*'
-      WRITE(*,*) '    Re = ', Re
+! WRITE(*,*) '*check*'
+! WRITE(*,*) '    Re = ', Re
       vv = 0
       CALL extract (xsol,  u0, p0)
 
@@ -652,8 +667,8 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
       !-------------OF THE COUPLED EQUATION SYSTEM-----------------------
       !             Jacobian  <--- [(u0.V)_ + (_.V)u0)]  +  K_  +  V_ (ibp)
 
-      WRITE(*,*) '*check*'
-      WRITE(*,*) '    Re = ', Re
+! WRITE(*,*) '*check*'
+! WRITE(*,*) '    Re = ', Re
       CALL ComputeJacobianMatrix (np, mm, jj, jj_L, js_Axis, js_D, DESINGULARIZE, Jacobian, Re, u0)
       CALL par_mumps_master (NUMER_FACTOR, 1, Jacobian, 0)
 

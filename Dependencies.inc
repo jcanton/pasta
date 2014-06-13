@@ -29,7 +29,8 @@ OBJ    = dirichlet_neumann.o         \
          eigensolve.o                \
          transient_growth.o          \
          dns_algorithms.o            \
-         vorticity_stream.o
+         vorticity_stream.o          \
+			case_dependent.o
            
 ###############################################################################
 # Dependencies
@@ -149,6 +150,9 @@ vorticity_stream.o: global_variables.o  \
                     qs_sp.o             \
                     qs_sp_m.o           \
                     par_solve_mumps.o
+
+case_dependent.o: global_variables.o          \
+                  miscellaneous_subroutines.o
 
 # C
 loca_interface.o: loca_wrappers.o

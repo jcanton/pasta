@@ -39,8 +39,10 @@ MODULE global_variables
    REAL(KIND=8), DIMENSION(:), POINTER             :: x0 ! used for passing from C to F
    REAL(KIND=8), ALLOCATABLE, DIMENSION(:), TARGET :: xx ! used for passing from F to C
                                                          !
-   REAL(KIND=8) :: Re, velRatio                          ! when used inside F they
+   REAL(KIND=8) :: Re                                    ! when used inside F they
    INTEGER      :: beta, Nx                              ! behave in the same way
+
+   REAL(KIND=8), DIMENSION(3) :: flow_parameters
 
    REAL(KIND=8), DIMENSION(3,2) :: volumeForcing
 

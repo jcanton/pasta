@@ -40,7 +40,7 @@ MODULE loca_wrappers
    !**********************************
    TYPE, BIND(C) :: passdown_struct
       TYPE(C_PTR)         :: x ! pointer to xx set in main.f90 at line \approx 136
-      REAL(KIND=C_DOUBLE) :: reynolds, vRatio, mu, alpha, h, tol
+      REAL(KIND=C_DOUBLE) :: reynolds, oscar, romeo, whisky, h, tol
       INTEGER(KIND=C_INT) :: bif_param, param, maxiter, ldz, &
                              num_linear_its, debug
    END TYPE passdown_struct
@@ -1085,26 +1085,26 @@ SUBROUTINE assign_parameter_conwrap(param) &
          Re          = param
          pd%reynolds = param
 
-      CASE( VRATIO )
-         WRITE(*,*) '    velRatio = ', param
-         WRITE(*,*) '    oldVR    = ', velRatio
+      CASE( OSCAR )
+         WRITE(*,*) '    oscar    = ', param
+         WRITE(*,*) '    oldOscar = ', flow_parameters(1)
 
-         velRatio  = param
-         pd%vRatio = param
+         flow_parameters(1)  = param
+         pd%oscar            = param
 
          ! coaxial jets
          in_bvs_D(1,1,2) = 1d0
-         in_bvs_D(1,5,2) = velRatio
+         in_bvs_D(1,5,2) = flow_parameters(1)
 
          CALL gen_dirichlet_boundary_values (rr, sides, Dir, jjs, js_D, in_bvs_D, bvs_D)
 
-      CASE( MU )
-         WRITE(*,*) '    mu = ', param
-         pd%mu = param
+      CASE( ROMEO )
+         WRITE(*,*) '    romeo = ', param
+         pd%romeo = param
 
-      CASE( ALPHA )
-         WRITE(*,*) '    alpha = ', param
-         pd%alpha = param
+      CASE( WHISKY )
+         WRITE(*,*) '    whisky = ', param
+         pd%whisky = param
 
    END SELECT
 
@@ -1148,26 +1148,26 @@ SUBROUTINE assign_bif_parameter_conwrap(bif_param) &
          Re          = bif_param
          pd%reynolds = bif_param
 
-      CASE( VRATIO )
-         WRITE(*,*) '    velRatio = ', bif_param
-         WRITE(*,*) '    oldVR    = ', velRatio
+      CASE( OSCAR )
+         WRITE(*,*) '    oscar    = ', bif_param
+         WRITE(*,*) '    oldOscar = ', flow_parameters(1)
        
-         velRatio  = bif_param
-         pd%vRatio = bif_param
+         flow_parameters(1)  = bif_param
+         pd%oscar            = bif_param
 
          ! coaxial jets
          in_bvs_D(1,1,2) = 1d0
-         in_bvs_D(1,5,2) = velRatio
+         in_bvs_D(1,5,2) = flow_parameters(1)
 
          CALL gen_dirichlet_boundary_values (rr, sides, Dir, jjs, js_D, in_bvs_D, bvs_D)
 
-      CASE( MU )
-         WRITE(*,*) '    mu = ', bif_param
-         pd%mu = bif_param
+      CASE( ROMEO )
+         WRITE(*,*) '    romeo = ', bif_param
+         pd%romeo = bif_param
 
-      CASE( ALPHA )
-         WRITE(*,*) '    alpha = ', bif_param
-         pd%alpha = bif_param
+      CASE( WHISKY )
+         WRITE(*,*) '    whisky = ', bif_param
+         pd%whisky = bif_param
 
    END SELECT
 
@@ -1213,14 +1213,14 @@ SUBROUTINE param_output(param) &
       CASE( REYNOLDS )
          filenm = './locaOut/reynolds.dat'
          WRITE(*,*) 'writing file: ', trim(filenm)
-      CASE( VRATIO )
-         filenm = './locaOut/vratio.dat'
+      CASE( OSCAR )
+         filenm = './locaOut/oscar.dat'
          WRITE(*,*) 'writing file: ', trim(filenm)
-      CASE( MU )
-         filenm = './locaOut/mu.dat'
+      CASE( ROMEO )
+         filenm = './locaOut/romeo.dat'
          WRITE(*,*) 'writing file: ', trim(filenm)
-      CASE( ALPHA )
-         filenm = './locaOut/alpha.dat'
+      CASE( WHISKY )
+         filenm = './locaOut/whisky.dat'
          WRITE(*,*) 'writing file: ', trim(filenm)
    END SELECT
 
@@ -1241,7 +1241,7 @@ SUBROUTINE param_output(param) &
    filenm = './locaOut/all.dat'
    OPEN(UNIT= fid, FILE= trim(filenm), ACCESS= 'APPEND')
    WRITE(*,*) 'writing file: ', trim(filenm)
-   WRITE(fid,*) pd%reynolds, pd%vRatio, pd%mu, pd%alpha, &
+   WRITE(fid,*) pd%reynolds, pd%oscar, pd%romeo, pd%whisky, &
                             u_avg(1), u_avg(2), u_avg(3)
                             
    CLOSE(fid)

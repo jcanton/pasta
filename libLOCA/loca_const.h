@@ -102,9 +102,9 @@ static char *cvs_conconsth_id =
 
 /* Problem parameters */
 #define REYNOLDS 0
-#define VRATIO   1
-#define MU       2
-#define ALPHA    3
+#define OSCAR    1
+#define ROMEO    2
+#define WHISKY   3
 
 /*****************************************************************************/
 /*                                 MF INCLUDES                               */

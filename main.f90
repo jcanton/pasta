@@ -31,6 +31,7 @@ PROGRAM  main
    USE transient_growth
    USE dns_algorithms
    USE vorticity_stream
+   USE case_dependent
 
 !------------------------------------------------------------------------------
 
@@ -41,7 +42,6 @@ PROGRAM  main
 
    INTEGER      :: k, m
    REAL(KIND=8) :: dummy
-   REAL(KIND=8), DIMENSION(velCmpnnts) :: u_avg
 
 
 !-------------END OF DECLARATIONS----------------------------------------------
@@ -113,9 +113,9 @@ IF ( myRank == 0 ) THEN
 !------------------------------------------------------------------------------
 !-------------PREPARE TYPE OF BOUNDARY CONDITIONS AND js_D ARRAY---------------
 
-   CALL read_and_apply_boundary_conditions('problem_data.in', k_d, rr, mms, jjs,       &
-                       sides,  Re, velRatio, beta, js_D, zero_bvs_D, old_bvs_D, bvs_D, &
-                                                          ms_2, ms_3, c_2, q_3)
+   CALL read_and_apply_boundary_conditions('problem_data.in', k_d, rr, mms, jjs, &
+                            sides,  Re, flow_parameters, beta, js_D, zero_bvs_D, &
+                                         old_bvs_D, bvs_D, ms_2, ms_3, c_2, q_3)
    
 !------------------------------------------------------------------------------
 !------------ARRAY ALLOCATION--------------------------------------------------
@@ -164,6 +164,12 @@ IF ( myRank == 0 ) THEN
    
    xx = x0
 
+
+!------------------------------------------------------------------------------
+   CALL case_preprocess()
+!------------------------------------------------------------------------------
+
+
 !------------------------------------------------------------------------------
 !------------------------------------------------------------------------------
 !------------------------ANALYSIS----------------------------------------------
@@ -185,17 +191,6 @@ IF ( myRank == 0 ) THEN
          ! WRITE RESTART FILE
          CALL write_restart(xx, Re, ite_num, p_in%nwtn_maxite, p_in%output_restart_file, LEN(trim(p_in%output_restart_file)))
       END IF
-
-!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-      CALL computeFieldAverage(uu,  u_avg)
-      WRITE(*,*)
-      WRITE(*,*) '--> Average quantities'
-      WRITE(*,*) '    avg(u_z) = ', u_avg(1)
-      WRITE(*,*) '    avg(u_r) = ', u_avg(2)
-      WRITE(*,*) '    avg(u_t) = ', u_avg(3)
-      
-!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
       ! WRITE QP RESTART FILE
       CALL write_QP_restart(xx, 'suiteSteadyState.QPrestart', 26)
@@ -228,6 +223,9 @@ IF ( myRank == 0 ) THEN
          CALL write_BVS (9, uu, rr, jjs, sides, 'steadyStateSolution')
       END IF
 
+      CALL case_postprocess_analysis1()
+
+
    CASE (2)
    !-------------------------------
    ! Continuation analisys
@@ -237,9 +235,9 @@ IF ( myRank == 0 ) THEN
       pd%ldz      = Nx
       pd%x        = C_LOC(xx)
       pd%reynolds = Re
-      pd%vRatio   = velRatio
-      pd%mu       = 1d0
-      pd%alpha    = 1d0
+      pd%oscar    = flow_parameters(1)
+      pd%romeo    = flow_parameters(2)
+      pd%whisky   = flow_parameters(3)
       pd%maxiter  = p_in%nwtn_maxite
       pd%tol      = p_in%nwtn_tol
 
@@ -263,6 +261,8 @@ IF ( myRank == 0 ) THEN
       ENDIF
       CALL compute_eigen(xx, 'SteadyState', 11, 0d0)
 
+      CALL case_postprocess_analysis3()
+
    CASE (4)
    !-------------------------------
    ! Structural sensitivity
@@ -274,6 +274,8 @@ IF ( myRank == 0 ) THEN
 
       CALL compute_structSens(Jacobian) ! Jacobian matrix only needed for its
                                         ! sparsity pattern
+
+      CALL case_postprocess_analysis4()
 
    CASE (5)
    !-------------------------------
@@ -293,12 +295,16 @@ IF ( myRank == 0 ) THEN
       ENDIF
       CALL compute_transientGrowth(x0, Jacobian, 'SteadyState')
 
+      CALL case_postprocess_analysis5()
+
    CASE (6)
    !-------------------------------
    ! DNS
    !-------------------------------
       
       CALL dns(x0)
+
+      CALL case_postprocess_analysis6()
 
    CASE (7)
    !------------------------------------------
@@ -324,6 +330,8 @@ IF ( myRank == 0 ) THEN
       WRITE(*,*) 'STOP.'
       STOP
       !CALL evolve_transientGrowth(x0)
+
+      !CALL case_postprocess_analysis7()
 
    CASE DEFAULT
       WRITE(*,*) '*************************************'
@@ -446,9 +454,9 @@ END SUBROUTINE check_boundary_conditions
 !------------------------------------------------------------------------------
 ! new subroutines
 
-SUBROUTINE read_and_apply_boundary_conditions(input_file, k_d, rr, mms, jjs,       &
-                   sides,  Re, velRatio, beta, js_D, zero_bvs_D, old_bvs_D, bvs_D, &
-                                                       ms_2, ms_3, c_2, q_3)
+SUBROUTINE read_and_apply_boundary_conditions(input_file, k_d, rr, mms, jjs, &
+                                    sides,  Re, flow_parameters, beta, js_D, &
+                         zero_bvs_D, old_bvs_D, bvs_D, ms_2, ms_3, c_2, q_3)
 
    IMPLICIT NONE
    ! input variables
@@ -459,8 +467,9 @@ SUBROUTINE read_and_apply_boundary_conditions(input_file, k_d, rr, mms, jjs,    
    INTEGER,      DIMENSION(:),   INTENT(IN) :: mms
    INTEGER,      DIMENSION(:),   INTENT(IN) :: sides
    ! output variables
-   REAL(KIND=8)                        :: Re, velRatio
+   REAL(KIND=8)                        :: Re
    INTEGER                             :: beta
+   REAL(KIND=8), DIMENSION(3)          :: flow_parameters
    TYPE(dyn_int_line),  DIMENSION(:)   :: js_D
    TYPE(dyn_real_line), DIMENSION(:)   :: zero_bvs_D, old_bvs_D, bvs_D
    INTEGER,      DIMENSION(:), POINTER :: ms_2, ms_3
@@ -478,15 +487,17 @@ SUBROUTINE read_and_apply_boundary_conditions(input_file, k_d, rr, mms, jjs,    
    ! (1)
    ! read input file
    OPEN (UNIT = 21, FILE = trim(input_file), FORM = 'formatted', STATUS = 'unknown')
-   READ  (21,*)  Re, velRatio
+   READ  (21,*)  Re, flow_parameters(1), flow_parameters(2), flow_parameters(3)
    READ  (21,*)  beta
-   READ  (21,*) ! comment line
+   READ  (21,*) ! jump one line
      
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> reading input-file ', trim(input_file), ' ...'
    WRITE(*,*) '    Re       = ', Re
-   WRITE(*,*) '    velRatio = ', velRatio
+   WRITE(*,*) '    param 1  = ', flow_parameters(1)
+   WRITE(*,*) '    param 2  = ', flow_parameters(2)
+   WRITE(*,*) '    param 3  = ', flow_parameters(3)
    WRITE(*,*) '    beta     = ', beta
    WRITE(*,*) '    number of boundary segments: ', number_of_sides
 
@@ -516,22 +527,15 @@ SUBROUTINE read_and_apply_boundary_conditions(input_file, k_d, rr, mms, jjs,    
    READ(21,*) volumeForcing(2,1), volumeForcing(2,2)
    READ(21,*) volumeForcing(3,1), volumeForcing(3,2)
 
+   CLOSE (21)
+   WRITE(*,*) '--> finished reading file ', trim(input_file), '.'
+
+
    WRITE(*,*) '    f_z     = ', volumeForcing(1,1), volumeForcing(1,2)
    WRITE(*,*) '    f_r     = ', volumeForcing(2,1), volumeForcing(2,2)
    WRITE(*,*) '    f_theta = ', volumeForcing(3,1), volumeForcing(3,2)
 
-
-!+++
-! coaxial jets
-   IF (velRatio /= 0d0) THEN
-      WRITE(*,*) '    assigning velRatio based on header input'
-      in_bvs_D(1,1,2) = 1d0
-      in_bvs_D(1,5,2) = velRatio
-   ENDIF
-!+++
-  
-   CLOSE (21)
-   WRITE(*,*) '--> finished reading file ', trim(input_file), '.'
+   CALL case_problemset()
 
    ! (2)
    ! generate Dirichlet nodes

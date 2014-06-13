@@ -93,7 +93,7 @@
  **********************************/
 struct passdown_struct {
    double *x;
-   double reynolds, vratio, mu, alpha, h, tol; 
+   double reynolds, oscar, romeo, whisky, h, tol; 
    int bif_param, param, maxiter, ldz, num_linear_its, debug;
    };
 
@@ -292,9 +292,9 @@ void cvarsparser(struct con_struct *con, struct passdown_struct *pd,
   printf("Bifurcation parameter:\t");
   switch (pd->bif_param) {
     case REYNOLDS : bif_param_init = pd->reynolds; printf("Reynolds, "); break;
-    case VRATIO   : bif_param_init = pd->vratio;   printf("vRatio, ");   break;
-    case MU       : bif_param_init = pd->mu;       printf("mu, ");       break;
-    case ALPHA    : bif_param_init = pd->alpha;    printf("alpha, ");    break;
+    case OSCAR    : bif_param_init = pd->oscar;    printf("oscar, ");    break;
+    case ROMEO    : bif_param_init = pd->romeo;    printf("romeo, ");    break;
+    case WHISKY   : bif_param_init = pd->whisky;   printf("whisky, ");   break;
   }
   printf("initial value = %5.4f\n", bif_param_init);
   //
@@ -303,9 +303,9 @@ void cvarsparser(struct con_struct *con, struct passdown_struct *pd,
   printf("Continuation parameter:\t");
   switch (pd->param) {
     case REYNOLDS : con->general_info.param = pd->reynolds;  printf("Reynolds, ");break;
-    case VRATIO   : con->general_info.param = pd->vratio;    printf("vRatio, ");  break;
-    case MU       : con->general_info.param = pd->mu;        printf("mu, ");      break;
-    case ALPHA    : con->general_info.param = pd->alpha;     printf("alpha, ");   break;
+    case OSCAR    : con->general_info.param = pd->oscar;     printf("oscar, ");   break;
+    case ROMEO    : con->general_info.param = pd->romeo;     printf("romeo, ");   break;
+    case WHISKY   : con->general_info.param = pd->whisky;    printf("whisky, ");  break;
   }
   printf("initial value = %5.4f\n", con->general_info.param);
   //

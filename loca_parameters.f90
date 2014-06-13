@@ -56,9 +56,9 @@ MODULE Loca_parameters
 
    ! Problem parameters
    INTEGER, PARAMETER ::  REYNOLDS = 0
-   INTEGER, PARAMETER ::  VRATIO   = 1
-   INTEGER, PARAMETER ::  MU       = 2
-   INTEGER, PARAMETER ::  ALPHA    = 3
+   INTEGER, PARAMETER ::  OSCAR    = 1
+   INTEGER, PARAMETER ::  ROMEO    = 2
+   INTEGER, PARAMETER ::  WHISKY   = 3
 
 
 END MODULE Loca_parameters

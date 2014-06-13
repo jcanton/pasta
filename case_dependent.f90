@@ -6,6 +6,8 @@ MODULE case_dependent
 !
 ! This module contains routines which are case dependent and can be adapted
 ! to suit the needs of a particular flow analysis.
+! The idea is to have here ALL what is case dependent so that it's more
+! difficult to make stupid memory mistakes to the core of the program.
 !
    USE global_variables
    USE miscellaneous_subroutines

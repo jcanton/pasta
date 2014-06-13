@@ -190,8 +190,8 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
 !   CALL extract (x0,  u0, p0)
    CALL extract (x0,  u0)
    CALL qv_0y01_sp (mm, jj, u0,  vv)
-   CALL qc_ty0_sp_s (ms_2, jjs, iis,  c_2,  vv)  !  cumulative
-   CALL qc_ny0_sp_s (ms_3, jjs, iis, -q_3,  vv)  !  cumulative
+!   CALL qc_ty0_sp_s (ms_2, jjs, iis,  c_2,  vv)  !  cumulative
+!   CALL qc_ny0_sp_s (ms_3, jjs, iis, -q_3,  vv)  !  cumulative
 
    u0(1,:) = volumeForcing(1,1)
    u0(2,:) = volumeForcing(2,1)

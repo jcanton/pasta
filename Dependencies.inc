@@ -110,7 +110,8 @@ loca_wrappers.o: loca_parameters.o           \
                  read_input_files.o          \
                  eigensolve.o                \
                  axisym_boundary_values.o    \
-                 vtk_plot.o
+                 vtk_plot.o                  \
+					  case_dependent.o
 
 eigensolve.o: sparse_matrix_profiles.o   \
               sparse_matrix_operations.o \
@@ -152,7 +153,8 @@ vorticity_stream.o: global_variables.o  \
                     par_solve_mumps.o
 
 case_dependent.o: global_variables.o          \
-                  miscellaneous_subroutines.o
+                  miscellaneous_subroutines.o \
+						axisym_boundary_values.o
 
 # C
 loca_interface.o: loca_wrappers.o

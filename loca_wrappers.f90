@@ -21,6 +21,7 @@ MODULE loca_wrappers
    USE EigenSolve
    USE axisym_boundary_values
    USE vtk_plot
+   USE case_dependent
 
 
 !------------------------------------------------------------------------------
@@ -1091,20 +1092,23 @@ SUBROUTINE assign_parameter_conwrap(param) &
 
          flow_parameters(1)  = param
          pd%oscar            = param
-
-         ! coaxial jets
-         in_bvs_D(1,1,2) = 1d0
-         in_bvs_D(1,5,2) = flow_parameters(1)
-
-         CALL gen_dirichlet_boundary_values (rr, sides, Dir, jjs, js_D, in_bvs_D, bvs_D)
+         CALL case_loca_changeOscar(param)
 
       CASE( ROMEO )
-         WRITE(*,*) '    romeo = ', param
-         pd%romeo = param
+         WRITE(*,*) '    romeo    = ', param
+         WRITE(*,*) '    oldRomeo = ', flow_parameters(2)
+
+         flow_parameters(2) = param
+         pd%romeo           = param
+         CALL case_loca_changeRomeo(param)
 
       CASE( WHISKY )
-         WRITE(*,*) '    whisky = ', param
-         pd%whisky = param
+         WRITE(*,*) '    whisky    = ', param
+         WRITE(*,*) '    oldWhisky = ', flow_parameters(3)
+
+         flow_parameters(3) = param
+         pd%whisky          = param
+         CALL case_loca_changeWhisky(param)
 
    END SELECT
 
@@ -1154,20 +1158,23 @@ SUBROUTINE assign_bif_parameter_conwrap(bif_param) &
        
          flow_parameters(1)  = bif_param
          pd%oscar            = bif_param
-
-         ! coaxial jets
-         in_bvs_D(1,1,2) = 1d0
-         in_bvs_D(1,5,2) = flow_parameters(1)
-
-         CALL gen_dirichlet_boundary_values (rr, sides, Dir, jjs, js_D, in_bvs_D, bvs_D)
+         CALL case_loca_changeOscar(bif_param)
 
       CASE( ROMEO )
-         WRITE(*,*) '    romeo = ', bif_param
-         pd%romeo = bif_param
+         WRITE(*,*) '    romeo    = ', bif_param
+         WRITE(*,*) '    oldRomeo = ', flow_parameters(2)
+
+         flow_parameters(2) = bif_param
+         pd%romeo           = bif_param
+         CALL case_loca_changeRomeo(bif_param)
 
       CASE( WHISKY )
-         WRITE(*,*) '    whisky = ', bif_param
-         pd%whisky = bif_param
+         WRITE(*,*) '    whisky    = ', bif_param
+         WRITE(*,*) '    oldWhisky = ', flow_parameters(3)
+
+         flow_parameters(3) = bif_param
+         pd%whisky          = bif_param
+         CALL case_loca_changeWhisky(bif_param)
 
    END SELECT
 
@@ -1201,7 +1208,6 @@ SUBROUTINE param_output(param) &
    ! local variables
    INTEGER           :: fid = 22
    CHARACTER(LEN=50) :: filenm
-   REAL(KIND=8), DIMENSION(velCmpnnts) :: u_avg
 
 
    WRITE(*,*)
@@ -1228,23 +1234,15 @@ SUBROUTINE param_output(param) &
    WRITE(fid,*) param
    CLOSE(fid)
 
-   ! compute average quantities
-   CALL extract (xx,  uu)
-   CALL computeFieldAverage(uu,  u_avg)
-   WRITE(*,*)
-   WRITE(*,*) '--> Average quantities'
-   WRITE(*,*) '    avg(u_z) = ', u_avg(1)
-   WRITE(*,*) '    avg(u_r) = ', u_avg(2)
-   WRITE(*,*) '    avg(u_t) = ', u_avg(3)
-
    ! print all parameters to file
    filenm = './locaOut/all.dat'
    OPEN(UNIT= fid, FILE= trim(filenm), ACCESS= 'APPEND')
    WRITE(*,*) 'writing file: ', trim(filenm)
-   WRITE(fid,*) pd%reynolds, pd%oscar, pd%romeo, pd%whisky, &
-                            u_avg(1), u_avg(2), u_avg(3)
-                            
+   WRITE(fid,*) pd%reynolds, pd%oscar, pd%romeo, pd%whisky
+
    CLOSE(fid)
+
+   CALL case_loca_paramout()
 
 END SUBROUTINE param_output
 

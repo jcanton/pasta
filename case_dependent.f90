@@ -9,6 +9,7 @@ MODULE case_dependent
 !
    USE global_variables
    USE miscellaneous_subroutines
+   USE axisym_boundary_values
 
 !------------------------------------------------------------------------------
 
@@ -20,9 +21,9 @@ CONTAINS
 
 SUBROUTINE case_problemset()
 !
-! Author:
-! E-mail:
-! Last revision:
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 13/6/2014
 !
 ! This routine is executed after reading the 'problem_data.in' file
 
@@ -32,6 +33,7 @@ SUBROUTINE case_problemset()
    ! local variables
 
    ! executable statements
+   WRITE(*,*) '--> call to: case_problemset'
 
    !***coaxial jets
    IF (flow_parameters(1) /= 0d0) THEN
@@ -40,6 +42,9 @@ SUBROUTINE case_problemset()
       in_bvs_D(1,5,2) = flow_parameters(1)
    ENDIF
 
+
+   WRITE(*,*) '    done: case_problemset'
+   WRITE(*,*)
 END SUBROUTINE case_problemset
 
 !------------------------------------------------------------------------------
@@ -59,9 +64,12 @@ SUBROUTINE case_preprocess()
    ! local variables
    ! executable statements
 
+   WRITE(*,*) '--> call to: case_preprocess'
+   WRITE(*,*) '    done: case_preprocess'
+   WRITE(*,*)
 END SUBROUTINE case_preprocess
 
-!------------------------------------------------------------------------------
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 SUBROUTINE case_postprocess_analysis1()
 !
@@ -79,6 +87,9 @@ SUBROUTINE case_postprocess_analysis1()
    REAL(KIND=8), DIMENSION(velCmpnnts) :: u_avg
 
    ! executable statements
+   WRITE(*,*) '--> call to: case_postprocess_analysis1'
+
+   !***torus
    CALL computeFieldAverage(uu,  u_avg)
    WRITE(*,*)
    WRITE(*,*) '--> Average velocity field'
@@ -86,6 +97,9 @@ SUBROUTINE case_postprocess_analysis1()
    WRITE(*,*) '    avg(u_r) = ', u_avg(2)
    WRITE(*,*) '    avg(u_t) = ', u_avg(3)
 
+
+   WRITE(*,*) '    done: case_postprocess_analysis1'
+   WRITE(*,*)
 END SUBROUTINE case_postprocess_analysis1
 
 !------------------------------------------------------------------------------
@@ -105,7 +119,9 @@ SUBROUTINE case_postprocess_analysis3()
    ! local variables
 
    ! executable statements
-
+   WRITE(*,*) '--> call to: case_postprocess_analysis3'
+   WRITE(*,*) '    done: case_postprocess_analysis3'
+   WRITE(*,*)
 END SUBROUTINE case_postprocess_analysis3
 
 !------------------------------------------------------------------------------
@@ -126,7 +142,9 @@ SUBROUTINE case_postprocess_analysis4()
    ! local variables
 
    ! executable statements
-
+   WRITE(*,*) '--> call to: case_postprocess_analysis4'
+   WRITE(*,*) '    done: case_postprocess_analysis4'
+   WRITE(*,*)
 END SUBROUTINE case_postprocess_analysis4
 
 !------------------------------------------------------------------------------
@@ -146,7 +164,9 @@ SUBROUTINE case_postprocess_analysis5()
    ! local variables
 
    ! executable statements
-
+   WRITE(*,*) '--> call to: case_postprocess_analysis5'
+   WRITE(*,*) '    done: case_postprocess_analysis5'
+   WRITE(*,*)
 END SUBROUTINE case_postprocess_analysis5
 
 !------------------------------------------------------------------------------
@@ -166,7 +186,9 @@ SUBROUTINE case_postprocess_analysis6()
    ! local variables
 
    ! executable statements
-
+   WRITE(*,*) '--> call to: case_postprocess_analysis6'
+   WRITE(*,*) '    done: case_postprocess_analysis6'
+   WRITE(*,*)
 END SUBROUTINE case_postprocess_analysis6
 
 !------------------------------------------------------------------------------
@@ -186,10 +208,122 @@ SUBROUTINE case_postprocess_analysis7()
    ! local variables
 
    ! executable statements
-
+   WRITE(*,*) '--> call to: case_postprocess_analysis7'
+   WRITE(*,*) '    done: case_postprocess_analysis7'
+   WRITE(*,*)
 END SUBROUTINE case_postprocess_analysis7
 
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+SUBROUTINE case_loca_paramout()
+!
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 13/6/2014
+!
+! This routine is executed when LOCA has converged on a steady solution
+! and saves the results
+
+   IMPLICIT NONE
+   ! input variables
+   ! output variables
+   ! local variables
+   INTEGER           :: fid = 23
+   REAL(KIND=8), DIMENSION(velCmpnnts) :: u_avg
+
+   ! executable statements
+   WRITE(*,*) '--> call to: case_loca_paramout'
+
+   !***torus
+   CALL extract (xx,  uu)
+   CALL computeFieldAverage(uu,  u_avg)
+   WRITE(*,*)
+   WRITE(*,*) '--> Average velocity field'
+   WRITE(*,*) '    avg(u_z) = ', u_avg(1)
+   WRITE(*,*) '    avg(u_r) = ', u_avg(2)
+   WRITE(*,*) '    avg(u_t) = ', u_avg(3)
+
+   OPEN(UNIT= fid, FILE='./locaOut/paramsUb.dat', ACCESS= 'APPEND')
+   WRITE(fid,*) Re, flow_parameters(1), flow_parameters(2), flow_parameters(3), u_avg(1), u_avg(2), u_avg(3)
+   CLOSE(fid)
+
+
+   WRITE(*,*) '    done: case_loca_paramout'
+   WRITE(*,*)
+END SUBROUTINE case_loca_paramout
+
 !------------------------------------------------------------------------------
+
+SUBROUTINE case_loca_changeOscar(oscar)
+!
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 13/6/2014
+!
+! This routine is executed when LOCA needs to change parameter Oscar
+
+   IMPLICIT NONE
+   ! input variables
+   REAL(KIND=8), INTENT(IN) :: oscar
+   ! output variables
+   ! local variables
+
+   ! executable statements
+   WRITE(*,*) '--> call to: case_loca_changeOscar'
+
+   !***coaxial jets
+   in_bvs_D(1,1,2) = 1d0
+   in_bvs_D(1,5,2) = oscar
+   CALL gen_dirichlet_boundary_values (rr, sides, Dir, jjs, js_D, in_bvs_D, bvs_D)
+
+
+   WRITE(*,*) '    done: case_loca_changeOscar'
+   WRITE(*,*)
+END SUBROUTINE case_loca_changeOscar
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE case_loca_changeRomeo(romeo)
+!
+! Author:
+! E-mail:
+! Last revision:
+!
+! This routine is executed when LOCA needs to change parameter Romeo
+
+   IMPLICIT NONE
+   ! input variables
+   REAL(KIND=8), INTENT(IN) :: romeo
+   ! output variables
+   ! local variables
+
+   ! executable statements
+   WRITE(*,*) '--> call to: case_loca_changeRomeo'
+   WRITE(*,*) '    done: case_loca_changeRomeo'
+   WRITE(*,*)
+END SUBROUTINE case_loca_changeRomeo
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE case_loca_changeWhisky(whisky)
+!
+! Author:
+! E-mail:
+! Last revision:
+!
+! This routine is executed when LOCA needs to change parameter Whisky
+
+   IMPLICIT NONE
+   ! input variables
+   REAL(KIND=8), INTENT(IN) :: whisky
+   ! output variables
+   ! local variables
+
+   ! executable statements
+   WRITE(*,*) '--> call to: case_loca_changeWhisky'
+   WRITE(*,*) '    done: case_loca_changeWhisky'
+   WRITE(*,*)
+END SUBROUTINE case_loca_changeWhisky
 
 
 !==============================================================================

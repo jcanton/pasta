@@ -35,14 +35,15 @@ SUBROUTINE case_problemset()
    ! local variables
 
    ! executable statements
+   WRITE(*,*)
    WRITE(*,*) '--> call to: case_problemset'
 
-   !***coaxial jets
-   IF (flow_parameters(1) /= 0d0) THEN
-      WRITE(*,*) '    assigning velocity ratio based on header input'
-      in_bvs_D(1,1,2) = 1d0
-      in_bvs_D(1,5,2) = flow_parameters(1)
-   ENDIF
+!   !***coaxial jets
+!   IF (flow_parameters(1) /= 0d0) THEN
+!      WRITE(*,*) '    assigning velocity ratio based on header input'
+!      in_bvs_D(1,1,2) = 1d0
+!      in_bvs_D(1,5,2) = flow_parameters(1)
+!   ENDIF
 
 
    WRITE(*,*) '    done: case_problemset'
@@ -64,8 +65,9 @@ SUBROUTINE case_preprocess()
    ! input variables
    ! output variables
    ! local variables
-   ! executable statements
 
+   ! executable statements
+   WRITE(*,*)
    WRITE(*,*) '--> call to: case_preprocess'
    WRITE(*,*) '    done: case_preprocess'
    WRITE(*,*)
@@ -91,6 +93,7 @@ SUBROUTINE case_newton_iteprocess()
    REAL(KIND=8), SAVE :: f0, Ub0=313d0
 
    ! executable statements
+   WRITE(*,*)
    WRITE(*,*) '--> call to: case_newton_iteprocess'
 
    !***torus
@@ -132,6 +135,7 @@ SUBROUTINE case_postprocess_analysis1()
    REAL(KIND=8), DIMENSION(velCmpnnts) :: u_avg
 
    ! executable statements
+   WRITE(*,*)
    WRITE(*,*) '--> call to: case_postprocess_analysis1'
 
    !***torus
@@ -164,6 +168,7 @@ SUBROUTINE case_postprocess_analysis3()
    ! local variables
 
    ! executable statements
+   WRITE(*,*)
    WRITE(*,*) '--> call to: case_postprocess_analysis3'
    WRITE(*,*) '    done: case_postprocess_analysis3'
    WRITE(*,*)
@@ -187,6 +192,7 @@ SUBROUTINE case_postprocess_analysis4()
    ! local variables
 
    ! executable statements
+   WRITE(*,*)
    WRITE(*,*) '--> call to: case_postprocess_analysis4'
    WRITE(*,*) '    done: case_postprocess_analysis4'
    WRITE(*,*)
@@ -209,6 +215,7 @@ SUBROUTINE case_postprocess_analysis5()
    ! local variables
 
    ! executable statements
+   WRITE(*,*)
    WRITE(*,*) '--> call to: case_postprocess_analysis5'
    WRITE(*,*) '    done: case_postprocess_analysis5'
    WRITE(*,*)
@@ -231,6 +238,7 @@ SUBROUTINE case_postprocess_analysis6()
    ! local variables
 
    ! executable statements
+   WRITE(*,*)
    WRITE(*,*) '--> call to: case_postprocess_analysis6'
    WRITE(*,*) '    done: case_postprocess_analysis6'
    WRITE(*,*)
@@ -253,6 +261,7 @@ SUBROUTINE case_postprocess_analysis7()
    ! local variables
 
    ! executable statements
+   WRITE(*,*)
    WRITE(*,*) '--> call to: case_postprocess_analysis7'
    WRITE(*,*) '    done: case_postprocess_analysis7'
    WRITE(*,*)
@@ -277,6 +286,7 @@ SUBROUTINE case_loca_paramout()
    REAL(KIND=8), DIMENSION(velCmpnnts) :: u_avg
 
    ! executable statements
+   WRITE(*,*)
    WRITE(*,*) '--> call to: case_loca_paramout'
 
    !***torus
@@ -314,12 +324,13 @@ SUBROUTINE case_loca_changeOscar(oscar)
    ! local variables
 
    ! executable statements
+   WRITE(*,*)
    WRITE(*,*) '--> call to: case_loca_changeOscar'
 
-   !***coaxial jets
-   in_bvs_D(1,1,2) = 1d0
-   in_bvs_D(1,5,2) = oscar
-   CALL gen_dirichlet_boundary_values (rr, sides, Dir, jjs, js_D, in_bvs_D, bvs_D)
+!   !***coaxial jets
+!   in_bvs_D(1,1,2) = 1d0
+!   in_bvs_D(1,5,2) = oscar
+!   CALL gen_dirichlet_boundary_values (rr, sides, Dir, jjs, js_D, in_bvs_D, bvs_D)
 
 
    WRITE(*,*) '    done: case_loca_changeOscar'
@@ -343,6 +354,7 @@ SUBROUTINE case_loca_changeRomeo(romeo)
    ! local variables
 
    ! executable statements
+   WRITE(*,*)
    WRITE(*,*) '--> call to: case_loca_changeRomeo'
    WRITE(*,*) '    done: case_loca_changeRomeo'
    WRITE(*,*)
@@ -365,6 +377,7 @@ SUBROUTINE case_loca_changeWhisky(whisky)
    ! local variables
 
    ! executable statements
+   WRITE(*,*)
    WRITE(*,*) '--> call to: case_loca_changeWhisky'
    WRITE(*,*) '    done: case_loca_changeWhisky'
    WRITE(*,*)

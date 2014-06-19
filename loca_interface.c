@@ -274,9 +274,11 @@ void cvarsparser(struct con_struct *con, struct passdown_struct *pd,
   // pd->x = (double *) malloc(pd->ldz * sizeof(double)) ;
   con->general_info.x = pd->x;
 
+  /*
   printf("Check to have correctly received the initial solution:\n");
   printf("\tpd->x[0]   = %20.10f \n",   pd->x[0]);
   printf("\tpd->x[end] = %20.10f \n\n", pd->x[pd->ldz-1]);
+  */
  
   //*******************************************
   // <!--General_Info_H5_P4_T3_A2_F1_Z0-->
@@ -433,9 +435,11 @@ void cvarsparser(struct con_struct *con, struct passdown_struct *pd,
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //
     read_eigenvector (pd->ldz, hopf_nev, temp, strlen(temp), con->hopf_info.y_vec, con->hopf_info.z_vec);
+	 /*
     printf("Check to have correctly received the eigenvector:\n");
     printf("\ty_vec[0] = %20.10f y_vec[end] = %20.10f \n",   con->hopf_info.y_vec[0], con->hopf_info.y_vec[pd->ldz-1]);
     printf("\tz_vec[0] = %20.10f z_vec[end] = %20.10f \n\n", con->hopf_info.z_vec[0], con->hopf_info.z_vec[pd->ldz-1]);
+	 */
     //
     // hopf_input_arpack(pd->x,con->hopf_info.y_vec,con->hopf_info.z_vec,temp,temp2,hopf_nev,hopf_ind);
     // printf("\tloaded eigenvector (for hopf) from arpack sol. in file%s\n", temp);

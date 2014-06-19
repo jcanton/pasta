@@ -152,7 +152,7 @@ SUBROUTINE Gauss_gen_L (np, me, nps, mes, jj, jjs, rr)
    ENDDO
 
 
-   PRINT*, 'end of gen_Gauss_L'
+!   PRINT*, 'end of gen_Gauss_L'
 
 
    CONTAINS

@@ -8,6 +8,7 @@ MODULE loca_wrappers
    USE loca_parameters
    USE dynamic_structures
    USE sparse_matrix_profiles
+   USE sparse_matrix_operations
    USE global_variables
    USE miscellaneous_subroutines
    USE prep_mesh_p1p2_sp
@@ -174,6 +175,9 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
    x0 = x_vec
    xx = x_vec
 
+!************************************************************************************
+!*** Newton't method in bi-incremental form is reported at the end of this module ***
+!************************************************************************************
 
    !=============================================================
    ! start of NEWTON'S ITERATIONS IN NON-INCREMENTAL FORM
@@ -183,6 +187,8 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
    !
    DO n = 1, p_in%nwtn_maxite
       
+      WRITE(*,*)
+      WRITE(*,*) '    n = ', n
 
       IF (n == p_in%nwtn_maxite) THEN
        
@@ -202,7 +208,7 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
       !------------------------------------------------------------------
       ! call case dependent subroutine
       !
-      CALL case_newton_iteprocess(n)
+      CALL case_newton_iteprocess(n, continuation_converged)
 
       !------------------------------------------------------------------
       !-------------GENERATION OF THE RIGHT-HAND SIDE--------------------
@@ -253,8 +259,6 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
 
       residual = MAXVAL(ABS(rhs))
       
-      WRITE(*,*)
-      WRITE(*,*) '    n = ', n
       WRITE(*,*) '    |res|_L-infty = ', residual
 
       !===================================================================
@@ -347,11 +351,18 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
    CALL extract (x0,  u0, p0)
    CALL extract (xx,  uu, pp)
 
+
    IF ( n <= p_in%nwtn_maxite ) THEN
       num_newt_its = n
    ELSE
       num_newt_its = -1
    ENDIF
+
+   !------------------------------------------------------------------
+   ! call case dependent subroutine
+   !
+   CALL case_newton_postprocess()
+
 
 
    DEALLOCATE( vv, ww, dx, dx0, rhs )
@@ -399,8 +410,8 @@ FUNCTION linear_solver_conwrap(xsol, jac_flag, tmp) &
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to linear_solver_conwrap'
 
-   WRITE(*,*) '*check*'
-   WRITE(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(xsol))
+!write(*,*) '*check*'
+!write(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(xsol))
    
    pd%num_linear_its = pd%num_linear_its + 1
 
@@ -412,6 +423,8 @@ FUNCTION linear_solver_conwrap(xsol, jac_flag, tmp) &
       ! fixme
       !      I think that there is no need to update the Jacobian matrix as it
       !      gets updated in matrix_residual_fill_conwrap!
+      !      The NEW_JACOBIAN flag only means that the preconditioner has to be
+      !      changed since the jacobian has changed.
       ! fixme
 
       ! Build the Jacobian matrix and factorize it
@@ -423,8 +436,9 @@ FUNCTION linear_solver_conwrap(xsol, jac_flag, tmp) &
    ENDIF
    
    CALL par_mumps_master (DIRECT_SOLUTION, 1, Jacobian, 0, xsol)
-   WRITE(*,*) '*check*'
-   WRITE(*,*) '    |sol|_L-infty = ', MAXVAL(ABS(xsol))
+
+!write(*,*) '*check*'
+!write(*,*) '    |sol|_L-infty = ', MAXVAL(ABS(xsol))
    
 
    ires = 1
@@ -477,8 +491,8 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
    
    rhs = CMPLX(c, d)
 
-   WRITE(*,*) '*check*'
-   WRITE(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(DBLE(rhs))), MAXVAL(ABS(AIMAG(rhs)))
+!write(*,*) '*check*'
+!write(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(DBLE(rhs))), MAXVAL(ABS(AIMAG(rhs)))
    
 
    IF (jac_flag == NEW_JACOBIAN) THEN
@@ -489,13 +503,13 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
          ALLOCATE( Mass%i      (SIZE(Jacobian%i))       ); Mass%i       = Jacobian%i
          ALLOCATE( Mass%i_mumps(SIZE(Jacobian%i_mumps)) ); Mass%i_mumps = Jacobian%i_mumps
          ALLOCATE( Mass%j      (SIZE(Jacobian%j))       ); Mass%j       = Jacobian%j
-         ALLOCATE( Mass%e      (SIZE(Jacobian%e))       ); Mass%e       = 0
+         ALLOCATE( Mass%e      (SIZE(Jacobian%e))       ); Mass%e       = 0d0
          CALL qc_0y0_zero_sp_M (mm, jj, 1d0, Mass)
          ! impose boundary conditions on the Mass Matrix
          CALL Dirichlet_c_M_MASS (np, js_Axis, js_D,  Mass)
          Mass_init = .TRUE.
-         WRITE(*,*) '*check*'
-         WRITE(*,*) '    |Mass%e|_L-infty = ', MAXVAL(ABS(Mass%e))
+!write(*,*) '*check*'
+!write(*,*) '    |Mass%e|_L-infty = ', MAXVAL(ABS(Mass%e))
       ENDIF
 
 
@@ -514,22 +528,40 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
          JmoM_init=.TRUE.
       ENDIF
 
+write(*,*) '*check*'
+write(*,*) '    Re    = ', Re
+write(*,*) '    beta  = ', beta
+write(*,*) '    omega = ', omega
+
+      IF ( beta /= 0 ) THEN
+         WRITE(*,*) '*******************************************************************'
+         WRITE(*,*) ''
+         WRITE(*,*) 'gran cazzata!'
+         WRITE(*,*) 'la continuazione della biforcazione di Hopf non puo` essere fatta'
+         WRITE(*,*) 'per beta /= 0 per via di come e` scritta LOCA'
+         WRITE(*,*) ''
+         WRITE(*,*) '*******************************************************************'
+         WRITE(*,*) 'STOP.'
+         STOP
+      ENDIF
+
       WRITE(*,*) '    filling [J-i*omega*M] matrix'
       DO i = 1, SIZE(Jacobian%e)
          ! we can do this as J and M have the same sparsity pattern 
          ! because they have been lazily built
          JmoM%e(i) = CMPLX( Jacobian%e(i), - omega*Mass%e(i) )
       ENDDO
-      WRITE(*,*) '*check*'
-      WRITE(*,*) '    |[J-i*omega*M]%e|_L-infty = ', MAXVAL(ABS(DBLE(JmoM%e))), MAXVAL(ABS(AIMAG(JmoM%e)))
+
+!write(*,*) '*check*'
+!write(*,*) '    |[J-i*omega*M]%e|_L-infty = ', MAXVAL(ABS(DBLE(JmoM%e))), MAXVAL(ABS(AIMAG(JmoM%e)))
 
       CALL par_mumps_master (NUMER_FACTOR, 2, JmoM, 0)
 
    ENDIF
 
    CALL par_mumps_master (DIRECT_SOLUTION, 2, JmoM, 0, rhs)
-   WRITE(*,*) '*check*'
-   WRITE(*,*) '    |sol|_L-infty = ', MAXVAL(ABS(DBLE(rhs))), MAXVAL(ABS(AIMAG(rhs)))
+!write(*,*) '*check*'
+!write(*,*) '    |sol|_L-infty = ', MAXVAL(ABS(DBLE(rhs))), MAXVAL(ABS(AIMAG(rhs)))
 
 
    IF (jac_flag == OLD_JACOBIAN_DESTROY) THEN
@@ -586,28 +618,29 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
    ! output variables
    REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: rhs
    ! local variables
-   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: vv
+   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: vv, ff
    REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: ww
 
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to matrix_residual_fill_conwrap'
 
-   WRITE(*,*) '*check*'
-   WRITE(*,*) '    |xsol|_L-infty = ', MAXVAL(ABS(xsol))
+!write(*,*) '*check*'
+!write(*,*) '    |xsol|_L-infty = ', MAXVAL(ABS(xsol))
 
    IF (matflag == RHS_ONLY .OR. matflag == RHS_MATRIX .OR. matflag == RHS_MATRIX_SAVE) THEN
 
       WRITE(*,*) '    generating new RHS'
 
       ALLOCATE ( vv(SIZE(u0,1), SIZE(u0,2)) )
+      ALLOCATE ( ff(SIZE(u0,1), SIZE(u0,2)) )
       ALLOCATE ( ww(SIZE(p0)) )
       !------------------------------------------------------------------
       !-------------GENERATION OF THE RIGHT-HAND SIDE--------------------
       !
       ! INCREMENTAL FORM
-      ! rhs <-- - (u0 \dot \nabla)u0 + 1/Re lapl{u0} - grad{p0}
-      !         - div{u0}
+      ! rhs <-- - (u0 \dot \nabla)u0 + 1/Re lapl{u0} - grad{p0} + f
+      !      ~~ - div{u0} ~~
 ! WRITE(*,*) '*check*'
 ! WRITE(*,*) '    Re = ', Re
       vv = 0
@@ -616,6 +649,14 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
       CALL qv_0y01_sp   (mm, jj, u0,              vv) ! (u0 \dot \nabla)u0
       CALL qc_1y1_sp_gg (mm, jj, u0, 1d0/Re,      vv) ! - 1/Re lapl{u0} !!!!!! ibp
       CALL qv_y_10_hybrid_sp (mm, jj, jj_L, -p0,  vv) ! grad{p0} !!!!!!!!!!!!! ibp
+      ff(1,:) = volumeForcing(1,1)
+      ff(2,:) = volumeForcing(2,1)
+      ff(3,:) = volumeForcing(3,1)
+      CALL qv_0y0_sp   (mm, jj, ff, 1d0,  vv)
+      ff(1,:) = volumeForcing(1,2)
+      ff(2,:) = volumeForcing(2,2)
+      ff(3,:) = volumeForcing(3,2)
+      CALL qv_0y0_dR_sp(mm, jj, ff, 1d0,  vv)
       !do ii = 1, size(vv,2)
       !   write(*,*) vv(:,ii)
       !enddo
@@ -638,13 +679,13 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
 
       IF (DESINGULARIZE) rhs(Nx) = 0d0
 
-      WRITE(*,*) '*check*'
-      DO ii = 1, SIZE(u0, 1)
-         WRITE(*,*) 'MAXdelta_bvs_D = ', MAXVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
-         WRITE(*,*) 'MINdelta_bvs_D = ', MINVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
-      ENDDO
+!write(*,*) '*check*'
+!do ii = 1, SIZE(u0, 1)
+!   write(*,*) 'MAXdelta_bvs_D = ', MAXVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
+!   write(*,*) 'MINdelta_bvs_D = ', MINVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
+!enddo
 
-      DEALLOCATE( vv, ww )
+      DEALLOCATE( ff, vv, ww )
 
       !-------------------------------------
       ! WARNING: continuation_hook expects the solution of
@@ -653,8 +694,8 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
       !-------------------------------------
       rhs = -rhs
 
-      WRITE(*,*) '*check*'
-      WRITE(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(rhs))
+!write(*,*) '*check*'
+!write(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(rhs))
    ENDIF  
 
    IF (matflag == MATRIX_ONLY .OR. matflag == RHS_MATRIX .OR. matflag == RECOVER_MATRIX ) THEN
@@ -672,8 +713,8 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
       CALL ComputeJacobianMatrix (np, mm, jj, jj_L, js_Axis, js_D, DESINGULARIZE, Jacobian, Re, u0)
       CALL par_mumps_master (NUMER_FACTOR, 1, Jacobian, 0)
 
-      WRITE(*,*) '*check*'
-      WRITE(*,*) '    |Jacobian%e|_L-infty = ', MAXVAL(ABS(Jacobian%e))
+!write(*,*) '*check*'
+!write(*,*) '    |Jacobian%e|_L-infty = ', MAXVAL(ABS(Jacobian%e))
    ENDIF
 
    WRITE(*,*)
@@ -713,14 +754,14 @@ SUBROUTINE mass_matrix_fill_conwrap(xsol, rhs) &
       ALLOCATE( Mass%i      (SIZE(Jacobian%i))       ); Mass%i       = Jacobian%i
       ALLOCATE( Mass%i_mumps(SIZE(Jacobian%i_mumps)) ); Mass%i_mumps = Jacobian%i_mumps
       ALLOCATE( Mass%j      (SIZE(Jacobian%j))       ); Mass%j       = Jacobian%j
-      ALLOCATE( Mass%e      (SIZE(Jacobian%e))       ); Mass%e       = 0
+      ALLOCATE( Mass%e      (SIZE(Jacobian%e))       ); Mass%e       = 0d0
       CALL qc_0y0_zero_sp_M (mm, jj, 1d0, Mass)
       ! impose boundary conditions on the Mass Matrix
       CALL Dirichlet_c_M_MASS (np, js_Axis, js_D,  Mass)
       Mass_init = .TRUE.
 
-      WRITE(*,*) '*check*'
-      WRITE(*,*) '    |Mass%e|_L-infty = ', MAXVAL(ABS(Mass%e))
+!write(*,*) '*check*'
+!write(*,*) '    |Mass%e|_L-infty = ', MAXVAL(ABS(Mass%e))
    ENDIF
 
 END SUBROUTINE mass_matrix_fill_conwrap
@@ -756,35 +797,13 @@ SUBROUTINE matvec_mult_conwrap(xxx, yyy) &
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to matvec_mult_conwrap'
 
-   WRITE(*,*) '*check*'
-   WRITE(*,*) '    |x|_L-infty = ', MAXVAL(ABS(xxx))
+!write(*,*) '*check*'
+!write(*,*) '    |x|_L-infty = ', MAXVAL(ABS(xxx))
 
-   number_of_rows = SIZE(Jacobian%i)-1
+   CALL dAtimx(yyy, Jacobian%e, Jacobian%j, Jacobian%i, xxx)
 
-   ! compute yyy <-- Jacobian*xxx
-!$OMP PARALLEL DO
-   DO i = 1, number_of_rows
-
-   ! compute the inner product of row i with vector x
-
-      yi = 0d0
-
-      DO p = Jacobian%i(i), Jacobian%i(i+1)-1
-
-         yi = yi + Jacobian%e(p)*xxx(Jacobian%j(p))
-
-      END DO
-
-      ! store result in y(i)
-
-      yyy(i) = yi
-
-   END DO
-!$OMP END PARALLEL DO
-
-   WRITE(*,*) '*check*'
-   WRITE(*,*) '    |y|_L-infty = ', MAXVAL(ABS(yyy))
-   WRITE(*,*)
+!write(*,*) '*check*'
+!write(*,*) '    |y|_L-infty = ', MAXVAL(ABS(yyy))
 
 END SUBROUTINE matvec_mult_conwrap
 
@@ -819,9 +838,6 @@ SUBROUTINE mass_matvec_mult_conwrap(xxx, yyy) &
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to mass_matvec_mult_conwrap'
 
-   WRITE(*,*) '*check*'
-   WRITE(*,*) '    |x|_L-infty = ', MAXVAL(ABS(xxx))
-
    IF ( .NOT.Mass_init ) THEN
       WRITE(*,*) '***************************'
       WRITE(*,*) '********* STRANGE *********'
@@ -832,32 +848,13 @@ SUBROUTINE mass_matvec_mult_conwrap(xxx, yyy) &
       STOP
    ENDIF
 
-   number_of_rows = SIZE(Mass%i)-1
+!write(*,*) '*check*'
+!write(*,*) '    |x|_L-infty = ', MAXVAL(ABS(xxx))
 
-   ! compute yyy <-- Mass*xxx
-!$OMP PARALLEL DO
-   DO i = 1, number_of_rows
+   CALL dAtimx(yyy, Mass%e, Mass%j, Mass%i, xxx)
 
-   ! compute the inner product of row i with vector x
-
-      yi = 0d0
-
-      DO p = Mass%i(i), Mass%i(i+1)-1
-
-         yi = yi + Mass%e(p)*xxx(Mass%j(p))
-
-      END DO
-
-      ! store result in y(i)
-
-      yyy(i) = yi
-
-   END DO
-!$OMP END PARALLEL DO
-
-   WRITE(*,*) '*check*'
-   WRITE(*,*) '    |y|_L-infty = ', MAXVAL(ABS(yyy))
-   WRITE(*,*)
+!write(*,*) '*check*'
+!write(*,*) '    |y|_L-infty = ', MAXVAL(ABS(yyy))
 
 END SUBROUTINE mass_matvec_mult_conwrap
 
@@ -1046,25 +1043,25 @@ SUBROUTINE assign_parameter_conwrap(param) &
          WRITE(*,*) '    oscar    = ', param
          WRITE(*,*) '    oldOscar = ', flow_parameters(1)
 
+         CALL case_loca_changeOscar(param)
          flow_parameters(1)  = param
          pd%oscar            = param
-         CALL case_loca_changeOscar(param)
 
       CASE( ROMEO )
          WRITE(*,*) '    romeo    = ', param
          WRITE(*,*) '    oldRomeo = ', flow_parameters(2)
 
+         CALL case_loca_changeRomeo(param)
          flow_parameters(2) = param
          pd%romeo           = param
-         CALL case_loca_changeRomeo(param)
 
       CASE( WHISKY )
          WRITE(*,*) '    whisky    = ', param
          WRITE(*,*) '    oldWhisky = ', flow_parameters(3)
 
+         CALL case_loca_changeWhisky(param)
          flow_parameters(3) = param
          pd%whisky          = param
-         CALL case_loca_changeWhisky(param)
 
    END SELECT
 
@@ -1112,25 +1109,25 @@ SUBROUTINE assign_bif_parameter_conwrap(bif_param) &
          WRITE(*,*) '    oscar    = ', bif_param
          WRITE(*,*) '    oldOscar = ', flow_parameters(1)
        
+         CALL case_loca_changeOscar(bif_param)
          flow_parameters(1)  = bif_param
          pd%oscar            = bif_param
-         CALL case_loca_changeOscar(bif_param)
 
       CASE( ROMEO )
          WRITE(*,*) '    romeo    = ', bif_param
          WRITE(*,*) '    oldRomeo = ', flow_parameters(2)
 
+         CALL case_loca_changeRomeo(bif_param)
          flow_parameters(2) = bif_param
          pd%romeo           = bif_param
-         CALL case_loca_changeRomeo(bif_param)
 
       CASE( WHISKY )
          WRITE(*,*) '    whisky    = ', bif_param
          WRITE(*,*) '    oldWhisky = ', flow_parameters(3)
 
+         CALL case_loca_changeWhisky(bif_param)
          flow_parameters(3) = bif_param
          pd%whisky          = bif_param
-         CALL case_loca_changeWhisky(bif_param)
 
    END SELECT
 
@@ -1739,3 +1736,340 @@ END SUBROUTINE compute_structSens
 !==============================================================================
 
 END MODULE loca_wrappers
+
+!------------------------------------------------------------------------------
+! qui sotto e` riportato qualcosa che non deve essre perso
+
+!!   FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
+!!      RESULT(num_newt_its) BIND(C, NAME='nonlinear_solver_conwrap')
+!!   !
+!!   ! Put the call to your nonlinear solver here.
+!!   ! Input:
+!!   !    x_vec     solution vector
+!!   !    con_ptr   pointer to continuation structure, cast to (void *)
+!!   !              must be passed to nonlinear solver and then passed
+!!   !              to bordering algorithms.
+!!   !    step_num  Continuation step number
+!!   ! 
+!!   ! Output:
+!!   !    x_vec     solution vector
+!!   ! 
+!!   ! Return Value:
+!!   !    num_newt_its  Number of Newton iterations needed for
+!!   !                  convergence, used to pick next step size.
+!!   !                  Negative value means nonlinear solver didn't converge.
+!!   ! 
+!!   
+!!      USE ISO_C_BINDING
+!!   
+!!      IMPLICIT NONE
+!!   
+!!      INTERFACE
+!!         FUNCTION continuation_hook(x_hook, delta_x_hook, con_ptr, Reltol, Abstol) &
+!!            RESULT(continuation_converged) BIND(C, NAME='continuation_hook')
+!!            USE ISO_C_BINDING
+!!            REAL(KIND=C_DOUBLE)        :: x_hook
+!!            REAL(KIND=C_DOUBLE)        :: delta_x_hook
+!!            TYPE(C_PTR),         VALUE :: con_ptr
+!!            REAL(KIND=C_DOUBLE), VALUE :: Reltol
+!!            REAL(KIND=C_DOUBLE), VALUE :: Abstol
+!!            INTEGER(KIND=C_INT)        :: continuation_converged
+!!         END FUNCTION continuation_hook
+!!      END INTERFACE
+!!   
+!!      ! input variables
+!!      REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: x_vec
+!!      TYPE(C_PTR), VALUE                 :: con_ptr
+!!      INTEGER(KIND=C_INT), VALUE         :: step_num
+!!      REAL(KIND=C_DOUBLE), VALUE         :: lambda
+!!      REAL(KIND=C_DOUBLE), VALUE         :: delta_s
+!!      ! output variables
+!!      INTEGER(KIND=C_INT)                :: num_newt_its
+!!   
+!!      ! common variables used
+!!      ! Jacobian
+!!      ! p_in
+!!      ! velCmpnnts, np, np_L, Nx
+!!      ! x0, u0, p0
+!!      ! mm, jj, jj_L, js_D, zero_bvs_D
+!!      ! DESINGULARIZE
+!!      ! Re
+!!   
+!!      ! local variables
+!!      INTEGER                                   :: n
+!!      REAL(KIND=8)                              :: residual
+!!      REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE ::     vv, du0
+!!      REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dx, ww, dx0
+!!   
+!!   
+!!      INTEGER(KIND=C_INT)                       :: continuation_converged=0
+!!      REAL(KIND=C_DOUBLE), DIMENSION(Nx)        :: x_hook
+!!      REAL(KIND=C_DOUBLE), DIMENSION(Nx)        :: delta_x_hook
+!!      REAL(KIND=C_DOUBLE)                       :: Reltol = 1d-3
+!!      REAL(KIND=C_DOUBLE)                       :: Abstol = 1d-8
+!!      ! (Reltol=1.0e-3, Abstol=1.0e-8 are good defaults.)
+!!   
+!!   
+!!      ! executable statements
+!!   
+!!      WRITE(*,*)
+!!      WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+!!      WRITE(*,*) '--> CALL to nonlinear_solver_conwrap'
+!!      WRITE(*,*)
+!!   
+!!   
+!!      ALLOCATE ( vv (velCmpnnts, np) )
+!!      ALLOCATE ( ww (np_L) )
+!!      ALLOCATE ( dx (Nx) )
+!!      ALLOCATE ( dx0(Nx) )
+!!      ALLOCATE ( du0(velCmpnnts, np) )
+!!   
+!!   
+!!      x0 = x_vec
+!!      xx = x_vec
+!!   
+!!   
+!!      !============================================
+!!      ! start of FIRST STEP IN NON-INCREMENTAL FORM
+!!      !
+!!      WRITE(*,*) '    First step in NON-INCREMENTAL form'
+!!      !
+!!      !------------------------------------------------------------------
+!!      !-------------GENERATION OF THE RIGHT-HAND SIDE--------------------
+!!      !
+!!      ! NON-INCREMENTAL FORM
+!!      ! rhs <---  (u0 \dot \nabla)u0
+!!      !           0
+!!      vv = 0
+!!   !   CALL extract (x0,  u0, p0)
+!!      CALL extract (x0,  u0)
+!!      CALL qv_0y01_sp (mm, jj, u0,  vv)
+!!   !   CALL qc_ty0_sp_s (ms_2, jjs, iis,  c_2,  vv)  !  cumulative
+!!   !   CALL qc_ny0_sp_s (ms_3, jjs, iis, -q_3,  vv)  !  cumulative
+!!   
+!!      u0(1,:) = volumeForcing(1,1)
+!!      u0(2,:) = volumeForcing(2,1)
+!!      u0(3,:) = volumeForcing(3,1)
+!!      CALL qv_0y0_sp   (mm, jj, u0, 1d0, vv)
+!!   
+!!      u0(1,:) = volumeForcing(1,2)
+!!      u0(2,:) = volumeForcing(2,2)
+!!      u0(3,:) = volumeForcing(3,2)
+!!      CALL qv_0y0_dR_sp(mm, jj, u0, 1d0, vv)
+!!   
+!!      ww = 0
+!!      CALL collect (vv, ww,  dx) ! here dx is the RHS
+!!      !------------------------------------------------------------------
+!!      !-------------ENFORCING DIRICHLET BOUNDARY CONDITIONS ON THE RHS---
+!!      !
+!!      ! NON-INCREMENTAL FORM
+!!      ! non-homogeneous boundary conditions
+!!      !
+!!      CALL Dirichlet_c (np, js_Axis, js_D, bvs_D,  dx)
+!!      IF (DESINGULARIZE) dx(Nx) = 0d0
+!!      !------------------------------------------------------------------
+!!      !-------------GENERATION OF THE JACOBIAN MATRIX--------------------
+!!      !-------------OF THE COUPLED EQUATION SYSTEM-----------------------
+!!      !             Jacobian  <--- [(u0.V)_ + (_.V)u0)]  +  K_  +  V_ (ibp)
+!!      !
+!!   !write(*,*) '*check*'
+!!   !write(*,*) '    Re = ', Re
+!!      CALL extract (x0,  u0)
+!!      CALL ComputeJacobianMatrix (np, mm, jj, jj_L, js_Axis, js_D, DESINGULARIZE, Jacobian, Re, u0)
+!!      CALL par_mumps_master (NUMER_FACTOR, 1, Jacobian, 0)
+!!      !------------------------------------------------------------------
+!!      !-------------DIRECT SOLUTION OF THE COUPLED SYSTEM----------------
+!!      CALL par_mumps_master (DIRECT_SOLUTION, 1, Jacobian, 0, dx)
+!!      ! as the first step is done in NON-INCREMENTAL FORM,
+!!      ! we actually compute x_1 even though we call it dx,
+!!      ! dx has then to be computed as dx = x_1 - x_0
+!!      !
+!!      dx = dx - x0
+!!      !------------------------------------------------------------------
+!!      !-------------UPDATE SOLUTION VECTOR-------------------------------
+!!      x_vec = x0 + dx 
+!!      x0  = x_vec
+!!      dx0 = dx
+!!      !
+!!      ! end of FIRST STEP IN NON-INCREMENTAL FORM
+!!      !============================================
+!!   
+!!   
+!!      WRITE(*,*)
+!!   
+!!   
+!!      !=============================================================
+!!      ! start of NEWTON'S ITERATIONS IN BI-INCREMENTAL FORM
+!!      !
+!!      WRITE(*,*) '    Start of Newton''s iterations'
+!!      WRITE(*,*) '    in BI-INCREMENTAL form'
+!!      !
+!!      DO n = 1, p_in%nwtn_maxite
+!!         
+!!         WRITE(*,*)
+!!         WRITE(*,*) '    n = ', n
+!!   
+!!         IF (n == p_in%nwtn_maxite) THEN
+!!          
+!!            WRITE(*,*) '   ************************************************'
+!!            WRITE(*,*) '   *Maximum number of Newton''s iterations reached:'
+!!            WRITE(*,*) '   *ite_max = ', p_in%nwtn_maxite
+!!            WRITE(*,*) '   ************************************************'
+!!            WRITE(*,*)
+!!         
+!!         ENDIF
+!!         
+!!         CALL extract (x0,  u0)
+!!   
+!!   !      CALL extract (x0,  u0, p0)
+!!   !      CALL vtk_plot_P2 (rr, jj, jj_L, u0, p0, trim(p_in%plot_directory) // 'iteSol.vtk')
+!!   
+!!         !------------------------------------------------------------------
+!!         ! call case dependent subroutine
+!!         !
+!!         CALL case_newton_iteprocess(n, continuation_converged)
+!!   
+!!         !------------------------------------------------------------------
+!!         !-------------GENERATION OF THE RIGHT-HAND SIDE--------------------
+!!         !
+!!         ! BI-INCREMENTAL FORM
+!!         ! rhs  <---  - (du0 \dot \nabla)du0
+!!         !            0
+!!         !
+!!         vv = 0
+!!         CALL extract (dx0,  du0)
+!!         CALL qv_0y01_sp (mm, jj, du0,  vv)
+!!   
+!!         ww = 0
+!!   
+!!         CALL collect (-vv, ww,  dx) ! here dx is the RHS
+!!   
+!!         !------------------------------------------------------------------
+!!         !-------------ENFORCING DIRICHLET BOUNDARY CONDITIONS ON THE RHS---
+!!         !
+!!         ! BI-INCREMENTAL FORM
+!!         ! differential type boundary conditions
+!!         ! (homogeneous if not calling LOCA)
+!!         !
+!!         CALL extract_Dirichlet_c (np, js_Axis, js_D, x0,  old_bvs_D)
+!!         CALL Dirichlet_c_DIFF (np, js_Axis, js_D, bvs_D, old_bvs_D,  dx)
+!!   
+!!         IF (DESINGULARIZE) dx(Nx) = 0d0
+!!   
+!!   !write(*,*) '*check*'
+!!   !do ii = 1, SIZE(du0, 1)
+!!   !   write(*,*) 'MAXdelta_bvs_D = ', MAXVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
+!!   !   write(*,*) 'MINdelta_bvs_D = ', MINVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
+!!   !enddo
+!!   
+!!         !------------------------------------------------------------------
+!!         !-------------COMPUTE RESIDUAL-------------------------------------
+!!   
+!!         residual = MAXVAL(ABS(dx))
+!!         
+!!         WRITE(*,*) '    |res|_L-infty = ', residual
+!!   
+!!         !===================================================================
+!!         !===================================================================
+!!         IF (residual < p_in%nwtn_tol .AND. continuation_converged == 1) THEN
+!!            x_vec = x0
+!!            WRITE (*,*)
+!!            WRITE (*,*) '    Residual on the converged solution:'
+!!            WRITE (*,*) '    |res|_L-infty = ', residual
+!!            WRITE (*,*) '    End of Newton''s iterations.'
+!!            WRITE (*,*)
+!!            EXIT
+!!         ENDIF
+!!         !===================================================================
+!!         !===================================================================
+!!   
+!!         !------------------------------------------------------------------
+!!         !-------------GENERATION OF THE JACOBIAN MATRIX--------------------
+!!         !-------------OF THE COUPLED EQUATION SYSTEM-----------------------
+!!         !             Jacobian  <--- [(u0.V)_ + (_.V)u0)]  +  K_  +  V_ (ibp)
+!!         !
+!!   
+!!   !write(*,*) '*check*'
+!!   !write(*,*) '    Re = ', Re
+!!         CALL extract (x0,  u0)
+!!         CALL ComputeJacobianMatrix (np, mm, jj, jj_L, js_Axis, js_D, DESINGULARIZE, Jacobian, Re, u0)
+!!         CALL par_mumps_master (NUMER_FACTOR, 1, Jacobian, 0)
+!!   
+!!         !------------------------------------------------------------------
+!!         !-------------DIRECT SOLUTION OF THE COUPLED SYSTEM----------------
+!!   
+!!         CALL par_mumps_master (DIRECT_SOLUTION, 1, Jacobian, 0, dx)
+!!   
+!!         !------------------------------------------------------------------
+!!         !-------------LOCA'S STUFF-----------------------------------------
+!!         
+!!         IF ( C_ASSOCIATED(con_ptr) ) THEN
+!!   
+!!            WRITE(*,*)
+!!            WRITE(*,*) '    --> CALL to continuation_hook'
+!!            !WRITE(*,*) '    |x0|_L-infty = ', MAXVAL(ABS(x0))
+!!            !WRITE(*,*) '    |dx|_L-infty = ', MAXVAL(ABS(dx))
+!!            WRITE(*,*)
+!!            !-------------------------------------
+!!            ! WARNING: continuation_hook expects the solution of
+!!            ! J(-x) = + R   and not
+!!            ! J( x) = - R
+!!            !-------------------------------------
+!!   
+!!            x_hook       = x0
+!!            delta_x_hook = - dx
+!!   
+!!            continuation_converged = continuation_hook(x_hook(1), delta_x_hook(1), &
+!!                                                         con_ptr, Reltol, Abstol);
+!!            dx = - delta_x_hook
+!!   
+!!            WRITE(*,*) '    done.'
+!!            WRITE(*,*)
+!!   
+!!         ELSE
+!!            continuation_converged = 1
+!!         ENDIF
+!!   
+!!         !------------------------------------------------------------------
+!!         !-------------UPDATE SOLUTION VECTOR-------------------------------
+!!   
+!!         x_vec = x0 + dx
+!!   
+!!         x0  = x_vec
+!!         dx0 = dx
+!!   
+!!      ENDDO
+!!      !
+!!      ! end of NEWTON'S ITERATIONS IN BI-INCREMENTAL FORM
+!!      !=============================================================
+!!   
+!!   
+!!      !------------------------------------------------------------------
+!!      !-------------UPDATE EVERYTHING------------------------------------
+!!   
+!!      x0   = x_vec
+!!      xx   = x_vec
+!!      pd%x = C_LOC(xx)
+!!      CALL extract (x0,  u0, p0)
+!!      CALL extract (xx,  uu, pp)
+!!   
+!!   
+!!      IF ( n <= p_in%nwtn_maxite ) THEN
+!!         num_newt_its = n
+!!      ELSE
+!!         num_newt_its = -1
+!!      ENDIF
+!!   
+!!      !------------------------------------------------------------------
+!!      ! call case dependent subroutine
+!!      !
+!!      CALL case_newton_postprocess()
+!!   
+!!   
+!!   
+!!      DEALLOCATE( vv, ww, dx, dx0, du0 )
+!!   
+!!   
+!!   END FUNCTION nonlinear_solver_conwrap
+!!   
+!!   !------------------------------------------------------------------------------

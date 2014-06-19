@@ -163,7 +163,7 @@ SUBROUTINE Gauss_gen (np, me, nps, mes, jj, jjs, rr)
    ENDDO
 
 
-   PRINT*, 'end of gen_Gauss_2d_p2_sp (sub-parametric)'
+!   PRINT*, 'end of gen_Gauss_2d_p2_sp (sub-parametric)'
 
 
    CONTAINS

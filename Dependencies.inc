@@ -102,6 +102,7 @@ loca_wrappers.o: loca_parameters.o           \
                  qs_l_sp.o                   \
                  dynamic_structures.o        \
                  sparse_matrix_profiles.o    \
+                 sparse_matrix_operations.o  \
                  global_variables.o          \
                  miscellaneous_subroutines.o \
                  prep_mesh_p1p2_sp.o         \
@@ -154,7 +155,9 @@ vorticity_stream.o: global_variables.o  \
 
 case_dependent.o: global_variables.o          \
                   miscellaneous_subroutines.o \
-						axisym_boundary_values.o
+						axisym_boundary_values.o    \
+                  gauss_points_2d_l.o         \
+                  gauss_points_2d_p_sp.o
 
 # C
 loca_interface.o: loca_wrappers.o

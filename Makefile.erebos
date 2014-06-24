@@ -37,13 +37,13 @@ CC = mpicc
 F90CMP = $(FC) -c
 F90LNK = $(FC)
 F90OPT = -O3 -fopenmp
-F90DEB = -static #-g -Wall -Wextra -pedantic -fcheck=all
+F90DEB = #-g -Wall -Wextra -pedantic -fcheck=all
 F90FLAGS = $(F90OPT) $(F90DEB)
 
 CCMP   = $(CC) -c
 CLNK   = $(CC)
 COPT   = -O3
-CDEB   = -static
+CDEB   =
 CFLAGS = $(COPT) $(CDEB)
 
 # Include paths
@@ -60,7 +60,7 @@ LIBLOCA   = -L./libLOCA/ -lloca
 LIBS      = $(LIBMUMPS) $(LIBMPI) $(LIBLOCA) $(LIBARPACK) $(LIBLAPACK) $(LIBBLAS)
 
 FOLDER = ~/scratch/software/bin/
-NAME   = pasta_static
+NAME   = pasta_axi
 
 
 ###############################################################################

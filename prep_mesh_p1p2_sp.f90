@@ -82,7 +82,11 @@ INTEGER,      ALLOCATABLE, DIMENSION(:,:), PUBLIC :: jj
 INTEGER,      ALLOCATABLE, DIMENSION(:,:), PUBLIC :: jjs
 !< *jjs (n_ws, mes)* : indici degli elementi di bordo, numerati accordingly a quelli di volume.
 INTEGER,      ALLOCATABLE, DIMENSION(:,:), PUBLIC :: iis
-!< *iis (n_ws, mes)* : indici degli elementi di bordo (surface) in surface numbering. Nota anche come matrice di connettivita` degli elementi di superficie, partendo dalla matrice jjs degli elementi di superficie numerati accordingly a quelli di volume, e dall'array js dei nodi di bordo accordingly alla numerazione dei nodi di volume.
+!< *iis (n_ws, mes)* : indici degli elementi di bordo (surface) in surface
+!numbering. Nota anche come matrice di connettivita` degli elementi di
+!superficie, partendo dalla matrice jjs degli elementi di superficie numerati
+!accordingly a quelli di volume, e dall'array js dei nodi di bordo accordingly
+!alla numerazione dei nodi di volume.
 INTEGER,      POINTER,     DIMENSION(:),   PUBLIC :: js
 !< *js (nps)* : indici dei nodi di bordo in volume numbering.  
 REAL(KIND=8), ALLOCATABLE, DIMENSION(:,:), PUBLIC :: rr

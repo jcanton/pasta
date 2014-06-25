@@ -12,6 +12,11 @@ MODULE vorticity_stream
 
 CONTAINS
 
+! added to avoid errors when compiling with intel compilers
+SUBROUTINE dummySubroutine()
+   IMPLICIT NONE
+END SUBROUTINE dummySubroutine
+
 !-----------------------------------------------------------------------------
 
 !!  SUBROUTINE  compute_vorticity_stream (jj, jjs, js, uu, rr, t, sides, Axis, Dir_psi,  zz, psi)

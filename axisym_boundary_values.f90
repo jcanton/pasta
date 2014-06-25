@@ -277,7 +277,7 @@ SUBROUTINE write_BVS (sideNumber, uu, rr, jjs, sides, file_name)
    INTEGER,      DIMENSION(:),       INTENT(IN) :: sides
    CHARACTER(*),                     INTENT(IN) :: file_name
    ! local variables
-   LOGICAL, DIMENSION(MAXVAL(sides))         :: this_side
+   LOGICAL, DIMENSION(:), ALLOCATABLE        :: this_side
    INTEGER, DIMENSION(:), POINTER            :: nodes_on_this_side
    CHARACTER(LEN=64)                         :: dataFolder='./boundaryData/'
    CHARACTER(LEN=64)                         :: dataFileName
@@ -285,6 +285,8 @@ SUBROUTINE write_BVS (sideNumber, uu, rr, jjs, sides, file_name)
    INTEGER                                   :: j
 
    ! executable statements
+
+   ALLOCATE( this_side(MAXVAL(sides)) )
 
    ! get the indexes of the nodes on this side
    this_side = .false.;  this_side(sideNumber) = .true.

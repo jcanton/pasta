@@ -43,20 +43,25 @@ SUBROUTINE write_restart(x, param, step_num, max_steps, filenm, filenmLen) &
    REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: x
    REAL(KIND=C_DOUBLE), VALUE         :: param
    INTEGER(KIND=C_INT), VALUE         :: step_num, max_steps
-   CHARACTER(KIND=C_CHAR)             :: filenm
    INTEGER(KIND=C_INT), VALUE         :: filenmLen
+   !CHARACTER(KIND=C_CHAR)             :: filenm
+   CHARACTER(KIND=C_CHAR),DIMENSION(filenmLen) :: filenm
    ! local variables
    REAL(KIND=8), DIMENSION(velCmpnnts,np) :: u_save
    REAL(KIND=8), DIMENSION(np_L)          :: p_save
    INTEGER :: i
+   CHARACTER(LEN=128) :: Ffilenm
 
+   Ffilenm = transfer(filenm(1:filenmLen), Ffilenm)
 
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
-   WRITE(*,*) '--> Writing restart file: '//trim(p_in%restart_directory)//filenm(1:filenmLen)//' ...'
+   !WRITE(*,*) '--> Writing restart file: '//trim(p_in%restart_directory)//filenm(1:filenmLen)//' ...'
+   WRITE(*,*) '--> Writing restart file: '//trim(p_in%restart_directory)//trim(Ffilenm)//' ...'
 
 
-   OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//filenm(1:filenmLen) )
+   !OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//filenm(1:filenmLen) )
+   OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//trim(Ffilenm) )
 
    WRITE(20, *) param
    WRITE(20, *) step_num, max_steps
@@ -116,19 +121,24 @@ SUBROUTINE read_restart(x, param, filenm, filenmLen) &
    ! output variables
    REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: x
    REAL(KIND=C_DOUBLE)                :: param
-   CHARACTER(KIND=C_CHAR)             :: filenm
    INTEGER(KIND=C_INT), VALUE         :: filenmLen
+   !CHARACTER(KIND=C_CHAR)             :: filenm
+   CHARACTER(KIND=C_CHAR),DIMENSION(filenmLen) :: filenm
    ! local variables
    REAL(KIND=8), DIMENSION(velCmpnnts,np) :: u_save
    REAL(KIND=8), DIMENSION(np_L)          :: p_save
    INTEGER :: i, uc_in, np_in, np_L_in
+   CHARACTER(LEN=128) :: Ffilenm
 
+   Ffilenm = transfer(filenm(1:filenmLen), Ffilenm)
 
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
-   WRITE(*,*) '--> Reading restart file: '//trim(p_in%restart_directory)//filenm(1:filenmLen)//' ...'
+   !WRITE(*,*) '--> Reading restart file: '//trim(p_in%restart_directory)//filenm(1:filenmLen)//' ...'
+   WRITE(*,*) '--> Writing restart file: '//trim(p_in%restart_directory)//trim(Ffilenm)//' ...'
 
-   OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//filenm(1:filenmLen))
+   !OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//filenm(1:filenmLen))
+   OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//trim(Ffilenm) )
 
    READ(20, *) param
    READ(20, *) ! jump this line

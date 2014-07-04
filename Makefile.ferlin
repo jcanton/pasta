@@ -66,7 +66,8 @@ LIBSCOTCH    =
 LIBMKL       = -L/pdc/vol/i-compilers/11.1/icc/mkl/lib/em64t -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -Wl,--rpath,/pdc/vol/i-compilers/11.1/icc/mkl/lib/em64t
 LIBMUMPS     = -L/pdc/vol/mumps/4.10.0/lib -ldmumps -lzmumps -lmumps_common -lpord -L/pdc/vol/i-compilers/11.1/icc/mkl/lib/em64t/ -lmkl_scalapack_lp64 -lmkl_blacs_lp64
 LIBMPI       = 
-LIBLOCA      = -L./libLOCA/ -lloca
+#LIBLOCA      = -L./libLOCA/ -lloca
+LIBLOCA      = -L$(HOME)/software/Loca1.1/lib/LINUX.SERIAL -lloca
 LIBS         = $(LIBMUMPS) $(LIBLOCA) $(LIBARPACK) $(LIBMKL)
 #LIBS         = $(LIBMUMPS) $(LIBMPI) $(LIBLOCA) $(LIBARPACK) $(LIBSCOTCH) $(LIBSCALAPACK) $(LIBMKL) $(LIBLAPACK) $(LIBBLAS) $(LIBMUMPS) $(LIBSCOTCH)
 

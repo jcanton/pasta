@@ -148,12 +148,15 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
       WRITE(*,*) '             using a centralized dense rhs_sol'
       WRITE(*,*) '             not using out-of-core'
       WRITE(*,*) '             on : error messages'
-      WRITE(*,*) '             off: diagnostic, statistics and warnings'
-      WRITE(*,*) '             off: global information'
+      WRITE(*,*) '             on : diagnostic, statistics and warnings'
+      WRITE(*,*) '             on : global information'
       id_real(matrID)%SYM = symFlag
       CALL MPI_BARRIER (MPI_COMM_WORLD, mpiIerr)
       CALL par_mumps (parMumpsJob, matrID)
 
+		! diagnostic, statistics and warnings
+      id_real(matrID)%ICNTL(2)  = 6
+      id_real(matrID)%ICNTL(4)  = 4
       ! centralized assembled matrix
       id_real(matrID)%ICNTL(5)  = 0
       id_real(matrID)%ICNTL(18) = 0
@@ -470,12 +473,15 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
       WRITE(*,*) '             using a centralized dense rhs_sol'
       WRITE(*,*) '             not using out-of-core'
       WRITE(*,*) '             on : error messages'
-      WRITE(*,*) '             off: diagnostic, statistics and warnings'
-      WRITE(*,*) '             off: global information'
+      WRITE(*,*) '             on : diagnostic, statistics and warnings'
+      WRITE(*,*) '             on : global information'
       id_cmpl(matrID)%SYM = symFlag
       CALL MPI_BARRIER (MPI_COMM_WORLD, mpiIerr)
       CALL par_mumps (parMumpsJob, matrID)
 
+		! diagnostic, statistics and warnings
+      id_cmpl(matrID)%ICNTL(2)  = 6
+      id_cmpl(matrID)%ICNTL(4)  = 4
       ! centralized assembled matrix
       id_cmpl(matrID)%ICNTL(5)  = 0
       id_cmpl(matrID)%ICNTL(18) = 0

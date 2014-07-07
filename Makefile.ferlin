@@ -1,9 +1,9 @@
 # Modules:
 #
-# module add mkl/11.1 # blas and lapack
-# module add arpack # serial arpack
-# module add mumps/4.10.0 # parallel mumps
-# module add i-compilers/11.1 intelmpi/4.1.0 # mpiicc mpiifort
+# moudle add mkl/11.1 # scalapack, blacs, blas and lapack
+# module add arpack/2003-05-22-gnu # serial arpack
+# module add mumps/4.10.0-gnu # parallel mumps
+# module add gcc/4.6.3 openmpi/1.5.4-gcc-4.6 # mpicc mpif90
 #
 ###############################################################################
 # Rules
@@ -38,37 +38,36 @@ clean:
 NOW := $(shell date +"%c" | tr ' :' '__')
 
 # Compilers
-FC = mpiifort
-CC = mpiicc
+FC = mpif90
+CC = mpicc
 
 F90CMP = $(FC) -c
 F90LNK = $(FC)
-F90OPT = -O3 #-fopenmp
-F90DEB = -check all -debug all -traceback
+F90OPT = -O2 #-fopenmp
+F90DEB = -g
 F90FLAGS = $(F90OPT) $(F90DEB)
 
 CCMP   = $(CC) -c
 CLNK   = $(CC)
-COPT   = -O3
-CDEB   =
+COPT   = -O2
+CDEB   = -g
 CFLAGS = $(COPT) $(CDEB)
 
 # Include paths
-F90INCDIR = -I/pdc/vol/i-compilers/11.1/icc/mkl/include -I/pdc/vol/mumps/4.10.0/include
+F90INCDIR = -I/pdc/vol/mumps/4.10.0/include
 CINCDIR   = -I libLOCA
 
 # Libraries
-LIBARPACK    = -L/pdc/vol/arpack/2003-05-22/lib -larpack
+LIBARPACK    = -L/pdc/vol/arpack/2003-05-22/amd64_co5/GNU/lib -larpack
 LIBLAPACK    = 
 LIBSCALAPACK = 
 LIBBLAS      = 
 LIBSCOTCH    = 
-LIBMKL       = -L/pdc/vol/i-compilers/11.1/icc/mkl/lib/em64t -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -Wl,--rpath,/pdc/vol/i-compilers/11.1/icc/mkl/lib/em64t
-LIBMUMPS     = -L/pdc/vol/mumps/4.10.0/lib -ldmumps -lzmumps -lmumps_common -lpord -L/pdc/vol/i-compilers/11.1/icc/mkl/lib/em64t/ -lmkl_scalapack_lp64 -lmkl_blacs_lp64
-LIBMPI       = 
-#LIBLOCA      = -L./libLOCA/ -lloca
-LIBLOCA      = -L$(HOME)/software/Loca1.1/lib/LINUX.SERIAL -lloca
-LIBS         = $(LIBMUMPS) $(LIBLOCA) $(LIBARPACK) $(LIBMKL)
+LIBMKL       = -L/pdc/vol/i-compilers/11.1/icc/mkl/lib/em64t -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core  -lpthread -Wl,--rpath,/pdc/vol/i-compilers/11.1/icc/mkl/lib/em64t
+LIBMUMPS     = -L/pdc/vol/mumps/4.10.0/amd64_co5/GNU/lib -ldmumps -lzmumps -lmumps_common -lpord
+LIBMPI       = -L/afs/pdc.kth.se/pdc/vol/openmpi/1.5.4/gcc/4.6/lib -lmpi_f77 -lmpi
+LIBLOCA      = -L./libLOCA/ -lloca
+LIBS         = $(LIBMUMPS) $(LIBLOCA) $(LIBARPACK) $(LIBMKL) $(LIBMPI)
 #LIBS         = $(LIBMUMPS) $(LIBMPI) $(LIBLOCA) $(LIBARPACK) $(LIBSCOTCH) $(LIBSCALAPACK) $(LIBMKL) $(LIBLAPACK) $(LIBBLAS) $(LIBMUMPS) $(LIBSCOTCH)
 
 FOLDER = $(HOME)/software/bin/

@@ -135,7 +135,7 @@ SUBROUTINE read_restart(x, param, filenm, filenmLen) &
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    !WRITE(*,*) '--> Reading restart file: '//trim(p_in%restart_directory)//filenm(1:filenmLen)//' ...'
-   WRITE(*,*) '--> Writing restart file: '//trim(p_in%restart_directory)//trim(Ffilenm)//' ...'
+   WRITE(*,*) '--> Reading restart file: '//trim(p_in%restart_directory)//trim(Ffilenm)//' ...'
 
    !OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//filenm(1:filenmLen))
    OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//trim(Ffilenm) )

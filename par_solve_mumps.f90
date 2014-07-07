@@ -155,8 +155,8 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
       CALL par_mumps (parMumpsJob, matrID)
 
 		! diagnostic, statistics and warnings
-      id_real(matrID)%ICNTL(2)  = 6
-      id_real(matrID)%ICNTL(4)  = 2
+      id_real(matrID)%ICNTL(2)  = 0
+      id_real(matrID)%ICNTL(4)  = 0
       ! centralized assembled matrix
       id_real(matrID)%ICNTL(5)  = 0
       id_real(matrID)%ICNTL(18) = 0
@@ -480,8 +480,8 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
       CALL par_mumps (parMumpsJob, matrID)
 
 		! diagnostic, statistics and warnings
-      id_cmpl(matrID)%ICNTL(2)  = 6
-      id_cmpl(matrID)%ICNTL(4)  = 2
+      id_cmpl(matrID)%ICNTL(2)  = 0
+      id_cmpl(matrID)%ICNTL(4)  = 0
       ! centralized assembled matrix
       id_cmpl(matrID)%ICNTL(5)  = 0
       id_cmpl(matrID)%ICNTL(18) = 0

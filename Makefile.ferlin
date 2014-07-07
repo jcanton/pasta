@@ -1,8 +1,8 @@
 # Modules:
 #
-# moudle add mkl/11.1 # scalapack, blacs, blas and lapack
+# module add mkl/11.1 # scalapack, blacs, blas and lapack
 # module add arpack/2003-05-22-gnu # serial arpack
-# module add mumps/4.10.0-gnu # parallel mumps
+# module add mumps/4.10.0-gcc # parallel mumps
 # module add gcc/4.6.3 openmpi/1.5.4-gcc-4.6 # mpicc mpif90
 #
 ###############################################################################

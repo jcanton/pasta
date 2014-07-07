@@ -527,13 +527,12 @@ SUBROUTINE read_and_apply_boundary_conditions(input_file, k_d, rr, mms, jjs, &
    READ(21,*) volumeForcing(2,1), volumeForcing(2,2)
    READ(21,*) volumeForcing(3,1), volumeForcing(3,2)
 
-   CLOSE (21)
-   WRITE(*,*) '--> finished reading file ', trim(input_file), '.'
-
-
    WRITE(*,*) '    f_z     = ', volumeForcing(1,1), volumeForcing(1,2)
    WRITE(*,*) '    f_r     = ', volumeForcing(2,1), volumeForcing(2,2)
    WRITE(*,*) '    f_theta = ', volumeForcing(3,1), volumeForcing(3,2)
+
+   CLOSE (21)
+   WRITE(*,*) '--> finished reading file ', trim(input_file), '.'
 
    CALL case_problemset()
 

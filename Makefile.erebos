@@ -60,6 +60,7 @@ LIBLOCA   = -L./libLOCA/ -lloca
 LIBS      = $(LIBMUMPS) $(LIBMPI) $(LIBLOCA) $(LIBARPACK) $(LIBLAPACK) $(LIBBLAS)
 
 FOLDER = ~/scratch/software/bin/
+#FOLDER = ~/scratch/DATA/continuation_axi_cases/coaxialJets/neutralCurve/case3-tanh5-h5-l40-t5-neutralCurve/
 NAME   = pasta_axi
 
 

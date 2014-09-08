@@ -16,7 +16,7 @@ CONTAINS
 
 !------------------------------------------------------------------------------
 
-SUBROUTINE eigensComplexShiftInvert(nev, maxit, tol, sigma, A, M, directAdjoint, eigenvalues, eigenvectors)
+SUBROUTINE eigensComplexShiftInvert(nev, maxit, tol, sigma, A, M, directAdjoint,  statusMsg, eigenvalues, eigenvectors)
 
 !     Simple program to illustrate the idea of reverse communication
 !     in shift and invert mode for a generalized complex nonsymmetric 
@@ -56,6 +56,7 @@ SUBROUTINE eigensComplexShiftInvert(nev, maxit, tol, sigma, A, M, directAdjoint,
 !  %------------------%
 !  | Output variables |
 !  %------------------%
+   INTEGER :: statusMsg
    COMPLEX(KIND=8), DIMENSION(:),   ALLOCATABLE :: eigenvalues
    COMPLEX(KIND=8), DIMENSION(:,:), ALLOCATABLE :: eigenvectors
 
@@ -102,6 +103,8 @@ SUBROUTINE eigensComplexShiftInvert(nev, maxit, tol, sigma, A, M, directAdjoint,
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> Start of eigensComplexShiftInvert'
    WRITE(*,*) ''
+
+   statusMsg = 0
 
    IF ( directAdjoint == 1 ) THEN
       ! direct problem
@@ -346,7 +349,8 @@ SUBROUTINE eigensComplexShiftInvert(nev, maxit, tol, sigma, A, M, directAdjoint,
 !     %----------------------------%
 !
       WRITE(*,*) ' Error with ZNAUPD, info = ', info
-      STOP       ' Check the documentation of ZNAUPD.'
+      WRITE(*,*) ' Check the documentation of ZNAUPD.'
+      statusMsg = 1
 !
    ELSE ! We made it.
 !
@@ -377,7 +381,7 @@ SUBROUTINE eigensComplexShiftInvert(nev, maxit, tol, sigma, A, M, directAdjoint,
 !     | returned in V.                               |
 !     %----------------------------------------------%
 !
-      IF ( info .ne. 0) THEN
+      IF ( info .ne. 0 ) THEN
 ! 
 !        %------------------------------------%
 !        | Error condition:                   |
@@ -385,7 +389,8 @@ SUBROUTINE eigensComplexShiftInvert(nev, maxit, tol, sigma, A, M, directAdjoint,
 !        %------------------------------------%
 !
          WRITE(*,*) ' Error with ZNEUPD, info = ', info
-         STOP       ' Check the documentation of ZNEUPD.'
+         WRITE(*,*) ' Check the documentation of ZNEUPD.'
+         statusMsg = 2
 
       ELSE
 

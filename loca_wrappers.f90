@@ -1260,6 +1260,8 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
    COMPLEX(KIND=8), DIMENSION(:,:), ALLOCATABLE :: directEigenvectors, adjointEigenvectors
    REAL(KIND=8),    DIMENSION(:),   ALLOCATABLE :: structuralsens
 
+   INTEGER :: statusMsg
+
    CHARACTER(LEN=128) :: shiftName, & ! used to insert the shift in file names
                          shiftNameRe, shiftNameIm
    INTEGER            :: shiftNameTemp
@@ -1462,51 +1464,54 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
                                        p_in%eigen_maxit, &
                                        p_in%eigen_tol,   &
                                        p_in%eigen_sigma, &
-                          Jacobian_cmplx, Mass_cmplx, 1, directEigenvalues, directEigenvectors)
+                          Jacobian_cmplx, Mass_cmplx, 1,  statusMsg, directEigenvalues, directEigenvectors)
 
-         !----------------
-         ! CHECK RESIDUALS
-         !
-         WRITE(*,*)
-         WRITE(*,*) '    Check residuals on the direct problem'
-         DO k = 1, SIZE(directEigenvalues)
-         
-            CALL zAtimx (tmpEigen1, Mass_cmplx%e,     Mass_cmplx%j,     Mass_cmplx%i,     directEigenvectors(:,k))
-            CALL zAtimx (tmpEigen2, Jacobian_cmplx%e, Jacobian_cmplx%j, Jacobian_cmplx%i, directEigenvectors(:,k))
-         
-            WRITE(*,*) '    eig', k, MAXVAL(ABS( tmpEigen1*directEigenvalues(k) - tmpEigen2 ))
-         
-         ENDDO
-         WRITE(*,*)
+         IF ( statusMsg .EQ. 0 ) THEN
+            !----------------
+            ! CHECK RESIDUALS
+            !
+            WRITE(*,*)
+            WRITE(*,*) '    Check residuals on the direct problem'
+            DO k = 1, SIZE(directEigenvalues)
+            
+               CALL zAtimx (tmpEigen1, Mass_cmplx%e,     Mass_cmplx%j,     Mass_cmplx%i,     directEigenvectors(:,k))
+               CALL zAtimx (tmpEigen2, Jacobian_cmplx%e, Jacobian_cmplx%j, Jacobian_cmplx%i, directEigenvectors(:,k))
+            
+               WRITE(*,*) '    eig', k, MAXVAL(ABS( tmpEigen1*directEigenvalues(k) - tmpEigen2 ))
+            
+            ENDDO
+            WRITE(*,*)
 
-         !-------------
-         ! SAVE RESULTS
-         !
-         CALL Save_eigenvalues  (directEigenvalues,  &
-                            trim(p_in%eigen_output_directory)// &
-                             'directEigenvalues'//filenm(1:filenmLen)//trim(shiftName)//'.dat')
+            !-------------
+            ! SAVE RESULTS
+            !
+            CALL Save_eigenvalues  (directEigenvalues,  &
+                               trim(p_in%eigen_output_directory)// &
+                                'directEigenvalues'//filenm(1:filenmLen)//trim(shiftName)//'.dat')
 
-!         CALL Save_eigenvectors (directEigenvectors, &
-!                            trim(p_in%eigen_output_directory)// &
-!                            'directEigenvectors'//filenm(1:filenmLen)//trim(shiftName)//'.dat')
+!            CALL Save_eigenvectors (directEigenvectors, &
+!                               trim(p_in%eigen_output_directory)// &
+!                               'directEigenvectors'//filenm(1:filenmLen)//trim(shiftName)//'.dat')
 
-         !------------------
-         ! PLOT EIGENVECTORS
-         !
-         IF ( p_in%write_plots_flag ) THEN
+            !------------------
+            ! PLOT EIGENVECTORS
+            !
+            IF ( p_in%write_plots_flag ) THEN
 
-            IF ( SIZE(directEigenvectors,2) .LT. p_in%eigen_plotNumber ) THEN
-               eigen_plotNum = SIZE(directEigenvectors,2)
-            ELSE
-               eigen_plotNum = p_in%eigen_plotNumber
+               IF ( SIZE(directEigenvectors,2) .LT. p_in%eigen_plotNumber ) THEN
+                  eigen_plotNum = SIZE(directEigenvectors,2)
+               ELSE
+                  eigen_plotNum = p_in%eigen_plotNumber
+               ENDIF
+
+               CALL vtk_plot_eigenvectors (rr, jj,  DBLE(directEigenvectors(:,1:eigen_plotNum)), &
+                                           trim(p_in%plot_directory)// &
+                                           'directEigenvectorsRe'//filenm(1:filenmLen)//trim(shiftName)//'.vtk')
+               CALL vtk_plot_eigenvectors (rr, jj, AIMAG(directEigenvectors(:,1:eigen_plotNum)), &
+                                           trim(p_in%plot_directory)// &
+                                           'directEigenvectorsIm'//filenm(1:filenmLen)//trim(shiftName)//'.vtk')
             ENDIF
 
-            CALL vtk_plot_eigenvectors (rr, jj,  DBLE(directEigenvectors(:,1:eigen_plotNum)), &
-                                        trim(p_in%plot_directory)// &
-                                        'directEigenvectorsRe'//filenm(1:filenmLen)//trim(shiftName)//'.vtk')
-            CALL vtk_plot_eigenvectors (rr, jj, AIMAG(directEigenvectors(:,1:eigen_plotNum)), &
-                                        trim(p_in%plot_directory)// &
-                                        'directEigenvectorsIm'//filenm(1:filenmLen)//trim(shiftName)//'.vtk')
          ENDIF
 
       ENDIF
@@ -1525,51 +1530,54 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
                                        p_in%eigen_maxit, &
                                        p_in%eigen_tol,   &
                                        p_in%eigen_sigma, &
-                          Jacobian_cmplx, Mass_cmplx, 2, adjointEigenvalues, adjointEigenvectors)
+                          Jacobian_cmplx, Mass_cmplx, 2,  statusMsg, adjointEigenvalues, adjointEigenvectors)
 
-         !----------------
-         ! CHECK RESIDUALS
-         !
-         WRITE(*,*)
-         WRITE(*,*) '    Check residuals on the adjoint problem'
-         DO k = 1, SIZE(adjointEigenvalues)
-         
-            CALL zAtimx_T (tmpEigen1, Mass_cmplx%e,     Mass_cmplx%j,     Mass_cmplx%i,     adjointEigenvectors(:,k))
-            CALL zAtimx_T (tmpEigen2, Jacobian_cmplx%e, Jacobian_cmplx%j, Jacobian_cmplx%i, adjointEigenvectors(:,k))
-         
-            WRITE(*,*) '    eig', k, MAXVAL(ABS( tmpEigen1*adjointEigenvalues(k) - tmpEigen2 ))
-         
-         ENDDO
-         WRITE(*,*)
+         IF ( statusMsg .EQ. 0 ) THEN
+            !----------------
+            ! CHECK RESIDUALS
+            !
+            WRITE(*,*)
+            WRITE(*,*) '    Check residuals on the adjoint problem'
+            DO k = 1, SIZE(adjointEigenvalues)
+            
+               CALL zAtimx_T (tmpEigen1, Mass_cmplx%e,     Mass_cmplx%j,     Mass_cmplx%i,     adjointEigenvectors(:,k))
+               CALL zAtimx_T (tmpEigen2, Jacobian_cmplx%e, Jacobian_cmplx%j, Jacobian_cmplx%i, adjointEigenvectors(:,k))
+            
+               WRITE(*,*) '    eig', k, MAXVAL(ABS( tmpEigen1*adjointEigenvalues(k) - tmpEigen2 ))
+            
+            ENDDO
+            WRITE(*,*)
 
-         !-------------
-         ! SAVE RESULTS
-         !
-         CALL Save_eigenvalues  (adjointEigenvalues,  &
-                             trim(p_in%eigen_output_directory)// &
-                              'adjointEigenvalues'//filenm(1:filenmLen)//trim(shiftName)//'.dat')
+            !-------------
+            ! SAVE RESULTS
+            !
+            CALL Save_eigenvalues  (adjointEigenvalues,  &
+                                trim(p_in%eigen_output_directory)// &
+                                 'adjointEigenvalues'//filenm(1:filenmLen)//trim(shiftName)//'.dat')
 
-!         CALL Save_eigenvectors (adjointEigenvectors, &
-!                             trim(p_in%eigen_output_directory)// &
-!                             'adjointEigenvectors'//filenm(1:filenmLen)//trim(shiftName)//'.dat')
+!            CALL Save_eigenvectors (adjointEigenvectors, &
+!                                trim(p_in%eigen_output_directory)// &
+!                                'adjointEigenvectors'//filenm(1:filenmLen)//trim(shiftName)//'.dat')
 
-         !------------------
-         ! PLOT EIGENVECTORS
-         !
-         IF ( p_in%write_plots_flag ) THEN
+            !------------------
+            ! PLOT EIGENVECTORS
+            !
+            IF ( p_in%write_plots_flag ) THEN
 
-            IF ( SIZE(adjointEigenvectors,2) .LT. p_in%eigen_plotNumber ) THEN
-               eigen_plotNum = SIZE(adjointEigenvectors,2)
-            ELSE
-               eigen_plotNum = p_in%eigen_plotNumber
+               IF ( SIZE(adjointEigenvectors,2) .LT. p_in%eigen_plotNumber ) THEN
+                  eigen_plotNum = SIZE(adjointEigenvectors,2)
+               ELSE
+                  eigen_plotNum = p_in%eigen_plotNumber
+               ENDIF
+
+               CALL vtk_plot_eigenvectors (rr, jj,  DBLE(adjointEigenvectors(:,1:eigen_plotNum)), &
+                                           trim(p_in%plot_directory)// &
+                                           'adjointEigenvectorsRe'//filenm(1:filenmLen)//trim(shiftName)//'.vtk')
+               CALL vtk_plot_eigenvectors (rr, jj, AIMAG(adjointEigenvectors(:,1:eigen_plotNum)), &
+                                           trim(p_in%plot_directory)// &
+                                           'adjointEigenvectorsIm'//filenm(1:filenmLen)//trim(shiftName)//'.vtk')
             ENDIF
 
-            CALL vtk_plot_eigenvectors (rr, jj,  DBLE(adjointEigenvectors(:,1:eigen_plotNum)), &
-                                        trim(p_in%plot_directory)// &
-                                        'adjointEigenvectorsRe'//filenm(1:filenmLen)//trim(shiftName)//'.vtk')
-            CALL vtk_plot_eigenvectors (rr, jj, AIMAG(adjointEigenvectors(:,1:eigen_plotNum)), &
-                                        trim(p_in%plot_directory)// &
-                                        'adjointEigenvectorsIm'//filenm(1:filenmLen)//trim(shiftName)//'.vtk')
          ENDIF
 
       ENDIF
@@ -1589,13 +1597,13 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
       !----------------------------------------
       ! DEALLOCATE EIGENVALUES AND EIGENVECTORS
       !
-      IF ( p_in%eigen_directAdjoint_flag == 1 .AND. .NOT.p_in%eigen_compute_structSens_flag ) THEN
+      IF ( p_in%eigen_directAdjoint_flag == 1 .AND. .NOT.p_in%eigen_compute_structSens_flag .AND. statusMsg == 0 ) THEN
          DEALLOCATE(  directEigenvalues,  directEigenvectors )
       ENDIF
-      IF ( p_in%eigen_directAdjoint_flag == 2 .AND. .NOT.p_in%eigen_compute_structSens_flag ) THEN
+      IF ( p_in%eigen_directAdjoint_flag == 2 .AND. .NOT.p_in%eigen_compute_structSens_flag .AND. statusMsg == 0 ) THEN
          DEALLOCATE( adjointEigenvalues, adjointEigenvectors )
       ENDIF
-      IF ( p_in%eigen_directAdjoint_flag == 3 .OR.  p_in%eigen_compute_structSens_flag ) THEN
+      IF ( p_in%eigen_directAdjoint_flag == 3 .OR.  p_in%eigen_compute_structSens_flag .AND. statusMsg == 0 ) THEN
          DEALLOCATE(  directEigenvalues,  directEigenvectors )
          DEALLOCATE( adjointEigenvalues, adjointEigenvectors )
       ENDIF

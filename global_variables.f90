@@ -48,8 +48,9 @@ MODULE global_variables
 
    LOGICAL :: DESINGULARIZE
 
-   LOGICAL, ALLOCATABLE, DIMENSION(:)      :: Dir_psi
-   REAL(KIND=8), ALLOCATABLE, DIMENSION(:) :: zz, psi
+   LOGICAL, ALLOCATABLE, DIMENSION(:)        :: Dir_psi
+   REAL(KIND=8), ALLOCATABLE, DIMENSION(:)   :: psi
+   REAL(KIND=8), ALLOCATABLE, DIMENSION(:,:) :: zz
 
 
    INCLUDE 'mpif.h'

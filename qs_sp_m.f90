@@ -333,7 +333,7 @@ SUBROUTINE qs_1y1_sp_M (alpha, AA,  PLUS,  symmetric)
    INTEGER      :: k, l, m, ni, nj, i, j, p
  
   
-   AA%e = 0
+!   AA%e = 0
 
 
    IF (PRESENT(PLUS)) THEN  

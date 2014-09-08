@@ -14,6 +14,7 @@ MODULE case_dependent
    USE axisym_boundary_values
    USE Gauss_points
    USE Gauss_points_L
+   USE vorticity_stream
 
 
 !------------------------------------------------------------------------------

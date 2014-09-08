@@ -14,6 +14,8 @@ MODULE case_dependent
    USE axisym_boundary_values
    USE Gauss_points
    USE Gauss_points_L
+   USE vorticity_stream
+   USE vtk_plot
 
 
 !------------------------------------------------------------------------------
@@ -185,14 +187,18 @@ SUBROUTINE case_postprocess_analysis1()
    ! input variables
    ! output variables
    ! local variables
-   INTEGER           :: fid = 23
+   INTEGER :: fid = 23
    REAL(KIND=8), DIMENSION(velCmpnnts) :: u_avg
+
 
    ! executable statements
    WRITE(*,*)
    WRITE(*,*) '--> call to: case_postprocess_analysis1'
 
-   !***torus
+!***torus
+
+   ! compute average velocity and save it together with the forcing
+   !
    CALL computeFieldAverage(uu,  u_avg)
    WRITE(*,*)
    WRITE(*,*) '--> Average velocity field'
@@ -204,6 +210,27 @@ SUBROUTINE case_postprocess_analysis1()
    WRITE(fid,*) Re, flow_parameters(1), flow_parameters(2), flow_parameters(3), &
                 u_avg(1), u_avg(2), u_avg(3), volumeForcing(3,2)
    CLOSE(fid)
+
+   ! compute vorticity and stream function fields
+   !
+!   IF ( p_in%write_plots_flag ) THEN
+!
+!      ALLOCATE (Dir_psi(number_of_sides))
+!      ALLOCATE (zz(velCmpnnts,np), psi(np))
+!      Dir_psi = .TRUE.
+!   
+!      CALL compute_vorticity_stream (jj, jjs, js, uu(1:2,:), rr, 0d0, sides, Axis, Dir_psi,  zz(3,:), psi)
+!!      CALL compute_axial_plane_vorticity (jj, jjs, js, uu(3,:), Axis,  zz(2,:), zz(1,:))
+!
+!      CALL vtk_plot_scalar_P2 (rr, jj, psi, trim(p_in%plot_directory) // 'steadyStateStream.vtk')
+!
+!!      CALL vtk_plot_P2 (rr, jj, jj_L,  zz, 0*pp, trim(p_in%plot_directory) // 'steadyStateVorticity.vtk')
+!
+!      DEALLOCATE(Dir_psi)
+!      DEALLOCATE(zz, psi)
+!
+!   ENDIF
+
 
 
    WRITE(*,*) '    done: case_postprocess_analysis1'

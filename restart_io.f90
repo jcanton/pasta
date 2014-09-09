@@ -177,7 +177,7 @@ SUBROUTINE read_restart(x, param, filenm, filenmLen) &
    READ(20) np_L_in ! number of P1 nodes
 #endif
 
-#if DEBUG == 1
+#if DEBUG > 0
    WRITE(*,*) '    param      = ', param
    WRITE(*,*) '    velCmpnnts = ', uc_in
    WRITE(*,*) '    np         = ', np_in

@@ -137,6 +137,7 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
       CASE (INITIALIZATION)
       ! initialize
       !
+#if DEBUG > 0
       WRITE(*,*) ''
       WRITE(*,*) 'PAR_SOLVE_MUMPS_real:'
       IF (hostWorking == 1) THEN
@@ -150,6 +151,7 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
       WRITE(*,*) '             on : error messages'
       WRITE(*,*) '             on : diagnostic, statistics and warnings'
       WRITE(*,*) '             on : global information'
+#endif
       id_real(matrID)%SYM = symFlag
       CALL MPI_BARRIER (MPI_COMM_WORLD, mpiIerr)
       CALL par_mumps (parMumpsJob, matrID)
@@ -166,13 +168,17 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
       ! deactivating out-of-core capability
       id_real(matrID)%ICNTL(22) = 0
 
+#if DEBUG > 0
       WRITE (*,*) 'PAR_SOLVE_MUMPS_real: Initialization successful.'
+#endif
 
 !---->
       CASE (SYMBO_FACTOR)
       ! symbolic factorization
       !
+#if DEBUG > 0
       WRITE (*,*) 'PAR_SOLVE_MUMPS_real: starting symbolic factorization ...'
+#endif
       IF (ASSOCIATED(id_real(matrID)%IRN)) THEN
          WRITE(*,*) '*************************************'
          WRITE(*,*) '* PAR SOLVE MUMPS                 ***'
@@ -194,7 +200,9 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
       CALL par_mumps (parMumpsJob, matrID)
       ! Print operation result
       IF ( id_real(matrID)%INFOG(1) .EQ. 0 ) THEN
+#if DEBUG > 0
          WRITE (*,*) 'PAR_SOLVE_MUMPS_real: Symbolic factorization computed successfully.'
+#endif
       ELSE
          CALL mumps_status(id_real(matrID)%INFOG(1))
       ENDIF
@@ -203,7 +211,9 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
       CASE (NUMER_FACTOR)
       ! numerical factorization
       !
+#if DEBUG > 0
       WRITE (*,*) 'PAR_SOLVE_MUMPS_real: starting numerical factorization ...'
+#endif
       IF (SIZE(A%i) - 1 /= id_real(matrID)%N) THEN
          WRITE(*,*) '*************************************'
          WRITE(*,*) '* PAR SOLVE MUMPS                 ***'
@@ -235,7 +245,9 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) 'STOP.'
          STOP
       ELSEIF ( id_real(matrID)%INFOG(1) .EQ. 0 ) THEN
+#if DEBUG > 0
          WRITE (*,*) 'PAR_SOLVE_MUMPS_real: Numerical factorization computed successfully.'
+#endif
       ELSE
          CALL mumps_status(id_real(matrID)%INFOG(1))
       ENDIF
@@ -244,7 +256,9 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
       CASE (DIRECT_SOLUTION)
       ! direct solution
       !
+#if DEBUG > 0
       WRITE (*,*) 'PAR_SOLVE_MUMPS_real: starting direct solution ...'
+#endif
       IF (.NOT.PRESENT(rhsSol)) THEN
          WRITE(*,*) '*************************************'
          WRITE(*,*) '* PAR SOLVE MUMPS                 ***'
@@ -290,7 +304,9 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) 'STOP.'
          STOP
       ELSEIF ( id_real(matrID)%INFOG(1) .EQ. 0 ) THEN
+#if DEBUG > 0
          WRITE (*,*) 'PAR_SOLVE_MUMPS_real: Solution computed successfully.'
+#endif
       ELSE
          CALL mumps_status(id_real(matrID)%INFOG(1))
       ENDIF
@@ -299,7 +315,9 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
       CASE (TRANSP_SOLUTION)
       ! solution with transposed matrix
       !
+#if DEBUG > 0
       WRITE (*,*) 'PAR_SOLVE_MUMPS_real: starting transposed solution ...'
+#endif
       IF (.NOT.PRESENT(rhsSol)) THEN
          WRITE(*,*) '*************************************'
          WRITE(*,*) '* PAR SOLVE MUMPS                 ***'
@@ -346,7 +364,9 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) 'STOP.'
          STOP
       ELSEIF ( id_real(matrID)%INFOG(1) .EQ. 0 ) THEN
+#if DEBUG > 0
          WRITE (*,*) 'PAR_SOLVE_MUMPS_real: Transposed solution computed successfully.'
+#endif
       ELSE
          CALL mumps_status(id_real(matrID)%INFOG(1))
       ENDIF
@@ -355,7 +375,9 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
       CASE (DEALLOCATION)
       ! deallocate space
       !
+#if DEBUG > 0
       WRITE (*,*) 'PAR_SOLVE_MUMPS_real: starting deallocation ...'
+#endif
       IF (ASSOCIATED(id_real(matrID)%IRN)) THEN
          CALL MPI_BARRIER (MPI_COMM_WORLD, mpiIerr)
          CALL par_mumps (parMumpsJob, matrID)
@@ -371,7 +393,9 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) 'STOP.'
          STOP
       ENDIF
+#if DEBUG > 0
       WRITE (*,*) 'PAR_SOLVE_MUMPS_real: Matrix deallocated successfully.'
+#endif
 
 !---->
       CASE (FINALIZATION)
@@ -462,6 +486,7 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
       CASE (INITIALIZATION)
       ! initialize
       !
+#if DEBUG > 0
       WRITE(*,*) ''
       WRITE(*,*) 'PAR_SOLVE_MUMPS_cmpl:'
       IF (hostWorking == 1) THEN
@@ -475,6 +500,7 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
       WRITE(*,*) '             on : error messages'
       WRITE(*,*) '             on : diagnostic, statistics and warnings'
       WRITE(*,*) '             on : global information'
+#endif
       id_cmpl(matrID)%SYM = symFlag
       CALL MPI_BARRIER (MPI_COMM_WORLD, mpiIerr)
       CALL par_mumps (parMumpsJob, matrID)
@@ -491,13 +517,17 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
       ! deactivating out-of-core capability
       id_cmpl(matrID)%ICNTL(22) = 0
 
+#if DEBUG > 0
       WRITE (*,*) 'PAR_SOLVE_MUMPS_cmpl: Initialization successful.'
+#endif
 
 !---->
       CASE (SYMBO_FACTOR)
       ! symbolic factorization
       !
+#if DEBUG > 0
       WRITE (*,*) 'PAR_SOLVE_MUMPS_cmpl: starting symbolic factorization ...'
+#endif
       IF (ASSOCIATED(id_cmpl(matrID)%IRN)) THEN
          WRITE(*,*) '*************************************'
          WRITE(*,*) '* PAR SOLVE MUMPS                 ***'
@@ -519,7 +549,9 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
       CALL par_mumps (parMumpsJob, matrID)
       ! Print operation result
       IF ( id_cmpl(matrID)%INFOG(1) .EQ. 0 ) THEN
+#if DEBUG > 0
          WRITE (*,*) 'PAR_SOLVE_MUMPS_cmpl: Symbolic factorization computed successfully.'
+#endif
       ELSE
          CALL mumps_status(id_cmpl(matrID)%INFOG(1))
       ENDIF
@@ -528,7 +560,9 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
       CASE (NUMER_FACTOR)
       ! numerical factorization
       !
+#if DEBUG > 0
       WRITE (*,*) 'PAR_SOLVE_MUMPS_cmpl: starting numerical factorization ...'
+#endif
       IF (SIZE(A%i) - 1 /= id_cmpl(matrID)%N) THEN
          WRITE(*,*) '*************************************'
          WRITE(*,*) '* PAR SOLVE MUMPS                 ***'
@@ -560,7 +594,9 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) 'STOP.'
          STOP
       ELSEIF ( id_cmpl(matrID)%INFOG(1) .EQ. 0 ) THEN
+#if DEBUG > 0
          WRITE (*,*) 'PAR_SOLVE_MUMPS_cmpl: Numerical factorization computed successfully.'
+#endif
       ELSE
          CALL mumps_status(id_cmpl(matrID)%INFOG(1))
       ENDIF
@@ -569,7 +605,9 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
       CASE (DIRECT_SOLUTION)
       ! direct solution
       !
+#if DEBUG > 0
       WRITE (*,*) 'PAR_SOLVE_MUMPS_cmpl: starting direct solution ...'
+#endif
       IF (.NOT.PRESENT(rhsSol)) THEN
          WRITE(*,*) '*************************************'
          WRITE(*,*) '* PAR SOLVE MUMPS                 ***'
@@ -615,7 +653,9 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) 'STOP.'
          STOP
       ELSEIF ( id_cmpl(matrID)%INFOG(1) .EQ. 0 ) THEN
+#if DEBUG > 0
          WRITE (*,*) 'PAR_SOLVE_MUMPS_cmpl: Solution computed successfully.'
+#endif
       ELSE
          CALL mumps_status(id_cmpl(matrID)%INFOG(1))
       ENDIF
@@ -624,7 +664,9 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
       CASE (TRANSP_SOLUTION)
       ! solution with transposed matrix
       !
+#if DEBUG > 0
       WRITE (*,*) 'PAR_SOLVE_MUMPS_cmpl: starting transposed solution ...'
+#endif
       IF (.NOT.PRESENT(rhsSol)) THEN
          WRITE(*,*) '*************************************'
          WRITE(*,*) '* PAR SOLVE MUMPS                 ***'
@@ -671,7 +713,9 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) 'STOP.'
          STOP
       ELSEIF ( id_cmpl(matrID)%INFOG(1) .EQ. 0 ) THEN
+#if DEBUG > 0
          WRITE (*,*) 'PAR_SOLVE_MUMPS_cmpl: Transposed solution computed successfully.'
+#endif
       ELSE
          CALL mumps_status(id_cmpl(matrID)%INFOG(1))
       ENDIF
@@ -680,7 +724,9 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
       CASE (DEALLOCATION)
       ! deallocate space
       !
+#if DEBUG > 0
       WRITE (*,*) 'PAR_SOLVE_MUMPS_cmpl: starting deallocation ...'
+#endif
       IF (ASSOCIATED(id_cmpl(matrID)%IRN)) THEN
          CALL MPI_BARRIER (MPI_COMM_WORLD, mpiIerr)
          CALL par_mumps (parMumpsJob, matrID)
@@ -696,7 +742,9 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) 'STOP.'
          STOP
       ENDIF
+#if DEBUG > 0
       WRITE (*,*) 'PAR_SOLVE_MUMPS: Matrix deallocated successfully.'
+#endif
 
 !---->
       CASE (FINALIZATION)

@@ -145,9 +145,11 @@ SUBROUTINE eigensComplexShiftInvert(nev, maxit, tol, sigma, A, M, directAdjoint,
 
       DEALLOCATE( AmsM%i, AmsM%i_mumps, AmsM%j, AmsM%e )
 
+#if DEBUG > 0
       WRITE(*,*) ''
       WRITE(*,*) '    Shifted matrix assembled correctly.'
       WRITE(*,*) ''
+#endif
 
    ELSE
 
@@ -160,9 +162,11 @@ SUBROUTINE eigensComplexShiftInvert(nev, maxit, tol, sigma, A, M, directAdjoint,
 !      ENDIF
       CALL par_mumps_master (NUMER_FACTOR, 4, A, 0)
    
+#if DEBUG > 0
       WRITE(*,*) ''
       WRITE(*,*) '    No shift requested.'
       WRITE(*,*) ''
+#endif
 
    END IF
 !
@@ -229,7 +233,9 @@ SUBROUTINE eigensComplexShiftInvert(nev, maxit, tol, sigma, A, M, directAdjoint,
    DO
       i = i+1
    
+#if DEBUG > 0
       WRITE(*,*) 'Eigensolve, iteration n. ', i
+#endif
 !
 !     %----------------------------------------------%
 !     | Repeatedly call the routine ZNAUPD  and take |
@@ -243,7 +249,9 @@ SUBROUTINE eigensComplexShiftInvert(nev, maxit, tol, sigma, A, M, directAdjoint,
                      v    , n    , iparam, ipntr, &
                      workd, workl, lworkl, rwork, info )
 
-      ! WRITE(*,*) 'Eigensolve, requested action ', ido
+#if DEBUG > 0
+      WRITE(*,*) 'Eigensolve, requested action ', ido
+#endif
 
       IF (ido .eq. -1) THEN
 !
@@ -328,7 +336,7 @@ SUBROUTINE eigensComplexShiftInvert(nev, maxit, tol, sigma, A, M, directAdjoint,
          CYCLE
          
       ELSE IF ( ido .eq. 99) THEN
-      
+       
          WRITE(*,*) 'Done eigensolution, exit info: ', info
          EXIT
 

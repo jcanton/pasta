@@ -29,7 +29,7 @@ SUBROUTINE write_restart(x, param, step_num, max_steps, filenm, filenmLen) &
 !
 ! Author: Jacopo Canton
 ! E-mail: jcanton@mech.kth.se
-! Last revision: 6/5/2013
+! Last revision: 9/9/2014
 !
 ! - x         :: solution vector
 ! - param     :: value of important parameter
@@ -47,43 +47,59 @@ SUBROUTINE write_restart(x, param, step_num, max_steps, filenm, filenmLen) &
    INTEGER(KIND=C_INT), VALUE         :: filenmLen
    !CHARACTER(KIND=C_CHAR),DIMENSION(filenmLen) :: filenm
    ! local variables
-   REAL(KIND=8), DIMENSION(velCmpnnts,np) :: u_save
-   REAL(KIND=8), DIMENSION(np_L)          :: p_save
-   INTEGER :: i
+!   REAL(KIND=8), DIMENSION(velCmpnnts,np) :: u_save
+!   REAL(KIND=8), DIMENSION(np_L)          :: p_save
+!   INTEGER :: i
+   LOGICAL :: existFlag
    !CHARACTER(LEN=128) :: Ffilenm
 
    !Ffilenm = transfer(filenm(1:filenmLen), Ffilenm)
 
-   WRITE(*,*)
-   WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
-   WRITE(*,*) '--> Writing restart file: '//trim(p_in%restart_directory)//filenm(1:filenmLen)//' ...'
-   !WRITE(*,*) '--> Writing restart file: '//trim(p_in%restart_directory)//trim(Ffilenm)//' ...'
+   INQUIRE( FILE = trim(p_in%restart_directory)//filenm(1:filenmLen), EXIST = existFlag )
+   IF (.NOT.existFlag) THEN
 
+      WRITE(*,*)
+      WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+      WRITE(*,*) '--> Writing restart file: '//trim(p_in%restart_directory)//filenm(1:filenmLen)//' ...'
+      !WRITE(*,*) '--> Writing restart file: '//trim(p_in%restart_directory)//trim(Ffilenm)//' ...'
 
-   OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//filenm(1:filenmLen) )
+   ELSE
+
+      ! may not be very portable
+      !CALL RENAME(trim(p_in%restart_directory)//filenm(1:filenmLen), trim(p_in%restart_directory)//filenm(1:filenmLen)//'.bak')
+      WRITE(*,*)
+      WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+      WRITE(*,*) '--> Restart file '//trim(p_in%restart_directory)//filenm(1:filenmLen)//' exists, overwriting'
+
+   ENDIF
+
+   OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//filenm(1:filenmLen), FORM = 'UNFORMATTED' )
    !OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//trim(Ffilenm) )
 
-   WRITE(20, *) param
-   WRITE(20, *) step_num, max_steps
-   WRITE(20, *) velCmpnnts
-   WRITE(20, *) np
-   WRITE(20, *) np_L
 
-   WRITE(*,*) '    param      = ', param
-   WRITE(*,*) '    ite        = ', step_num, '/', max_steps
-   WRITE(*,*) '    velCmpnnts = ', velCmpnnts
-   WRITE(*,*) '    np         = ', np
-   WRITE(*,*) '    np_L       = ', np_L
+   WRITE(20) param
+   WRITE(20) step_num, max_steps
+   WRITE(20) velCmpnnts
+   WRITE(20) np
+   WRITE(20) np_L
 
-   CALL extract(x, u_save, p_save)
+!   WRITE(*,*) '    param      = ', param
+!   WRITE(*,*) '    ite        = ', step_num, '/', max_steps
+!   WRITE(*,*) '    velCmpnnts = ', velCmpnnts
+!   WRITE(*,*) '    np         = ', np
+!   WRITE(*,*) '    np_L       = ', np_L
 
-   ! write fields
-   DO i = 1, np
-      WRITE(20, *) u_save(:,i)
-   END DO
-   DO i = 1, np_L
-      WRITE(20, *) p_save(i)
-   END DO
+!   CALL extract(x, u_save, p_save)
+!   ! write fields ASCII
+!   DO i = 1, np
+!      WRITE(20, *) u_save(:,i)
+!   END DO
+!   DO i = 1, np_L
+!      WRITE(20, *) p_save(i)
+!   END DO
+   !
+   ! write fields BINARY
+   WRITE(20) x
 
    CLOSE(20)
 
@@ -110,7 +126,7 @@ SUBROUTINE read_restart(x, param, filenm, filenmLen) &
 !
 ! Author: Jacopo Canton
 ! E-mail: jcanton@mech.kth.se
-! Last revision: 5/5/2013
+! Last revision: 9/9/2014
 !
 ! - x      :: solution vector
 ! - param  :: value of important parameter
@@ -118,15 +134,17 @@ SUBROUTINE read_restart(x, param, filenm, filenmLen) &
    USE ISO_C_BINDING
 
    IMPLICIT NONE
+   ! input variables
+   CHARACTER(KIND=C_CHAR)             :: filenm
+   INTEGER(KIND=C_INT), VALUE         :: filenmLen
    ! output variables
    REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: x
    REAL(KIND=C_DOUBLE)                :: param
-   CHARACTER(KIND=C_CHAR)             :: filenm
-   INTEGER(KIND=C_INT), VALUE         :: filenmLen
    !CHARACTER(KIND=C_CHAR),DIMENSION(filenmLen) :: filenm
    ! local variables
-   REAL(KIND=8), DIMENSION(velCmpnnts,np) :: u_save
-   REAL(KIND=8), DIMENSION(np_L)          :: p_save
+   INTEGER                            :: step_num, max_steps
+!   REAL(KIND=8), DIMENSION(velCmpnnts,np) :: u_save
+!   REAL(KIND=8), DIMENSION(np_L)          :: p_save
    INTEGER :: i, uc_in, np_in, np_L_in
    CHARACTER(LEN=128) :: Ffilenm
 
@@ -137,47 +155,51 @@ SUBROUTINE read_restart(x, param, filenm, filenmLen) &
    WRITE(*,*) '--> Reading restart file: '//trim(p_in%restart_directory)//filenm(1:filenmLen)//' ...'
    !WRITE(*,*) '--> Reading restart file: '//trim(p_in%restart_directory)//trim(Ffilenm)//' ...'
 
-   OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//filenm(1:filenmLen))
+   OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//filenm(1:filenmLen), FORM = 'UNFORMATTED' )
    !OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//trim(Ffilenm) )
 
-   READ(20, *) param
-   READ(20, *) ! jump this line
-   READ(20, *) uc_in   ! number of velocity components
-   READ(20, *) np_in   ! number of P2 nodes
-   READ(20, *) np_L_in ! number of P1 nodes
+   READ(20) param
+   READ(20) step_num, max_steps
+   READ(20) uc_in   ! number of velocity components
+   READ(20) np_in   ! number of P2 nodes
+   READ(20) np_L_in ! number of P1 nodes
 
-   WRITE(*,*) '    param      = ', param
-   WRITE(*,*) '    velCmpnnts = ', uc_in
-   WRITE(*,*) '    np         = ', np_in
-   WRITE(*,*) '    np_L       = ', np_L_in
+!   WRITE(*,*) '    param      = ', param
+!   WRITE(*,*) '    velCmpnnts = ', uc_in
+!   WRITE(*,*) '    np         = ', np_in
+!   WRITE(*,*) '    np_L       = ', np_L_in
 
    ! check dimension consistency
    ! uu
-   IF ( SIZE(u_save,1) /= uc_in .OR. SIZE(u_save,2) /= np_in ) THEN
+   IF ( velCmpnnts /= uc_in .OR. np /= np_in ) THEN
       WRITE(*,*) '    Error: wrong uu size'
-      WRITE(*,*) '    SIZE(uu,1) = ', SIZE(u_save,1), ', saved in this file: ', uc_in
-      WRITE(*,*) '    SIZE(uu,2) = ', SIZE(u_save,2), ', saved in this file: ', np_in
+      WRITE(*,*) '    SIZE(uu,1) = ', velCmpnnts, ', saved in this file: ', uc_in
+      WRITE(*,*) '    SIZE(uu,2) = ', np,         ', saved in this file: ', np_in
       WRITE(*,*) '    STOP.'
       STOP
    END IF
    ! pp
-   IF ( SIZE(p_save) /= np_L_in ) THEN
+   IF ( np_L /= np_L_in ) THEN
       WRITE(*,*) '    Error: wrong pp size'
-      WRITE(*,*) '    SIZE(pp) = ', SIZE(p_save), ', saved in this file: ', np_L_in
+      WRITE(*,*) '    SIZE(pp) = ', np_L, ', saved in this file: ', np_L_in
       WRITE(*,*) '    STOP.'
       STOP
    END IF
 
-   ! read fields
-   DO i = 1, np
-      READ(20, *) u_save(:,i)
-   END DO
-   DO i = 1, np_L
-      READ(20, *) p_save(i)
-   END DO
+!   ! read fields ASCII
+!   DO i = 1, np
+!      READ(20, *) u_save(:,i)
+!   END DO
+!   DO i = 1, np_L
+!      READ(20, *) p_save(i)
+!   END DO
+!   CALL collect(u_save, p_save, x)
+   !
+   ! read fields BINARY
+   READ(20) x
+
    CLOSE(20)
 
-   CALL collect(u_save, p_save, x)
 
    WRITE(*,*) '    Done.'
 

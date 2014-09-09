@@ -31,13 +31,13 @@ clean:
 NOW := $(shell date +"%c" | tr ' :' '__')
 
 # Compilers
-FC = mpif90
+FC = mpif90 -cpp
 CC = mpicc
 
 F90CMP = $(FC) -c
 F90LNK = $(FC)
 F90OPT = -O3 -fopenmp
-F90DEB = #-g -Wall -Wextra -pedantic -fcheck=all
+F90DEB = -DASCIIRESTART -DDEBUG=1 #-g -Wall -Wextra -pedantic -fcheck=all
 F90FLAGS = $(F90OPT) $(F90DEB)
 
 CCMP   = $(CC) -c

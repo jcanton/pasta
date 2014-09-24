@@ -304,8 +304,8 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
 
          WRITE(*,*)
          WRITE(*,*) '    --> CALL to continuation_hook'
-         WRITE(*,*) '    |x0|_L-infty = ', MAXVAL(ABS(x0))
-         WRITE(*,*) '    |dx|_L-infty = ', MAXVAL(ABS(dx))
+!write(*,*) '    |x0|_L-infty = ', MAXVAL(ABS(x0))
+!write(*,*) '    |dx|_L-infty = ', MAXVAL(ABS(dx))
          WRITE(*,*)
          !-------------------------------------
          ! WARNING: continuation_hook expects the solution of

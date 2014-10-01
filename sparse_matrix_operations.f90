@@ -107,14 +107,14 @@ SUBROUTINE dAtimx (y, a, ja, ia, x)
       WRITE(*,*) '--> dAtimx Error: wrong A - x size' 
       WRITE(*,*) '    SIZE(x) = ', SIZE(x), ' SIZE(A,1) = ', number_of_rows
       WRITE(*,*) '    STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    END IF
    ! A - y
    IF ( SIZE(y) /= number_of_rows ) THEN
       WRITE(*,*) '--> dAtimx Error: wrong A - y size' 
       WRITE(*,*) '    SIZE(y) = ', SIZE(y), ' SIZE(A,1) = ', number_of_rows
       WRITE(*,*) '    STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    END IF
    ! not necessary to check x-y consistency because A has to be square
 
@@ -189,14 +189,14 @@ SUBROUTINE dAtimx_T (y, a, ja, ia, x)
       WRITE(*,*) '--> dAtimx_T Error: wrong A - x size' 
       WRITE(*,*) '    SIZE(x) = ', SIZE(x), ' SIZE(A,1) = ', number_of_rows
       WRITE(*,*) '    STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    END IF
    ! A - y
    IF ( SIZE(y) /= number_of_rows ) THEN
       WRITE(*,*) '--> dAtimx_T Error: wrong A - y size' 
       WRITE(*,*) '    SIZE(y) = ', SIZE(y), ' SIZE(A,1) = ', number_of_rows
       WRITE(*,*) '    STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    END IF
    ! not necessary to check x-y consistency because A has to be square
 
@@ -268,7 +268,7 @@ SUBROUTINE dEssM (a, ja, ia, n, b, jb, ib, i_mumpsb)
       WRITE(*,*) '--> dEssM Error: n > rows(A)' 
       WRITE(*,*) '    n = ', n, ' SIZE(A,1) = ', number_of_rows
       WRITE(*,*) '    STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    END IF
 
 
@@ -435,14 +435,14 @@ SUBROUTINE zAtimx (y, a, ja, ia, x)
       WRITE(*,*) '--> zAtimx Error: wrong A - x size' 
       WRITE(*,*) '    SIZE(x) = ', SIZE(x), ' SIZE(A,1) = ', number_of_rows
       WRITE(*,*) '    STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    END IF
    ! A - y
    IF ( SIZE(y) /= number_of_rows ) THEN
       WRITE(*,*) '--> zAtimx Error: wrong A - y size' 
       WRITE(*,*) '    SIZE(y) = ', SIZE(y), ' SIZE(A,1) = ', number_of_rows
       WRITE(*,*) '    STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    END IF
    ! not necessary to check x-y consistency because A has to be square
 
@@ -516,14 +516,14 @@ SUBROUTINE zAtimx_T (y, a, ja, ia, x)
       WRITE(*,*) '--> zAtimx_T Error: wrong A - x size' 
       WRITE(*,*) '    SIZE(x) = ', SIZE(x), ' SIZE(A,1) = ', number_of_rows
       WRITE(*,*) '    STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    END IF
    ! A - y
    IF ( SIZE(y) /= number_of_rows ) THEN
       WRITE(*,*) '--> zAtimx_T Error: wrong A - y size' 
       WRITE(*,*) '    SIZE(y) = ', SIZE(y), ' SIZE(A,1) = ', number_of_rows
       WRITE(*,*) '    STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    END IF
    ! not necessary to check x-y consistency because A has to be square
 
@@ -595,7 +595,7 @@ SUBROUTINE zEssM (a, ja, ia, n, b, jb, ib, i_mumpsb)
       WRITE(*,*) '--> zEssM Error: n > rows(A)' 
       WRITE(*,*) '    n = ', n, ' SIZE(A,1) = ', number_of_rows
       WRITE(*,*) '    STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    END IF
 
 

@@ -134,7 +134,7 @@ SUBROUTINE read_BVS (sideNumber, scaleFactor, nodes_on_this_side, velCmpnnts, rr
    ELSE
       WRITE(*,*) '*** Increase possible side number in read_BVS ***'
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    ENDIF
 
    ! (2)
@@ -171,7 +171,7 @@ SUBROUTINE read_BVS (sideNumber, scaleFactor, nodes_on_this_side, velCmpnnts, rr
       WRITE(*,*) '*** mesh xmin = ', MINVAL(rr(1, nodes_on_this_side))
       WRITE(*,*) '*************************************'
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    ENDIF
    ! ymin
    IF ( dataSideData(velCmpnnts+2,1) /= MINVAL(rr(2, nodes_on_this_side)) ) THEN
@@ -181,7 +181,7 @@ SUBROUTINE read_BVS (sideNumber, scaleFactor, nodes_on_this_side, velCmpnnts, rr
       WRITE(*,*) '*** mesh ymin = ', MINVAL(rr(2, nodes_on_this_side))
       WRITE(*,*) '*************************************'
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    ENDIF
    ! xmax
    IF ( dataSideData(velCmpnnts+1,dataNumberOfPoints) /= MAXVAL(rr(1, nodes_on_this_side)) ) THEN
@@ -191,7 +191,7 @@ SUBROUTINE read_BVS (sideNumber, scaleFactor, nodes_on_this_side, velCmpnnts, rr
       WRITE(*,*) '*** mesh xmax = ', MAXVAL(rr(1, nodes_on_this_side))
       WRITE(*,*) '*************************************'
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    ENDIF
    ! ymax
    IF ( dataSideData(velCmpnnts+2,dataNumberOfPoints) /= MAXVAL(rr(2, nodes_on_this_side)) ) THEN
@@ -201,7 +201,7 @@ SUBROUTINE read_BVS (sideNumber, scaleFactor, nodes_on_this_side, velCmpnnts, rr
       WRITE(*,*) '*** mesh ymax = ', MAXVAL(rr(2, nodes_on_this_side))
       WRITE(*,*) '*************************************'
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    ENDIF
 
    ! (4)
@@ -301,7 +301,7 @@ SUBROUTINE write_BVS (sideNumber, uu, rr, jjs, sides, file_name)
    ELSE
       WRITE(*,*) '*** Increase possible side number in read_BVS ***'
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    ENDIF
 
 

@@ -126,7 +126,7 @@ SUBROUTINE vtk_plot_P2 (rr, jj, jj_L, uu, pp, file_name)
       ! what kind of vectorial field would you like to plot?!?
       WRITE(*,*) '    wrong vectorial field dimensions'
       WRITE(*,*) '    STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    END IF
 
 

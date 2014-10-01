@@ -151,8 +151,9 @@ SUBROUTINE  read_p1_gen_p2_sp (dir, fil)
 !      write(*,*) '    SUB : read_p1_gen_p2_sp'
 !      write(*,*) '    CAL : newton'
       WRITE(*,*) '    grid data incompatible with finite-element data'
+      WRITE(*,*) 'STOP'
 !      write(*,*)
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    ENDIF
    
    ALLOCATE (jj_L (n_w_L,  me),   neigh(n_w_L,  me))

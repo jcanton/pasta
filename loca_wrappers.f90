@@ -542,7 +542,7 @@ write(*,*) '    omega = ', omega
          WRITE(*,*) ''
          WRITE(*,*) '*******************************************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
 
       WRITE(*,*) '    filling [J-i*omega*M] matrix'
@@ -845,7 +845,7 @@ SUBROUTINE mass_matvec_mult_conwrap(xxx, yyy) &
       WRITE(*,*) '********* STRANGE *********'
       WRITE(*,*) '***************************'
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    ENDIF
 
 !write(*,*) '*check*'

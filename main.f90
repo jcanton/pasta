@@ -257,7 +257,7 @@ IF ( myRank == 0 ) THEN
          WRITE(*,*) '*** computed base flow.                            ***'
          WRITE(*,*) '******************************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
       CALL compute_eigen(xx, 'SteadyState', 11, 0d0)
 
@@ -291,7 +291,7 @@ IF ( myRank == 0 ) THEN
          WRITE(*,*) '*** computed base flow.                              ***'
          WRITE(*,*) '********************************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
       CALL compute_transientGrowth(x0, Jacobian, 'SteadyState')
 
@@ -319,7 +319,7 @@ IF ( myRank == 0 ) THEN
          WRITE(*,*) '*** to start from the Stokes initial guess.          ***'
          WRITE(*,*) '********************************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
       WRITE(*,*)
       WRITE(*,*) '********************************************************'
@@ -328,7 +328,7 @@ IF ( myRank == 0 ) THEN
       WRITE(*,*) '*** due to work in progress on 3d formulation.       ***'
       WRITE(*,*) '********************************************************'
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       !CALL evolve_transientGrowth(x0)
 
       !CALL case_postprocess_analysis7()
@@ -340,7 +340,7 @@ IF ( myRank == 0 ) THEN
       WRITE(*,*) '*** set to: ', p_in%method
       WRITE(*,*) '*************************************'
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    END SELECT
 
 !------------------------------------------------------------------------------
@@ -398,7 +398,7 @@ SUBROUTINE check_boundary_conditions (Dx, Dy, Norm, Tang)
          WRITE (*,*) '--> Modify the input setting'
          WRITE (*,*) '--> Norm = .false.  and  Tang =.false..'
       write(*,*)
-         STOP 
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr) 
 
       ENDIF 
 
@@ -413,7 +413,7 @@ SUBROUTINE check_boundary_conditions (Dx, Dy, Norm, Tang)
          WRITE (*,*) '--> Modify the input setting'
          WRITE (*,*) '--> Norm = .true.  and  Tang =.true..'
       write(*,*)
-         STOP 
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr) 
 
       ENDIF
 
@@ -427,7 +427,7 @@ SUBROUTINE check_boundary_conditions (Dx, Dy, Norm, Tang)
          WRITE (*,*) '--> STOP.'
          WRITE (*,*) '--> The input must be modified.'
       write(*,*)
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
          
       ENDIF
 
@@ -439,7 +439,7 @@ SUBROUTINE check_boundary_conditions (Dx, Dy, Norm, Tang)
      write(*,*) '--> hai creato un paradosso in barba'
      write(*,*) '--> alla logica.'
 
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
 
    ENDIF 
 
@@ -550,7 +550,7 @@ SUBROUTINE read_and_apply_boundary_conditions(input_file, k_d, rr, mms, jjs, &
          WRITE(*,*) ' you have to input Dir = false'
          WRITE(*,*) ' Correct your data'
          WRITE(*,*) ' STOP.'
-         STOP  
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)  
    
       ENDIF
 

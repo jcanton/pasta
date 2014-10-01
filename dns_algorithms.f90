@@ -112,7 +112,7 @@ SUBROUTINE dns (x0, x00)
          WRITE(*,*) '*** set to: ', p_in%dns_method
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    END SELECT
          
 !-------------------------------

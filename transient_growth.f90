@@ -135,7 +135,7 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
       WRITE(*,*) '*** set to: ', p_in%tranGrowth_BC
       WRITE(*,*) '*************************************'
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    ENDIF
 
    DO k = 1, velCmpnnts
@@ -245,7 +245,7 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
       WRITE(*,*) '*** following ones.               ***'
       WRITE(*,*) '*************************************'
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
 
       WRITE(*,*)
       WRITE(*,*) '--> Reading taus from file taus.in'
@@ -288,7 +288,7 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
          WRITE(*,*) '*** These two choiches are not compatible.   ***'
          WRITE(*,*) '************************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
       CALL read_cmplx_restart_bin(xx_tg(1:velCmpnnts*np), dummy, trim(restart_name))
       CALL extract_cmplx (xx_tg,  uInitGuess)
@@ -339,7 +339,7 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
             WRITE(*,*) '*** set to: ', p_in%tranGrowth_initGuess
             WRITE(*,*) '*************************************'
             WRITE(*,*) 'STOP.'
-            STOP
+            CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       END SELECT
 
    ENDIF
@@ -384,7 +384,7 @@ DO ii = 1, tausNumber
          WRITE(*,*) '            NOT IMPLEMENTED'
          WRITE(*,*) '            AND PROBABLY UNUSABLE'
          WRITE(*,*) '            STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
          !
          ! Wd  = [ 1/dtH Mass  + div(u) ]
          !
@@ -468,7 +468,7 @@ DO ii = 1, tausNumber
          WRITE(*,*) '    method: implicit Euler'
          WRITE(*,*) '            NOT IMPLEMENTED'
          WRITE(*,*) '            STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
          !
          ! Wd  = [ 1/dtH Mass  +  Lns ]
          !
@@ -483,7 +483,7 @@ DO ii = 1, tausNumber
          WRITE(*,*) '*** set to: ', p_in%tranGrowth_method
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    END SELECT
    WRITE(*,*)
 
@@ -525,7 +525,7 @@ DO ii = 1, tausNumber
 !      endif
 !   enddo
 !enddo
-!STOP
+!CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
 
    WRITE(*,*) '    Matrices assembled correctly.'
    WRITE(*,*)
@@ -1306,7 +1306,7 @@ endif
    !        './tranGrowthOut/'//'tranGrowthDir_Re.vtk')
    !   CALL vtk_plot_P2 (rr, jj, jj_L, AIMAG(uu_tg), AIMAG(p0_tg), &
    !        './tranGrowthOut/'//'tranGrowthDir_Im.vtk')
-   !STOP
+   !CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    !ELSEIF ( dirAdj == 2 ) THEN
    !   CALL vtk_plot_P2 (rr, jj, jj_L,  DBLE(uu_tg),  DBLE(p0_tg), &
    !        './tranGrowthOut/'//'tranGrowthAdj_Re.vtk')
@@ -1558,7 +1558,7 @@ END SUBROUTINE projectDiv
 !          WRITE(*,*) '*** ', trim(restart_name)
 !          WRITE(*,*) '***************************************'
 !          WRITE(*,*) 'STOP.'
-!          STOP
+!          CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
 !       ENDIF
 ! 
 !       !---------------------------------------------------

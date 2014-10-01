@@ -118,7 +118,7 @@ SUBROUTINE eigensComplexShiftInvert(nev, maxit, tol, sigma, A, M, directAdjoint,
       WRITE(*,*) '*** wrong directAdjoint parameter ***'
       WRITE(*,*) '*************************************'
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    ENDIF
 
 
@@ -643,7 +643,7 @@ SUBROUTINE read_eigenvector (Nx, nevRead, filenm, filenmLen, &
       WRITE(*,*) '    inconsistent dimensions:'
       WRITE(*,*) '    Nx = ', Nx, ' Nx read from this file: ', NxRead
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    ENDIF
 
    WRITE(*,*) '    Nx read from this file: ', NxRead

@@ -178,7 +178,7 @@ SUBROUTINE intToChar6 (intNumber, sixCharString)
       WRITE(*,*) '*** in module miscellaneous_subroutines ***'
       WRITE(*,*) '*******************************************'
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    ENDIF
 
 END SUBROUTINE intToChar6

@@ -127,7 +127,7 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
       WRITE(*,*) '*** range is: 0 to ', max_save
       WRITE(*,*) '*************************************'
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    ENDIF
 
    
@@ -188,7 +188,7 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** id_real: ', matrID
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
 
       id_real(matrID)%N   = SIZE(A%i) - 1
@@ -225,7 +225,7 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** id_real(matrID)%N: ', id_real(matrID)%N
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
       id_real(matrID)%A => A%e
 
@@ -243,7 +243,7 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** factorized                    ***'
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ELSEIF ( id_real(matrID)%INFOG(1) .EQ. 0 ) THEN
 #if DEBUG > 0
          WRITE (*,*) 'PAR_SOLVE_MUMPS_real: Numerical factorization computed successfully.'
@@ -269,7 +269,7 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** right had side                ***'
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
       IF (SIZE(rhsSol) /= id_real(matrID)%N) THEN
          WRITE(*,*) '*************************************'
@@ -282,7 +282,7 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** id_real(matrID)%N: ', id_real(matrID)%N
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
 
       id_real(matrID)%RHS => rhsSol
@@ -302,7 +302,7 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** factorized                    ***'
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ELSEIF ( id_real(matrID)%INFOG(1) .EQ. 0 ) THEN
 #if DEBUG > 0
          WRITE (*,*) 'PAR_SOLVE_MUMPS_real: Solution computed successfully.'
@@ -328,7 +328,7 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** right had side                ***'
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
       IF (SIZE(rhsSol) /= id_real(matrID)%N) THEN
          WRITE(*,*) '*************************************'
@@ -341,7 +341,7 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** id_real(matrID)%N: ', id_real(matrID)%N
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
 
       id_real(matrID)%RHS => rhsSol
@@ -362,7 +362,7 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** factorized                    ***'
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ELSEIF ( id_real(matrID)%INFOG(1) .EQ. 0 ) THEN
 #if DEBUG > 0
          WRITE (*,*) 'PAR_SOLVE_MUMPS_real: Transposed solution computed successfully.'
@@ -391,7 +391,7 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** has never been allocated      ***'
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
 #if DEBUG > 0
       WRITE (*,*) 'PAR_SOLVE_MUMPS_real: Matrix deallocated successfully.'
@@ -417,7 +417,7 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
       WRITE(*,*) '*** set to: ', parMumpsJob
       WRITE(*,*) '*************************************'
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
 
    END SELECT
 
@@ -476,7 +476,7 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
       WRITE(*,*) '*** range is: 0 to ', max_save
       WRITE(*,*) '*************************************'
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    ENDIF
 
    
@@ -537,7 +537,7 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** id_cmpl: ', matrID
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
 
       id_cmpl(matrID)%N   = SIZE(A%i) - 1
@@ -574,7 +574,7 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** id_cmpl(matrID)%N: ', id_cmpl(matrID)%N
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
       id_cmpl(matrID)%A => A%e
 
@@ -592,7 +592,7 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** factorized                    ***'
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ELSEIF ( id_cmpl(matrID)%INFOG(1) .EQ. 0 ) THEN
 #if DEBUG > 0
          WRITE (*,*) 'PAR_SOLVE_MUMPS_cmpl: Numerical factorization computed successfully.'
@@ -618,7 +618,7 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** right had side                ***'
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
       IF (SIZE(rhsSol) /= id_cmpl(matrID)%N) THEN
          WRITE(*,*) '*************************************'
@@ -631,7 +631,7 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** id_cmpl(matrID)%N: ', id_cmpl(matrID)%N
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
 
       id_cmpl(matrID)%RHS => rhsSol
@@ -651,7 +651,7 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** factorized                    ***'
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ELSEIF ( id_cmpl(matrID)%INFOG(1) .EQ. 0 ) THEN
 #if DEBUG > 0
          WRITE (*,*) 'PAR_SOLVE_MUMPS_cmpl: Solution computed successfully.'
@@ -677,7 +677,7 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** right had side                ***'
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
       IF (SIZE(rhsSol) /= id_cmpl(matrID)%N) THEN
          WRITE(*,*) '*************************************'
@@ -690,7 +690,7 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** id_cmpl(matrID)%N: ', id_cmpl(matrID)%N
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
 
       id_cmpl(matrID)%RHS => rhsSol
@@ -711,7 +711,7 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** factorized                    ***'
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ELSEIF ( id_cmpl(matrID)%INFOG(1) .EQ. 0 ) THEN
 #if DEBUG > 0
          WRITE (*,*) 'PAR_SOLVE_MUMPS_cmpl: Transposed solution computed successfully.'
@@ -740,7 +740,7 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
          WRITE(*,*) '*** has never been allocated      ***'
          WRITE(*,*) '*************************************'
          WRITE(*,*) 'STOP.'
-         STOP
+         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
 #if DEBUG > 0
       WRITE (*,*) 'PAR_SOLVE_MUMPS: Matrix deallocated successfully.'
@@ -766,7 +766,7 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
       WRITE(*,*) '*** set to: ', parMumpsJob
       WRITE(*,*) '*************************************'
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
 
    END SELECT
 
@@ -922,7 +922,7 @@ SUBROUTINE par_mumps (parMumpsJob, matrID)
       WRITE(*,*) '============================================================'
       WRITE(*,*) '             END of program for process.', myRank
       WRITE(*,*) '============================================================'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
 
    END SELECT
 
@@ -980,7 +980,7 @@ SUBROUTINE  mumps_status (ierr)
  
    END SELECT 
 
-   STOP
+   CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
 
 END SUBROUTINE  mumps_status
 

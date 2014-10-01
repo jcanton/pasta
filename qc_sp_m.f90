@@ -485,7 +485,7 @@ SUBROUTINE qc_0y0_zero_sp_M (m0, jj, alpha,  CC)
    
       WRITE (*,*) 'qc_0y0_zero_sp_M  is implemented only in 2D'
       WRITE (*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    
    ENDIF
 
@@ -587,7 +587,7 @@ SUBROUTINE qc_1y1_sp_M (m0, jj, alpha,  CC)
    
       WRITE (*,*) 'qc_1y1_sp_M  is implemented only for axisymmetric'
       WRITE (*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    
    ENDIF
 
@@ -737,7 +737,7 @@ SUBROUTINE qc_1y1_sp_gg_M (m0, jj, alpha,  CC)
    
       WRITE (*,*) 'qc_1y1_sp_gg_M  is implemented only for axisymmetric'
       WRITE (*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    
    ENDIF
 
@@ -1494,7 +1494,7 @@ SUBROUTINE qc_ty0_sp_s (ms0, jjs, iis, gzs,  v0)
    
       WRITE (*,*) ' qc_ty0_sp_s implemented only  in' 
       WRITE (*,*) ' the two-dimensional case: STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
        
    ENDIF
    

@@ -395,7 +395,7 @@ SUBROUTINE  start_coupled_system_axisym (np, np_L, jj, js,  CC)
       WRITE (*,*) 'incoherence between NR and AA%i(np_L+1) - 1'
       WRITE (*,*) 'in start_coupled_system.  STOP'
       
-      STOP 
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr) 
    
    ENDIF
 

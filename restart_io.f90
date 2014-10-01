@@ -191,14 +191,14 @@ SUBROUTINE read_restart(x, param, filenm, filenmLen) &
       WRITE(*,*) '    SIZE(uu,1) = ', velCmpnnts, ', saved in this file: ', uc_in
       WRITE(*,*) '    SIZE(uu,2) = ', np,         ', saved in this file: ', np_in
       WRITE(*,*) '    STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    END IF
    ! pp
    IF ( np_L /= np_L_in ) THEN
       WRITE(*,*) '    Error: wrong pp size'
       WRITE(*,*) '    SIZE(pp) = ', np_L, ', saved in this file: ', np_L_in
       WRITE(*,*) '    STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    END IF
 
    ! read fields
@@ -307,7 +307,7 @@ SUBROUTINE read_restart_bin(x, param, filenm)
       WRITE(*,*) '    Error: wrong x size'
       WRITE(*,*) '    SIZE(x) = ', SIZE(x), ', saved in this file: ', sizeX
       WRITE(*,*) '    STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    END IF
 
    ! read field
@@ -406,7 +406,7 @@ SUBROUTINE read_cmplx_restart_bin(x, param, filenm)
       WRITE(*,*) '    Error: wrong x size'
       WRITE(*,*) '    SIZE(x) = ', SIZE(x), ', saved in this file: ', sizeX
       WRITE(*,*) '    STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    END IF
 
    ! read field

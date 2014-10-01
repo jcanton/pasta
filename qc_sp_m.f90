@@ -20,10 +20,11 @@ MODULE qc_sp_M
 !   ===> dd_ij_ml = SUM_SUM(Dw_re(:,ni,l) * MTM_j(:,:,m) * Dw_re(:,nj,l))
 
 
-  USE sparse_matrix_profiles
+   USE sparse_matrix_profiles
 
-  USE dynamic_structures
+   USE dynamic_structures
 
+   USE global_variables ! MPI variables
 
 CONTAINS
 

@@ -45,8 +45,9 @@ gauss_points_2d_l.o:
 gauss_points_2d_p_sp.o:
 fem_2d_grid.o:
 sparse_matrix_profiles.o:
-sparse_matrix_operations.o:
 loca_parameters.o:
+sparse_matrix_operations.o: global_variables.o
+
 global_variables.o: read_input_files.o   \
                     dynamic_structures.o \
                     sparse_matrix_profiles.o
@@ -59,7 +60,8 @@ miscellaneous_subroutines.o: prep_mesh_p1p2_sp.o    \
 par_solve_mumps.o: global_variables.o \
                    sparse_matrix_profiles.o
 
-start_sparse_kit.o: sparse_matrix_profiles.o
+start_sparse_kit.o: sparse_matrix_profiles.o \
+                    global_variables.o
 
 qs_l_m.o: sparse_matrix_profiles.o \
           gauss_points_2d_p_sp.o   \
@@ -76,12 +78,14 @@ qv_sp.o: gauss_points_2d_p_sp.o
 
 qc_sp_m.o: sparse_matrix_profiles.o \
            gauss_points_2d_l.o      \
-           gauss_points_2d_p_sp.o
+           gauss_points_2d_p_sp.o   \
+			  global_variables.o
 
 prep_mesh_p1p2_sp.o: gauss_points_2d_l.o    \
                      gauss_points_2d_p_sp.o \
                      dirichlet_neumann.o    \
-                     fem_2d_grid.o
+                     fem_2d_grid.o          \
+							global_variables.o
 
 vtk_plot.o: miscellaneous_subroutines.o
 

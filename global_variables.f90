@@ -52,10 +52,10 @@ MODULE global_variables
    REAL(KIND=8), ALLOCATABLE, DIMENSION(:)   :: psi
    REAL(KIND=8), ALLOCATABLE, DIMENSION(:,:) :: zz
 
+   INTEGER :: parMumpsJob
+   INTEGER :: matrID
 
    INCLUDE 'mpif.h'
    INTEGER :: myRank, nProc, mpiErrC, mpiIerr
-   INTEGER :: parMumpsJob
-   INTEGER :: matrID
 
 END MODULE global_variables

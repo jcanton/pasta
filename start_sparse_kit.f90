@@ -1,6 +1,8 @@
 MODULE  start_sparse_kit
    
    USE sparse_matrix_profiles
+
+   USE global_variables ! MPI variables
    
    IMPLICIT NONE
    

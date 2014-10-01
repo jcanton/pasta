@@ -4,6 +4,9 @@ MODULE sparse_matrix_operations
 ! E-mail: jcanton@mech.kth.se
 ! Last revision: 25/8/2013
 !
+
+   USE global_variables ! MPI variables
+
    IMPLICIT NONE
 
 CONTAINS

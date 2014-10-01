@@ -50,6 +50,8 @@ MODULE  prep_mesh_p1p2_sp
                     !  fem_2d_readGrid
                     !  fem_2d_getElemType
                     !  fem_2d_getGridSizes
+
+   USE global_variables ! MPI variables
                     
 
    IMPLICIT NONE

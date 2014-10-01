@@ -390,7 +390,7 @@ SUBROUTINE Dirichlet_rc_M (np, js_Axis, js_D, diagE,  CC)
    INTEGER,            DIMENSION(:), INTENT(IN)    :: js_Axis
    TYPE(dyn_int_line), DIMENSION(:), INTENT(IN)    :: js_D
    REAL(KIND=8),                     INTENT(IN)    :: diagE
-   TYPE(CSR_MUMPS_Matrix),           INTENT(INOUT) :: CC 
+   TYPE(CSR_MUMPS_Matrix)                          :: CC 
 
    INTEGER :: k, n, i_, p
 
@@ -403,16 +403,16 @@ SUBROUTINE Dirichlet_rc_M (np, js_Axis, js_D, diagE,  CC)
          ! column
          WHERE ( CC%j == i_ )
 
-            CC%e = 0
+            CC%e = 0d0
 
          ENDWHERE
     
          ! row
          DO p = CC%i(i_), CC%i(i_+1) - 1
         
-            CC%e(p) = 0
+            CC%e(p) = 0d0
          
-            IF (CC%j(p) == i_) CC%e(p) = 1
+            IF (CC%j(p) == i_) CC%e(p) = 1d0
                 
          ENDDO  
          
@@ -430,14 +430,14 @@ SUBROUTINE Dirichlet_rc_M (np, js_Axis, js_D, diagE,  CC)
          ! column
          WHERE ( CC%j == i_ )
 
-            CC%e = 0
+            CC%e = 0d0
 
          ENDWHERE
     
          ! row
          DO p = CC%i(i_), CC%i(i_+1) - 1
          
-            CC%e(p) = 0
+            CC%e(p) = 0d0
          
             IF (CC%j(p) == i_) CC%e(p) = diagE
          
@@ -1523,76 +1523,7 @@ END SUBROUTINE qc_ty0_sp_s
 !******************************************************************************
 !******************************************************************************
 
-SUBROUTINE ComputeJacobianMatrix_3d(np, mm, jj, jj_L, js_Axis, js_D, DESINGULARIZE, beta, CC,  Re, UU)
-!===============================================================================
-
-   IMPLICIT NONE
-   
-   !-----------------------------------------------------------------------!
-   INTEGER,                            INTENT(IN) :: np 
-   INTEGER,            DIMENSION(:),   INTENT(IN) :: mm
-   INTEGER,            DIMENSION(:,:), INTENT(IN) :: jj
-   INTEGER,            DIMENSION(:,:), INTENT(IN) :: jj_L
-   INTEGER,   POINTER, DIMENSION(:)               :: js_Axis
-   TYPE(dyn_int_line), DIMENSION(:),   INTENT(IN) :: js_D 
-   LOGICAL,                            INTENT(IN) :: DESINGULARIZE
-   INTEGER,                            INTENT(IN) :: beta
-   
-   TYPE(CSR_MUMPS_Complex_Matrix)                 :: CC
-
-   REAL(KIND=8),                           INTENT(IN) :: Re
-   REAL(KIND=8), OPTIONAL, DIMENSION(:,:), INTENT(IN) :: UU
-   !-----------------------------------------------------------------------!
-
-   REAL(KIND=8), PARAMETER :: one = 1d0
-   INTEGER :: Nx, p
-   
-
-   !-----------------------------------------------------------------
-   !-------------GENERATION OF THE JACOBIAN MATRIX-------------------
-   !-------------OF THE COUPLED EQUATION SYSTEM----------------------            
-   !             CC  <---  Re [(U.G)_ + (_.G)U)]  +  K_  +  G_ (weak)  
-   !             CC  <---  - V._   
-   !-------------ONLY THE CONSTANT CONTRIBUTION---------------------- 
-
-   Nx = SIZE(CC%i) - 1
-
-   CC%e = 0
-
-   CALL qc_1y1_sp_gg_3d_M (mm, jj,  1d0/Re, beta,  CC) ! + stiffness (GRAD:GRAD)
-
-   CALL qc_1y0_sp_3d_M (mm, jj, jj_L, -one, beta,  CC) ! + pressure gradient (ibp)  
-
-   CALL qc_0y1_sp_3d_M (mm, jj, jj_L, -one, beta,  CC) ! - velocity divergence
-      
-
-   !-----------------------------------------------------------------
-   !-------------GENERATION OF THE JACOBIAN MATRIX-------------------
-   !-------------OF THE COUPLED EQUATION SYSTEM----------------------            
-   !             CC  <---  [(U.G)_ + (_.G)U)]  + 1/Re *  K_  +  G_ (ibp)  
-   !-------------ADD THE ITERATION DEPENDENDT PART------------------- 
-
-
-   IF (PRESENT(UU)) THEN 
-      CALL qc_oseen2y_sp_3d_M (mm, jj, UU, beta,  CC) ! linearized terms
-   END IF
-   
-   CALL Dirichlet_rc_3d_M (np, js_Axis, js_D, 1d0,  CC)
-
-   IF (DESINGULARIZE) THEN
-      ! reduction of the row of the last equation to 
-      ! the diagonal element alone, set equal to 1   
-      DO p = CC%i(Nx), CC%i(Nx + 1) - 1
-         CC%e(p) = 0
-         IF (CC%j(p) == Nx) CC%e(p) = 1
-      ENDDO
-   ENDIF
-   
-END SUBROUTINE ComputeJacobianMatrix_3d
-
-!------------------------------------------------------------------------------
-
-SUBROUTINE qc_1y1_sp_gg_3d_M (m0, jj, alpha, beta,  CC) 
+SUBROUTINE qc_1y1_sp_gg_3d_M (m0, jj, alpha, beta,  CC)
 !==========================================
 
 !  +  alpha [<< (Dw), y D_ >> ]   ===>   CC
@@ -1623,8 +1554,8 @@ SUBROUTINE qc_1y1_sp_gg_3d_M (m0, jj, alpha, beta,  CC)
    
       WRITE (*,*) 'qc_1y1_sp_gg_3d_M  is implemented only for 2d meshes'
       WRITE (*,*) 'STOP.'
-      STOP
-   
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
+
    ENDIF
 
    np = MAXVAL(jj) ! number of parabolic nodes

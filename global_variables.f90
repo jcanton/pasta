@@ -54,7 +54,7 @@ MODULE global_variables
 
 
    INCLUDE 'mpif.h'
-   INTEGER :: myRank, nProc, mpiIerr
+   INTEGER :: myRank, nProc, mpiErrC, mpiIerr
    INTEGER :: parMumpsJob
    INTEGER :: matrID
 

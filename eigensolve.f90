@@ -249,7 +249,7 @@ SUBROUTINE eigensComplexShiftInvert(nev, maxit, tol, sigma, A, M, directAdjoint,
                      v    , n    , iparam, ipntr, &
                      workd, workl, lworkl, rwork, info )
 
-#if DEBUG > 0
+#if DEBUG > 1
       WRITE(*,*) 'Eigensolve, requested action ', ido
 #endif
 

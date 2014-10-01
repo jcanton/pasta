@@ -1246,7 +1246,7 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
    REAL(KIND=C_DOUBLE), VALUE         :: shiftIm
 
    ! local variables
-   TYPE(CSR_MUMPS_Complex_Matrix)     :: Jacobian_cmplx, Mass_cmplx
+   TYPE(CSR_MUMPS_Complex_Matrix)     :: Lns_cmplx, Mass_cmplx
 
    LOGICAL, DIMENSION(velCmpnnts, number_of_sides) :: Dir_eigen
    TYPE(dyn_int_line), DIMENSION(velCmpnnts)       :: js_D_eigen
@@ -1299,9 +1299,10 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
          READ(20,*) shifts(i)
       ENDDO
       CLOSE(20)
+#if DEBUG > 0
       WRITE(*,*) '    read ', shiftsNumber, ' shifts'
       WRITE(*,*) '    Done.'
-
+#endif
    ENDIF
 
    !----------------------------------------------------
@@ -1312,17 +1313,24 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
    ! (1)
    ! prepare boundary conditions
    !
-!   WRITE(*,*) '*check*'
-!   WRITE(*,*) '    number_of_sides = ', number_of_sides
+#if DEBUG > 2
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    number_of_sides = ', number_of_sides
+#endif
+
    IF ( p_in%eigen_BC == 1 ) THEN
       ! homogeneous Dirichlet on every border
+#if DEBUG > 0
       WRITE(*,*) '    boundary conditions: zero velocity on every border'
+#endif
       Dir_eigen = .TRUE.
       DESINGULARIZE_eigen = .TRUE.
    ELSEIF ( p_in%eigen_BC == 2 ) THEN
       ! same BCs as for the base flow but homogeneous
       ! Dirichlet where the base flow has nonhomogeneous Dirichlet
+#if DEBUG > 0
       WRITE(*,*) '    boundary conditions: same as base flow'
+#endif
       Dir_eigen = Dir
       DESINGULARIZE_eigen = DESINGULARIZE
    ELSE
@@ -1332,7 +1340,7 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
       WRITE(*,*) '*** set to: ', p_in%eigen_BC
       WRITE(*,*) '*************************************'
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    ENDIF
 
    DO k = 1, velCmpnnts
@@ -1342,12 +1350,14 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
    ! (2)
    ! allocate the complex matrices
    !
+#if DEBUG > 0
    WRITE(*,*) '--> Creating complex matrices'
+#endif
 
-   ALLOCATE( Jacobian_cmplx%i      (SIZE(Jacobian%i))       ); Jacobian_cmplx%i       = Jacobian%i
-   ALLOCATE( Jacobian_cmplx%i_mumps(SIZE(Jacobian%i_mumps)) ); Jacobian_cmplx%i_mumps = Jacobian%i_mumps
-   ALLOCATE( Jacobian_cmplx%j      (SIZE(Jacobian%j))       ); Jacobian_cmplx%j       = Jacobian%j
-   ALLOCATE( Jacobian_cmplx%e      (SIZE(Jacobian%e))       ); Jacobian_cmplx%e       = CMPLX(0d0, 0d0,KIND=8)
+   ALLOCATE( Lns_cmplx%i      (SIZE(Jacobian%i))       ); Lns_cmplx%i       = Jacobian%i
+   ALLOCATE( Lns_cmplx%i_mumps(SIZE(Jacobian%i_mumps)) ); Lns_cmplx%i_mumps = Jacobian%i_mumps
+   ALLOCATE( Lns_cmplx%j      (SIZE(Jacobian%j))       ); Lns_cmplx%j       = Jacobian%j
+   ALLOCATE( Lns_cmplx%e      (SIZE(Jacobian%e))       ); Lns_cmplx%e       = CMPLX(0d0, 0d0,KIND=8)
 
    ALLOCATE( Mass_cmplx%i      (SIZE(Jacobian%i))       ); Mass_cmplx%i       = Jacobian%i
    ALLOCATE( Mass_cmplx%i_mumps(SIZE(Jacobian%i_mumps)) ); Mass_cmplx%i_mumps = Jacobian%i_mumps
@@ -1355,32 +1365,34 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
    ALLOCATE( Mass_cmplx%e      (SIZE(Jacobian%e))       ); Mass_cmplx%e       = CMPLX(0d0, 0d0, KIND=8)
 
    ! (3)
-   ! fill the jacobian matrix
-   ! NOTE: the sign of the Jacobian matrix has to be changed
+   ! fill the Lns matrix
+   ! NOTE: the sign of the Lns matrix has to be changed
    ! since the problem we are solving is:
-   ! lambda*Mass*x = -Jacobian*x
+   ! lambda*Mass*x = -Lns*x
    !
-!write(*,*) '*check*'
-!write(*,*) '    Re   = ', Re
-!write(*,*) '    beta = ', beta
+#if DEBUG > 2
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    Re   = ', Re
+   WRITE(*,*) '    beta = ', beta
+#endif
    CALL extract(x_vec, u0)
-   CALL qc_1y1_sp_gg_3d_M  (mm, jj,                  1d0/Re, beta,  Jacobian_cmplx) ! stifness (GRAD:GRAD)
-   CALL qc_oseen2y_sp_3d_M (mm, jj,                   u0,    beta,  Jacobian_cmplx) ! + linearized terms
-   CALL qc_1y0_sp_3d_M     (mm, jj, jj_L,           -1d0,    beta,  Jacobian_cmplx) ! + pressure gradient (ibp)
-   CALL qc_0y1_sp_3d_M     (mm, jj, jj_L,           -1d0,    beta,  Jacobian_cmplx) ! - velocity divergence
-   CALL Dirichlet_rc_3d_M  (np, js_Axis, js_D_eigen, 1d0,           Jacobian_cmplx) ! Dirichlet BCs
+   CALL qc_1y1_sp_gg_3d_M  (mm, jj,                  1d0/Re, beta,  Lns_cmplx) ! stifness (GRAD:GRAD)
+   CALL qc_oseen2y_sp_3d_M (mm, jj,                   u0,    beta,  Lns_cmplx) ! + linearized terms
+   CALL qc_1y0_sp_3d_M     (mm, jj, jj_L,           -1d0,    beta,  Lns_cmplx) ! + pressure gradient (ibp)
+   CALL qc_0y1_sp_3d_M     (mm, jj, jj_L,           -1d0,    beta,  Lns_cmplx) ! - velocity divergence
+   CALL Dirichlet_rc_3d_M  (np, js_Axis, js_D_eigen, 1d0,           Lns_cmplx) ! Dirichlet BCs
 
-   Jacobian_cmplx%e = - Jacobian_cmplx%e
+   Lns_cmplx%e = - Lns_cmplx%e
 
    IF (DESINGULARIZE_eigen) THEN
       ! column
-      WHERE (Jacobian_cmplx%j == Nx)
-         Jacobian_cmplx%e = CMPLX(0d0,0d0,KIND=8)
+      WHERE (Lns_cmplx%j == Nx)
+         Lns_cmplx%e = CMPLX(0d0,0d0,KIND=8)
       ENDWHERE
       ! row
-      DO i = Jacobian_cmplx%i(Nx), Jacobian_cmplx%i(Nx + 1) - 1
-         Jacobian_cmplx%e(i) = CMPLX(0d0,0d0,KIND=8)
-         IF (Jacobian_cmplx%j(i) == Nx) Jacobian_cmplx%e(i) = CMPLX(1d0,0d0,KIND=8)
+      DO i = Lns_cmplx%i(Nx), Lns_cmplx%i(Nx + 1) - 1
+         Lns_cmplx%e(i) = CMPLX(0d0,0d0,KIND=8)
+         IF (Lns_cmplx%j(i) == Nx) Lns_cmplx%e(i) = CMPLX(1d0,0d0,KIND=8)
       ENDDO
    ENDIF
 
@@ -1392,7 +1404,7 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
    ! EXPLAINATION: we use the Jacobian matrix to save memory in case the Mass
    !               matrix hasn't been created yet
    !
-   Jacobian%e = 0
+   Jacobian%e = 0d0
    CALL qc_0y0_zero_sp_M (mm, jj, 1d0, Jacobian)
 
    ! impose boundary conditions on the Mass Matrix
@@ -1404,8 +1416,8 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
 !+++
 !write(*,*) 'exporting matrices'
 !open(unit=20,file='Jacobian.dat',form='formatted')
-!do i = 1,size(Jacobian_cmplx%e)-1
-!   write(20,*) Jacobian_cmplx%i_mumps(i), Jacobian_cmplx%j(i), dble(Jacobian_cmplx%e(i))
+!do i = 1,size(Lns_cmplx%e)-1
+!   write(20,*) Lns_cmplx%i_mumps(i), Lns_cmplx%j(i), dble(Lns_cmplx%e(i))
 !enddo
 !close(20)
 !open(unit=20,file='Mass.dat',form='formatted')
@@ -1464,7 +1476,7 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
                                        p_in%eigen_maxit, &
                                        p_in%eigen_tol,   &
                                        p_in%eigen_sigma, &
-                          Jacobian_cmplx, Mass_cmplx, 1,  statusMsg, directEigenvalues, directEigenvectors)
+                          Lns_cmplx, Mass_cmplx, 1,  statusMsg, directEigenvalues, directEigenvectors)
 
          IF ( statusMsg .EQ. 0 ) THEN
             !----------------
@@ -1474,8 +1486,8 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
             WRITE(*,*) '    Check residuals on the direct problem'
             DO k = 1, SIZE(directEigenvalues)
             
-               CALL zAtimx (tmpEigen1, Mass_cmplx%e,     Mass_cmplx%j,     Mass_cmplx%i,     directEigenvectors(:,k))
-               CALL zAtimx (tmpEigen2, Jacobian_cmplx%e, Jacobian_cmplx%j, Jacobian_cmplx%i, directEigenvectors(:,k))
+               CALL zAtimx (tmpEigen1, Mass_cmplx%e, Mass_cmplx%j, Mass_cmplx%i, directEigenvectors(:,k))
+               CALL zAtimx (tmpEigen2, Lns_cmplx%e,  Lns_cmplx%j,  Lns_cmplx%i,  directEigenvectors(:,k))
             
                WRITE(*,*) '    eig', k, MAXVAL(ABS( tmpEigen1*directEigenvalues(k) - tmpEigen2 ))
             
@@ -1530,7 +1542,7 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
                                        p_in%eigen_maxit, &
                                        p_in%eigen_tol,   &
                                        p_in%eigen_sigma, &
-                          Jacobian_cmplx, Mass_cmplx, 2,  statusMsg, adjointEigenvalues, adjointEigenvectors)
+                          Lns_cmplx, Mass_cmplx, 2,  statusMsg, adjointEigenvalues, adjointEigenvectors)
 
          IF ( statusMsg .EQ. 0 ) THEN
             !----------------
@@ -1540,8 +1552,8 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
             WRITE(*,*) '    Check residuals on the adjoint problem'
             DO k = 1, SIZE(adjointEigenvalues)
             
-               CALL zAtimx_T (tmpEigen1, Mass_cmplx%e,     Mass_cmplx%j,     Mass_cmplx%i,     adjointEigenvectors(:,k))
-               CALL zAtimx_T (tmpEigen2, Jacobian_cmplx%e, Jacobian_cmplx%j, Jacobian_cmplx%i, adjointEigenvectors(:,k))
+               CALL zAtimx_T (tmpEigen1, Mass_cmplx%e, Mass_cmplx%j, Mass_cmplx%i, adjointEigenvectors(:,k))
+               CALL zAtimx_T (tmpEigen2, Lns_cmplx%e,  Lns_cmplx%j,  Lns_cmplx%i,  adjointEigenvectors(:,k))
             
                WRITE(*,*) '    eig', k, MAXVAL(ABS( tmpEigen1*adjointEigenvalues(k) - tmpEigen2 ))
             
@@ -1624,8 +1636,8 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
    !--------------------------------
    ! DEALLOCATE THE COMPLEX MATRICES
    !
-   DEALLOCATE( Jacobian_cmplx%i, Jacobian_cmplx%i_mumps, Jacobian_cmplx%j, Jacobian_cmplx%e )
-   DEALLOCATE( Mass_cmplx%i,         Mass_cmplx%i_mumps,     Mass_cmplx%j,     Mass_cmplx%e )
+   DEALLOCATE( Lns_cmplx%i,  Lns_cmplx%i_mumps,  Lns_cmplx%j,  Lns_cmplx%e )
+   DEALLOCATE( Mass_cmplx%i, Mass_cmplx%i_mumps, Mass_cmplx%j, Mass_cmplx%e )
 
 
 END SUBROUTINE compute_eigen

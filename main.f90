@@ -65,7 +65,7 @@ PROGRAM  main
       WRITE(*,*) '*** MPI uncorrectly initialized   ***'
       WRITE(*,*) '*************************************'
       WRITE(*,*) 'STOP.'
-      STOP
+      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    ENDIF
 
 IF ( myRank == 0 ) THEN

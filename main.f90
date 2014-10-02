@@ -189,7 +189,7 @@ IF ( myRank == 0 ) THEN
 
       IF ( p_in%write_restart_flag ) THEN
          ! WRITE RESTART FILE
-         CALL write_restart(xx, Re, ite_num, p_in%nwtn_maxite, p_in%output_restart_file, LEN(trim(p_in%output_restart_file)))
+         CALL write_restart(xx, Re, ite_num, p_in%nwtn_maxite, p_in%output_restart_file)
       END IF
 
       ! WRITE QP RESTART FILE

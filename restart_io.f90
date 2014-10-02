@@ -24,44 +24,32 @@ CONTAINS
 
 !------------------------------------------------------------------------------
 
-SUBROUTINE write_restart(x, param, step_num, max_steps, filenm, filenmLen) &
-   BIND(C, NAME='write_restart')
+SUBROUTINE write_restart(x, param, step_num, max_steps, filenm)
 !
 ! Author: Jacopo Canton
 ! E-mail: jcanton@mech.kth.se
-! Last revision: 9/9/2014
+! Last revision: 2/10/2014
 !
 ! - x         :: solution vector
 ! - param     :: value of important parameter
 ! - step_num  :: number of iterations taken to compute the solution
 ! - max_steps :: maximum number of iterations allowed
 !
-   USE ISO_C_BINDING
-
    IMPLICIT NONE
    ! input variables
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: x
-   REAL(KIND=C_DOUBLE), VALUE         :: param
-   INTEGER(KIND=C_INT), VALUE         :: step_num, max_steps
-   CHARACTER(KIND=C_CHAR)             :: filenm
-   INTEGER(KIND=C_INT), VALUE         :: filenmLen
-   !CHARACTER(KIND=C_CHAR),DIMENSION(filenmLen) :: filenm
-   ! local variables
-!   REAL(KIND=8), DIMENSION(velCmpnnts,np) :: u_save
-!   REAL(KIND=8), DIMENSION(np_L)          :: p_save
-!   INTEGER :: i
+   REAL(KIND=8), DIMENSION(Nx) :: x
+   REAL(KIND=8)                :: param
+   INTEGER                     :: step_num, max_steps
+   CHARACTER(*)                :: filenm
+
    LOGICAL :: existFlag
-   !CHARACTER(LEN=128) :: Ffilenm
 
-   !Ffilenm = transfer(filenm(1:filenmLen), Ffilenm)
-
-   INQUIRE( FILE = trim(p_in%restart_directory)//filenm(1:filenmLen), EXIST = existFlag )
+   INQUIRE( FILE = trim(p_in%restart_directory)//trim(filenm), EXIST = existFlag )
    IF (.NOT.existFlag) THEN
 
       WRITE(*,*)
       WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
-      WRITE(*,*) '--> Writing restart file: '//trim(p_in%restart_directory)//filenm(1:filenmLen)//' ...'
-      !WRITE(*,*) '--> Writing restart file: '//trim(p_in%restart_directory)//trim(Ffilenm)//' ...'
+      WRITE(*,*) '--> Writing restart file: '//trim(p_in%restart_directory)//trim(filenm)//' ...'
 
    ELSE
 
@@ -69,12 +57,11 @@ SUBROUTINE write_restart(x, param, step_num, max_steps, filenm, filenmLen) &
       !CALL RENAME(trim(p_in%restart_directory)//filenm(1:filenmLen), trim(p_in%restart_directory)//filenm(1:filenmLen)//'.bak')
       WRITE(*,*)
       WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
-      WRITE(*,*) '--> Restart file '//trim(p_in%restart_directory)//filenm(1:filenmLen)//' exists, overwriting'
+      WRITE(*,*) '--> Restart file '//trim(p_in%restart_directory)//trim(filenm)//' exists, OVERWRITING'
 
    ENDIF
 
-   OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//filenm(1:filenmLen), FORM = 'UNFORMATTED' )
-   !OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//trim(Ffilenm) )
+   OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//trim(filenm), FORM = 'UNFORMATTED' )
 
 
    WRITE(20) param
@@ -118,6 +105,103 @@ SUBROUTINE write_restart(x, param, step_num, max_steps, filenm, filenmLen) &
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 END SUBROUTINE write_restart
+!
+! C compatible version follows
+!
+!! SUBROUTINE write_restart(x, param, step_num, max_steps, filenm, filenmLen) &
+!!    BIND(C, NAME='write_restart')
+!! !
+!! ! Author: Jacopo Canton
+!! ! E-mail: jcanton@mech.kth.se
+!! ! Last revision: 9/9/2014
+!! !
+!! ! - x         :: solution vector
+!! ! - param     :: value of important parameter
+!! ! - step_num  :: number of iterations taken to compute the solution
+!! ! - max_steps :: maximum number of iterations allowed
+!! !
+!!    USE ISO_C_BINDING
+!! 
+!!    IMPLICIT NONE
+!!    ! input variables
+!!    REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: x
+!!    REAL(KIND=C_DOUBLE), VALUE         :: param
+!!    INTEGER(KIND=C_INT), VALUE         :: step_num, max_steps
+!!    CHARACTER(KIND=C_CHAR)             :: filenm
+!!    INTEGER(KIND=C_INT), VALUE         :: filenmLen
+!!    !CHARACTER(KIND=C_CHAR),DIMENSION(filenmLen) :: filenm
+!!    ! local variables
+!! !   REAL(KIND=8), DIMENSION(velCmpnnts,np) :: u_save
+!! !   REAL(KIND=8), DIMENSION(np_L)          :: p_save
+!! !   INTEGER :: i
+!!    LOGICAL :: existFlag
+!!    !CHARACTER(LEN=128) :: Ffilenm
+!! 
+!!    !Ffilenm = transfer(filenm(1:filenmLen), Ffilenm)
+!! 
+!!    INQUIRE( FILE = trim(p_in%restart_directory)//filenm(1:filenmLen), EXIST = existFlag )
+!!    IF (.NOT.existFlag) THEN
+!! 
+!!       WRITE(*,*)
+!!       WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+!!       WRITE(*,*) '--> Writing restart file: '//trim(p_in%restart_directory)//filenm(1:filenmLen)//' ...'
+!!       !WRITE(*,*) '--> Writing restart file: '//trim(p_in%restart_directory)//trim(Ffilenm)//' ...'
+!! 
+!!    ELSE
+!! 
+!!       ! may not be very portable
+!!       !CALL RENAME(trim(p_in%restart_directory)//filenm(1:filenmLen), trim(p_in%restart_directory)//filenm(1:filenmLen)//'.bak')
+!!       WRITE(*,*)
+!!       WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+!!       WRITE(*,*) '--> Restart file '//trim(p_in%restart_directory)//filenm(1:filenmLen)//' exists, overwriting'
+!! 
+!!    ENDIF
+!! 
+!!    OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//filenm(1:filenmLen), FORM = 'UNFORMATTED' )
+!!    !OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//trim(Ffilenm) )
+!! 
+!! 
+!!    WRITE(20) param
+!!    WRITE(20) step_num, max_steps
+!!    WRITE(20) velCmpnnts
+!!    WRITE(20) np
+!!    WRITE(20) np_L
+!! 
+!! !   WRITE(*,*) '    param      = ', param
+!! !   WRITE(*,*) '    ite        = ', step_num, '/', max_steps
+!! !   WRITE(*,*) '    velCmpnnts = ', velCmpnnts
+!! !   WRITE(*,*) '    np         = ', np
+!! !   WRITE(*,*) '    np_L       = ', np_L
+!! 
+!! !   CALL extract(x, u_save, p_save)
+!! !   ! write fields ASCII
+!! !   DO i = 1, np
+!! !      WRITE(20, *) u_save(:,i)
+!! !   END DO
+!! !   DO i = 1, np_L
+!! !      WRITE(20, *) p_save(i)
+!! !   END DO
+!!    !
+!!    ! write fields BINARY
+!!    WRITE(20) x
+!! 
+!!    CLOSE(20)
+!! 
+!! 
+!!    WRITE(*,*) '    Done.'
+!! 
+!!    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!    ! TEMPORARY
+!!    !WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+!!    !WRITE(*,*) '--> Writing matrix file: '//trim(p_in%restart_directory)//'matrix_'//filenm(1:filenmLen)//' ...'
+!!    !OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//'matrix_'//filenm(1:filenmLen) )
+!!    !do i = 1, size(Jacobian%e)
+!!    !   write(20,*) Jacobian%i_mumps(i), Jacobian%j(i), Jacobian%e(i)
+!!    !enddo
+!!    !close(20)
+!!    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! 
+!! END SUBROUTINE write_restart
 
 !------------------------------------------------------------------------------
 

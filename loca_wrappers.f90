@@ -1149,16 +1149,13 @@ END SUBROUTINE assign_bif_parameter_conwrap
 !------------------------------------------------------------------------------
 ! other LOCA's subroutines which are not wrappers
 
-SUBROUTINE param_output(param) &
-   BIND(C, NAME='param_output')
+SUBROUTINE param_output(param)
 ! 
 ! Print parameter(s) to file
 ! 
-   USE ISO_C_BINDING
-
    IMPLICIT NONE
    ! input variables
-   REAL(KIND=C_DOUBLE), VALUE :: param
+   REAL(KIND=8) :: param
    ! local variables
    INTEGER           :: fid = 22
    CHARACTER(LEN=50) :: filenm
@@ -1199,6 +1196,59 @@ SUBROUTINE param_output(param) &
    CALL case_loca_paramout()
 
 END SUBROUTINE param_output
+!
+! C compatible version follows
+!
+!! SUBROUTINE param_output(param) &
+!!    BIND(C, NAME='param_output')
+!! ! 
+!! ! Print parameter(s) to file
+!! ! 
+!!    USE ISO_C_BINDING
+!! 
+!!    IMPLICIT NONE
+!!    ! input variables
+!!    REAL(KIND=C_DOUBLE), VALUE :: param
+!!    ! local variables
+!!    INTEGER           :: fid = 22
+!!    CHARACTER(LEN=50) :: filenm
+!! 
+!! 
+!!    WRITE(*,*)
+!!    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+!!    WRITE(*,*) '--> CALL to param_output'
+!!    WRITE(*,*)
+!! 
+!!    SELECT CASE( pd%param )
+!!       CASE( REYNOLDS )
+!!          filenm = './locaOut/reynolds.dat'
+!!          WRITE(*,*) 'writing file: ', trim(filenm)
+!!       CASE( OSCAR )
+!!          filenm = './locaOut/oscar.dat'
+!!          WRITE(*,*) 'writing file: ', trim(filenm)
+!!       CASE( ROMEO )
+!!          filenm = './locaOut/romeo.dat'
+!!          WRITE(*,*) 'writing file: ', trim(filenm)
+!!       CASE( WHISKY )
+!!          filenm = './locaOut/whisky.dat'
+!!          WRITE(*,*) 'writing file: ', trim(filenm)
+!!    END SELECT
+!! 
+!!    OPEN(UNIT= fid, FILE= trim(filenm), ACCESS= 'APPEND')
+!!    WRITE(fid,*) param
+!!    CLOSE(fid)
+!! 
+!!    ! print all parameters to file
+!!    filenm = './locaOut/all.dat'
+!!    OPEN(UNIT= fid, FILE= trim(filenm), ACCESS= 'APPEND')
+!!    WRITE(*,*) 'writing file: ', trim(filenm)
+!!    WRITE(fid,*) pd%reynolds, pd%oscar, pd%romeo, pd%whisky
+!! 
+!!    CLOSE(fid)
+!! 
+!!    CALL case_loca_paramout()
+!! 
+!! END SUBROUTINE param_output
 
 !------------------------------------------------------------------------------
 

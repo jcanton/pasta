@@ -1007,8 +1007,7 @@ END SUBROUTINE destroy_shifted_matrix_conwrap
 
 !------------------------------------------------------------------------------
 
-SUBROUTINE assign_parameter_conwrap(param) &
-   BIND(C, NAME='assign_parameter_conwrap')
+SUBROUTINE assign_parameter_conwrap(param)
 ! 
 ! Put the call to a routine to assign the continuation parameter here.
 ! Input:
@@ -1019,11 +1018,9 @@ SUBROUTINE assign_parameter_conwrap(param) &
 ! Return Value:
 ! 
 
-   USE ISO_C_BINDING
-
    IMPLICIT NONE
    ! input variables
-   REAL(KIND=C_DOUBLE), VALUE :: param
+   REAL(KIND=8) :: param
 
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
@@ -1072,8 +1069,7 @@ END SUBROUTINE assign_parameter_conwrap
 
 !------------------------------------------------------------------------------
 
-SUBROUTINE assign_bif_parameter_conwrap(bif_param) &
-   BIND(C, NAME='assign_bif_parameter_conwrap')
+SUBROUTINE assign_bif_parameter_conwrap(bif_param)
 ! 
 ! Put the call to a routine to assign the continuation parameter here.
 ! Input:
@@ -1084,11 +1080,9 @@ SUBROUTINE assign_bif_parameter_conwrap(bif_param) &
 ! Return Value:
 ! 
 
-   USE ISO_C_BINDING
-
    IMPLICIT NONE
    ! input variables
-   REAL(KIND=C_DOUBLE), VALUE :: bif_param
+   REAL(KIND=8) :: bif_param
 
 
    WRITE(*,*)

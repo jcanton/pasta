@@ -607,35 +607,31 @@ END SUBROUTINE Save_eigenvectors
 
 !---------------------------------------------------------------------------
 
-SUBROUTINE read_eigenvector (Nx, nevRead, filenm, filenmLen, &
-                                                eigenvectorRe, eigenvectorIm) &
-   BIND(C, NAME='read_eigenvector')
+SUBROUTINE read_eigenvector (Nx, nevRead, filenm, eigenvectorRe, eigenvectorIm)
 !
 ! Author: Jacopo Canton
 ! E-mail: jcanton@mech.kth.se
-! Last revision: 16/5/2013
+! Last revision: 2/10/2014
 !
 !-----------------------------------------------------------
-   USE ISO_C_BINDING
 
    IMPLICIT NONE
    ! input variables
-   INTEGER(KIND=C_INT), VALUE :: Nx
-   INTEGER(KIND=C_INT), VALUE :: nevRead
-   CHARACTER(KIND=C_CHAR)     :: filenm
-   INTEGER(KIND=C_INT), VALUE :: filenmLen
+   INTEGER      :: Nx
+   INTEGER      :: nevRead
+   CHARACTER(*) :: filenm
    ! output variables
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: eigenvectorRe, eigenvectorIm
+   REAL(KIND=8), DIMENSION(Nx) :: eigenvectorRe, eigenvectorIm
    
    ! local variables
    INTEGER :: i, nev, NxRead
    COMPLEX(KIND=8), DIMENSION(:,:), ALLOCATABLE :: eigenvectors
 !-----------------------------------------------------------
 
-   WRITE(*,*) '--> Reading eigenvector file: ' // filenm(1:filenmLen) // ' ...'
+   WRITE(*,*) '--> Reading eigenvector file: ' // trim(filenm) // ' ...'
    WRITE(*,*) '    eigenvector number: ', nevRead
 
-   OPEN (UNIT = 19, FILE = filenm(1:filenmLen))
+   OPEN (UNIT = 19, FILE = trim(filenm))
 
    READ (19,*) nev, NxRead
    
@@ -664,6 +660,66 @@ SUBROUTINE read_eigenvector (Nx, nevRead, filenm, filenmLen, &
    WRITE(*,*) '    Done.'
 
 END SUBROUTINE read_eigenvector
+!
+! C compatible version follows
+!
+!! SUBROUTINE read_eigenvector (Nx, nevRead, filenm, filenmLen, &
+!!                                                 eigenvectorRe, eigenvectorIm) &
+!!    BIND(C, NAME='read_eigenvector')
+!! !
+!! ! Author: Jacopo Canton
+!! ! E-mail: jcanton@mech.kth.se
+!! ! Last revision: 16/5/2013
+!! !
+!! !-----------------------------------------------------------
+!!    USE ISO_C_BINDING
+!! 
+!!    IMPLICIT NONE
+!!    ! input variables
+!!    INTEGER(KIND=C_INT), VALUE :: Nx
+!!    INTEGER(KIND=C_INT), VALUE :: nevRead
+!!    CHARACTER(KIND=C_CHAR)     :: filenm
+!!    INTEGER(KIND=C_INT), VALUE :: filenmLen
+!!    ! output variables
+!!    REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: eigenvectorRe, eigenvectorIm
+!!    
+!!    ! local variables
+!!    INTEGER :: i, nev, NxRead
+!!    COMPLEX(KIND=8), DIMENSION(:,:), ALLOCATABLE :: eigenvectors
+!! !-----------------------------------------------------------
+!! 
+!!    WRITE(*,*) '--> Reading eigenvector file: ' // filenm(1:filenmLen) // ' ...'
+!!    WRITE(*,*) '    eigenvector number: ', nevRead
+!! 
+!!    OPEN (UNIT = 19, FILE = filenm(1:filenmLen))
+!! 
+!!    READ (19,*) nev, NxRead
+!!    
+!!    IF ( Nx /= NxRead ) THEN
+!!       WRITE(*,*) '    inconsistent dimensions:'
+!!       WRITE(*,*) '    Nx = ', Nx, ' Nx read from this file: ', NxRead
+!!       WRITE(*,*) 'STOP.'
+!!       CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
+!!    ENDIF
+!! 
+!!    WRITE(*,*) '    Nx read from this file: ', NxRead
+!! 
+!!    ALLOCATE( eigenvectors(Nx,nev) )
+!! 
+!!    DO i = 1, Nx
+!!       READ (19,*) eigenvectors(i,:)
+!!    ENDDO
+!! 
+!!    CLOSE(19)
+!! 
+!!    eigenvectorRe = DBLE ( eigenvectors(:,nevRead) )
+!!    eigenvectorIm = AIMAG( eigenvectors(:,nevRead) )
+!! 
+!!    DEALLOCATE( eigenvectors )
+!! 
+!!    WRITE(*,*) '    Done.'
+!! 
+!! END SUBROUTINE read_eigenvector
 
 
 !------------------------------------------------------------------------------

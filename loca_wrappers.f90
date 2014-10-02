@@ -36,10 +36,11 @@ MODULE loca_wrappers
    !**********************************
    !* WARNING:
    !* passdown_struct is also defined
-   !* in loca_interface.c
+   !* in loca_interface_hl
    !* Update both files if changes are
    !* needed
    !**********************************
+   ! FixMe remove the definition from here and use loca_pd
    TYPE, BIND(C) :: passdown_struct
       TYPE(C_PTR)         :: x ! pointer to xx set in main.f90 at line \approx 136
       REAL(KIND=C_DOUBLE) :: reynolds, oscar, romeo, whisky, h, tol
@@ -1716,7 +1717,6 @@ SUBROUTINE compute_structSens (Jacobian)
 
    CALL read_eigenvector (Nx, p_in%structSens_eigenNumber,             &
                           trim(p_in%structSens_directEigen_name),      &
-                          LEN(trim(p_in%structSens_directEigen_name)), &
                           tempEigenvectorRe, tempEigenvectorIm)
 
    directEigenvector  = CMPLX(tempEigenvectorRe, tempEigenvectorIm, KIND=8)
@@ -1725,7 +1725,6 @@ SUBROUTINE compute_structSens (Jacobian)
 
    CALL read_eigenvector (Nx, p_in%structSens_eigenNumber,              &
                           trim(p_in%structSens_adjointEigen_name),      &
-                          LEN(trim(p_in%structSens_adjointEigen_name)), &
                           tempEigenvectorRe, tempEigenvectorIm)
 
    adjointEigenvector = CMPLX(tempEigenvectorRe, tempEigenvectorIm, KIND=8)

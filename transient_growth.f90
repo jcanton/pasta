@@ -329,7 +329,7 @@ SUBROUTINE compute_transientGrowth(x_vec, Lns, filenm)
             ! already computed eigenvector
             WRITE(*,*) '    initial guess: eigenvector'
             WRITE(*,*)
-            CALL read_eigenvector (Nx, 1, './tranGrowthOut/eigenTranGrowth.dat', 35,  xx, x0)
+            CALL read_eigenvector (Nx, 1, './tranGrowthOut/eigenTranGrowth.dat',  xx, x0)
             xx_tg = CMPLX(xx,x0,KIND=8)
             CALL extract_cmplx (xx_tg,  uInitGuess)
          CASE DEFAULT

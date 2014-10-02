@@ -242,6 +242,7 @@ IF ( myRank == 0 ) THEN
       pd%tol      = p_in%nwtn_tol
 
       CALL do_loca(C_LOC(pd))
+      ! FixMe pass the structure, not a pointer ?
       
    CASE (3)
    !-------------------------------

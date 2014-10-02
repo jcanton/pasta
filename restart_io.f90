@@ -504,22 +504,19 @@ END SUBROUTINE read_cmplx_restart_bin
 
 !------------------------------------------------------------------------------
 
-SUBROUTINE write_QP_restart(x, filenm, filenmLen) &
-   BIND(C, NAME='write_QP_restart')
+SUBROUTINE write_QP_restart(x, filenm)
 !
 ! Author: Jacopo Canton
 ! E-mail: jcanton@mech.kth.se
-! Last revision: 15/7/2013
+! Last revision: 2/10/2014
 !
 ! - x         :: solution vector
 !
-   USE ISO_C_BINDING
 
    IMPLICIT NONE
    ! input variables
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: x
-   CHARACTER(KIND=C_CHAR)             :: filenm
-   INTEGER(KIND=C_INT), VALUE         :: filenmLen
+   REAL(KIND=8), DIMENSION(Nx) :: x
+   CHARACTER(*)                :: filenm
    ! local variables
    REAL(KIND=8), DIMENSION(velCmpnnts,np) :: u_save
    REAL(KIND=8), DIMENSION(np_L)          :: p_save
@@ -529,14 +526,14 @@ SUBROUTINE write_QP_restart(x, filenm, filenmLen) &
       ! WRITE QP RESTART
       WRITE(*,*)
       WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
-      WRITE(*,*) '--> Writing QP restart file: '//trim(p_in%restart_directory)//filenm(1:filenmLen)//' ...'
+      WRITE(*,*) '--> Writing QP restart file: '//trim(p_in%restart_directory)//trim(filenm)//' ...'
       
       WRITE(*,*) '    velCmpnnts = ', velCmpnnts
       WRITE(*,*) '    np         = ', np
       WRITE(*,*) '    np_L       = ', np_L
       
 
-      OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//filenm(1:filenmLen), STATUS='unknown', FORM='UNFORMATTED')
+      OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//trim(filenm), STATUS='unknown', FORM='UNFORMATTED')
       
       CALL extract(x, u_save, p_save)
 
@@ -558,6 +555,63 @@ SUBROUTINE write_QP_restart(x, filenm, filenmLen) &
    END IF
 
 END SUBROUTINE write_QP_restart
+!
+! C compatible version follows
+!
+!! SUBROUTINE write_QP_restart(x, filenm, filenmLen) &
+!!    BIND(C, NAME='write_QP_restart')
+!! !
+!! ! Author: Jacopo Canton
+!! ! E-mail: jcanton@mech.kth.se
+!! ! Last revision: 15/7/2013
+!! !
+!! ! - x         :: solution vector
+!! !
+!!    USE ISO_C_BINDING
+!! 
+!!    IMPLICIT NONE
+!!    ! input variables
+!!    REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: x
+!!    CHARACTER(KIND=C_CHAR)             :: filenm
+!!    INTEGER(KIND=C_INT), VALUE         :: filenmLen
+!!    ! local variables
+!!    REAL(KIND=8), DIMENSION(velCmpnnts,np) :: u_save
+!!    REAL(KIND=8), DIMENSION(np_L)          :: p_save
+!! 
+!! 
+!!    IF ( p_in%write_QP_restart_flag ) THEN
+!!       ! WRITE QP RESTART
+!!       WRITE(*,*)
+!!       WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+!!       WRITE(*,*) '--> Writing QP restart file: '//trim(p_in%restart_directory)//filenm(1:filenmLen)//' ...'
+!!       
+!!       WRITE(*,*) '    velCmpnnts = ', velCmpnnts
+!!       WRITE(*,*) '    np         = ', np
+!!       WRITE(*,*) '    np_L       = ', np_L
+!!       
+!! 
+!!       OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//filenm(1:filenmLen), STATUS='unknown', FORM='UNFORMATTED')
+!!       
+!!       CALL extract(x, u_save, p_save)
+!! 
+!!       WRITE(20) 0.d0, 1d-1, SIZE(uu,2), SIZE(pp)
+!! 
+!!       WRITE(20) u_save;  WRITE(20) u_save;  WRITE(20) u_save
+!!       WRITE(20) p_save;  WRITE(20) p_save;  WRITE(20) p_save
+!! 
+!!       CLOSE(20)
+!! 
+!!       WRITE(*,*) '    Done.'
+!! 
+!!    ENDIF
+!! 
+!!    IF ( p_in%write_BVS_flag ) THEN
+!!       ! WRITE BOUNDARY VALUES TO FILE
+!!       !CALL write_BVS (8, u_save, rr, jjs, sides, filenm(1:filenmLen))
+!!       !CALL write_BVS (9, u_save, rr, jjs, sides, filenm(1:filenmLen))
+!!    END IF
+!! 
+!! END SUBROUTINE write_QP_restart
 
 !==============================================================================
 

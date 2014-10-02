@@ -1252,16 +1252,12 @@ END SUBROUTINE param_output
 
 !------------------------------------------------------------------------------
 
-SUBROUTINE vtk_plot_loca(x_vec, filenm, filenmLen) &
-   BIND(C, NAME='vtk_plot_loca')
-
-   USE ISO_C_BINDING
+SUBROUTINE vtk_plot_loca(x_vec, filenm)
 
    IMPLICIT NONE
    ! input variables
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: x_vec
-   CHARACTER(KIND=C_CHAR)             :: filenm
-   INTEGER(KIND=C_INT), VALUE         :: filenmLen
+   REAL(KIND=8), DIMENSION(Nx) :: x_vec
+   CHARACTER(*)                :: filenm
    ! local variables
    REAL(KIND=8), DIMENSION(velCmpnnts,np) :: u_plot
    REAL(KIND=8), DIMENSION(np_L)          :: p_plot
@@ -1272,12 +1268,41 @@ SUBROUTINE vtk_plot_loca(x_vec, filenm, filenmLen) &
       CALL extract(x_vec, u_plot, p_plot)
 
       CALL vtk_plot_P2 (rr, jj, jj_L, u_plot, p_plot, &
-        trim(p_in%plot_directory)//'locaContSolution'//filenm(1:filenmLen)//'.vtk' )
+        trim(p_in%plot_directory)//'locaContSolution'//trim(filenm)//'.vtk' )
 
    ENDIF
 
 
 END SUBROUTINE vtk_plot_loca
+!
+! C compatible version follows
+!
+!! SUBROUTINE vtk_plot_loca(x_vec, filenm, filenmLen) &
+!!    BIND(C, NAME='vtk_plot_loca')
+!! 
+!!    USE ISO_C_BINDING
+!! 
+!!    IMPLICIT NONE
+!!    ! input variables
+!!    REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: x_vec
+!!    CHARACTER(KIND=C_CHAR)             :: filenm
+!!    INTEGER(KIND=C_INT), VALUE         :: filenmLen
+!!    ! local variables
+!!    REAL(KIND=8), DIMENSION(velCmpnnts,np) :: u_plot
+!!    REAL(KIND=8), DIMENSION(np_L)          :: p_plot
+!! 
+!! 
+!!    IF ( p_in%write_plots_flag ) THEN
+!! 
+!!       CALL extract(x_vec, u_plot, p_plot)
+!! 
+!!       CALL vtk_plot_P2 (rr, jj, jj_L, u_plot, p_plot, &
+!!         trim(p_in%plot_directory)//'locaContSolution'//filenm(1:filenmLen)//'.vtk' )
+!! 
+!!    ENDIF
+!! 
+!! 
+!! END SUBROUTINE vtk_plot_loca
 
 !------------------------------------------------------------------------------
 

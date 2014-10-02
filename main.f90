@@ -260,7 +260,7 @@ IF ( myRank == 0 ) THEN
          WRITE(*,*) 'STOP.'
          CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
-      CALL compute_eigen(xx, 'SteadyState', 11, 0d0)
+      CALL compute_eigen(xx, 'SteadyState', 0d0)
 
       CALL case_postprocess_analysis3()
 

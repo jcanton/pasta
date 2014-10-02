@@ -1306,20 +1306,17 @@ END SUBROUTINE vtk_plot_loca
 
 !------------------------------------------------------------------------------
 
-SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
-   BIND(C, NAME='compute_eigen')
+SUBROUTINE compute_eigen(x_vec, filenm, shiftIm)
 !
 ! Compute eigenvalues and eigenvectors and save them to file
 !
-   USE ISO_C_BINDING
 
    IMPLICIT NONE
 
    ! input variables
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: x_vec
-   CHARACTER(KIND=C_CHAR)             :: filenm
-   INTEGER(KIND=C_INT), VALUE         :: filenmLen
-   REAL(KIND=C_DOUBLE), VALUE         :: shiftIm
+   REAL(KIND=8), DIMENSION(Nx) :: x_vec
+   CHARACTER(*)                :: filenm
+   REAL(KIND=8)                :: shiftIm
 
    ! local variables
    TYPE(CSR_MUMPS_Complex_Matrix)     :: Lns_cmplx, Mass_cmplx
@@ -1358,6 +1355,7 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
 
 
    ! if "present" 'shiftIm' override read imaginary part of complex shift
+   !
    IF ( ABS(shiftIm) > 1d-8 ) THEN
       WRITE(*,*) '    overriding read complex shift'
       WRITE(*,*) '    LOCA suggests: ', shiftIM
@@ -1575,11 +1573,11 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
             !
             CALL Save_eigenvalues  (directEigenvalues,  &
                                trim(p_in%eigen_output_directory)// &
-                                'directEigenvalues'//filenm(1:filenmLen)//trim(shiftName)//'.dat')
+                                'directEigenvalues'//trim(filenm)//trim(shiftName)//'.dat')
 
 !            CALL Save_eigenvectors (directEigenvectors, &
 !                               trim(p_in%eigen_output_directory)// &
-!                               'directEigenvectors'//filenm(1:filenmLen)//trim(shiftName)//'.dat')
+!                               'directEigenvectors'//trim(filenm)//trim(shiftName)//'.dat')
 
             !------------------
             ! PLOT EIGENVECTORS
@@ -1594,10 +1592,10 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
 
                CALL vtk_plot_eigenvectors (rr, jj,  DBLE(directEigenvectors(:,1:eigen_plotNum)), &
                                            trim(p_in%plot_directory)// &
-                                           'directEigenvectorsRe'//filenm(1:filenmLen)//trim(shiftName)//'.vtk')
+                                           'directEigenvectorsRe'//trim(filenm)//trim(shiftName)//'.vtk')
                CALL vtk_plot_eigenvectors (rr, jj, AIMAG(directEigenvectors(:,1:eigen_plotNum)), &
                                            trim(p_in%plot_directory)// &
-                                           'directEigenvectorsIm'//filenm(1:filenmLen)//trim(shiftName)//'.vtk')
+                                           'directEigenvectorsIm'//trim(filenm)//trim(shiftName)//'.vtk')
             ENDIF
 
          ENDIF
@@ -1641,11 +1639,11 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
             !
             CALL Save_eigenvalues  (adjointEigenvalues,  &
                                 trim(p_in%eigen_output_directory)// &
-                                 'adjointEigenvalues'//filenm(1:filenmLen)//trim(shiftName)//'.dat')
+                                 'adjointEigenvalues'//trim(filenm)//trim(shiftName)//'.dat')
 
 !            CALL Save_eigenvectors (adjointEigenvectors, &
 !                                trim(p_in%eigen_output_directory)// &
-!                                'adjointEigenvectors'//filenm(1:filenmLen)//trim(shiftName)//'.dat')
+!                                'adjointEigenvectors'//trim(filenm)//trim(shiftName)//'.dat')
 
             !------------------
             ! PLOT EIGENVECTORS
@@ -1660,10 +1658,10 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
 
                CALL vtk_plot_eigenvectors (rr, jj,  DBLE(adjointEigenvectors(:,1:eigen_plotNum)), &
                                            trim(p_in%plot_directory)// &
-                                           'adjointEigenvectorsRe'//filenm(1:filenmLen)//trim(shiftName)//'.vtk')
+                                           'adjointEigenvectorsRe'//trim(filenm)//trim(shiftName)//'.vtk')
                CALL vtk_plot_eigenvectors (rr, jj, AIMAG(adjointEigenvectors(:,1:eigen_plotNum)), &
                                            trim(p_in%plot_directory)// &
-                                           'adjointEigenvectorsIm'//filenm(1:filenmLen)//trim(shiftName)//'.vtk')
+                                           'adjointEigenvectorsIm'//trim(filenm)//trim(shiftName)//'.vtk')
             ENDIF
 
          ENDIF
@@ -1678,7 +1676,7 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
                                                  directEigenvectors(:,p_in%structSens_eigenNumber), &
                                                  velCmpnnts, np,  structuralsens)
          CALL vtk_plot_scalar_P2 (rr, jj, structuralsens, &
-                           './structSensOut/'//'structuralSensitivity'//filenm(1:filenmLen)//'.vtk')
+                           './structSensOut/'//'structuralSensitivity'//trim(filenm)//'.vtk')
 
       ENDIF
 
@@ -1717,6 +1715,51 @@ SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
 
 
 END SUBROUTINE compute_eigen
+!
+! part of C version follows
+!
+!!SUBROUTINE compute_eigen(x_vec, filenm, filenmLen, shiftIm) &
+!!   BIND(C, NAME='compute_eigen')
+!!!
+!!! Compute eigenvalues and eigenvectors and save them to file
+!!!
+!!   USE ISO_C_BINDING
+!!
+!!   IMPLICIT NONE
+!!
+!!   ! input variables
+!!   REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: x_vec
+!!   CHARACTER(KIND=C_CHAR)             :: filenm
+!!   INTEGER(KIND=C_INT), VALUE         :: filenmLen
+!!   REAL(KIND=C_DOUBLE), VALUE         :: shiftIm
+!!
+!!   ! local variables
+!!   TYPE(CSR_MUMPS_Complex_Matrix)     :: Lns_cmplx, Mass_cmplx
+!!
+!!   LOGICAL, DIMENSION(velCmpnnts, number_of_sides) :: Dir_eigen
+!!   TYPE(dyn_int_line), DIMENSION(velCmpnnts)       :: js_D_eigen
+!!   LOGICAL                                         :: DESINGULARIZE_eigen
+!!
+!!   REAL(KIND=8), DIMENSION(SIZE(Jacobian%e)) :: Jacobian_save
+!!
+!!   INTEGER :: i, k, eigen_plotNum
+!!
+!!   COMPLEX(KIND=8), DIMENSION(:),   ALLOCATABLE :: directEigenvalues,  adjointEigenvalues
+!!   COMPLEX(KIND=8), DIMENSION(:,:), ALLOCATABLE :: directEigenvectors, adjointEigenvectors
+!!   REAL(KIND=8),    DIMENSION(:),   ALLOCATABLE :: structuralsens
+!!
+!!   INTEGER :: statusMsg
+!!
+!!   CHARACTER(LEN=128) :: shiftName, & ! used to insert the shift in file names
+!!                         shiftNameRe, shiftNameIm
+!!   INTEGER            :: shiftNameTemp
+!!
+!!   REAL(KIND=8) :: dataIdentifier = 313d0 ! Donald Duck's plate number!
+!!   INTEGER      :: shiftsNumber = 1
+!!   COMPLEX(KIND=8), DIMENSION(:),   ALLOCATABLE :: shifts
+!!
+!!   COMPLEX(KIND=8), DIMENSION(Nx) :: tmpEigen1, tmpEigen2 ! used to check residuals
+!!END SUBROUTINE compute_eigen
 
 !-----------------------------------------------------------------------------
 

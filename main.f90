@@ -193,7 +193,7 @@ IF ( myRank == 0 ) THEN
       END IF
 
       ! WRITE QP RESTART FILE
-      CALL write_QP_restart(xx, 'suiteSteadyState.QPrestart', 26)
+      CALL write_QP_restart(xx, 'suiteSteadyState.QPrestart')
 
       IF ( p_in%write_plots_flag ) THEN
          ! PLOT OUTPUT IN VTK FORMAT

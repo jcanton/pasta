@@ -2,7 +2,7 @@ MODULE loca_wrappers
 !
 ! Author: Jacopo Canton
 ! E-mail: jcanton@mech.kth.se
-! Last revision: 26/8/2013
+! Last revision: 07/10/2014
 !
    USE ISO_C_BINDING
    USE loca_parameters
@@ -23,6 +23,8 @@ MODULE loca_wrappers
    USE axisym_boundary_values
    USE vtk_plot
    USE case_dependent
+   !
+   USE loca_pd
 
 
 !------------------------------------------------------------------------------
@@ -33,32 +35,32 @@ MODULE loca_wrappers
    !---------------------------------------------------------------------------
    ! LOCA's interfaces and variables
    
-   !**********************************
-   !* WARNING:
-   !* passdown_struct is also defined
-   !* in loca_interface_hl
-   !* Update both files if changes are
-   !* needed
-   !**********************************
-   ! FixMe remove the definition from here and use loca_pd
-   TYPE, BIND(C) :: passdown_struct
-      TYPE(C_PTR)         :: x ! pointer to xx set in main.f90 at line \approx 136
-      REAL(KIND=C_DOUBLE) :: reynolds, oscar, romeo, whisky, h, tol
-      INTEGER(KIND=C_INT) :: bif_param, param, maxiter, ldz, &
-                             num_linear_its, debug
-   END TYPE passdown_struct
-
-   INTERFACE
-      SUBROUTINE do_loca(pd) BIND(C, NAME='do_loca')
-         USE ISO_C_BINDING
-         TYPE(C_PTR), VALUE :: pd
-      END SUBROUTINE do_loca
-   END INTERFACE
+!   !**********************************
+!   !* WARNING:
+!   !* passdown_struct is also defined
+!   !* in loca_types
+!   !* Update both files if changes are
+!   !* needed
+!   !**********************************
+!   ! FixMe remove the definition from here and use loca_pd
+!   TYPE, BIND(C) :: passdown_struct
+!      TYPE(C_PTR)         :: x ! pointer to xx set in main.f90 at line \approx 136
+!      REAL(KIND=C_DOUBLE) :: reynolds, oscar, romeo, whisky, h, tol
+!      INTEGER(KIND=C_INT) :: bif_param, param, maxiter, ldz, &
+!                             num_linear_its, debug
+!   END TYPE passdown_struct
+!
+!   INTERFACE
+!      SUBROUTINE do_loca(pd) BIND(C, NAME='do_loca')
+!         USE ISO_C_BINDING
+!         TYPE(C_PTR), VALUE :: pd
+!      END SUBROUTINE do_loca
+!   END INTERFACE
 
    TYPE(C_PTR) :: my_null_ptr
    INTEGER     :: ite_num
 
-   TYPE(passdown_struct), TARGET, BIND(C) :: pd
+!   TYPE(passdown_struct), TARGET, BIND(C) :: pd
 
    !---------------------------------------------------------------------------
 
@@ -88,7 +90,7 @@ CONTAINS
 
 
 FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
-   RESULT(num_newt_its) BIND(C, NAME='nonlinear_solver_conwrap')
+   RESULT(num_newt_its)
 !
 ! Put the call to your nonlinear solver here.
 ! Input:
@@ -107,31 +109,29 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
 !                  Negative value means nonlinear solver didn't converge.
 ! 
 
-   USE ISO_C_BINDING
-
    IMPLICIT NONE
 
-   INTERFACE
-      FUNCTION continuation_hook(x_hook, delta_x_hook, con_ptr, Reltol, Abstol) &
-         RESULT(continuation_converged) BIND(C, NAME='continuation_hook')
-         USE ISO_C_BINDING
-         REAL(KIND=C_DOUBLE)        :: x_hook
-         REAL(KIND=C_DOUBLE)        :: delta_x_hook
-         TYPE(C_PTR),         VALUE :: con_ptr
-         REAL(KIND=C_DOUBLE), VALUE :: Reltol
-         REAL(KIND=C_DOUBLE), VALUE :: Abstol
-         INTEGER(KIND=C_INT)        :: continuation_converged
-      END FUNCTION continuation_hook
-   END INTERFACE
+!   INTERFACE
+!      FUNCTION continuation_hook(x_hook, delta_x_hook, con_ptr, Reltol, Abstol) &
+!         RESULT(continuation_converged) BIND(C, NAME='continuation_hook')
+!         USE ISO_C_BINDING
+!         REAL(KIND=C_DOUBLE)        :: x_hook
+!         REAL(KIND=C_DOUBLE)        :: delta_x_hook
+!         TYPE(C_PTR),         VALUE :: con_ptr
+!         REAL(KIND=C_DOUBLE), VALUE :: Reltol
+!         REAL(KIND=C_DOUBLE), VALUE :: Abstol
+!         INTEGER(KIND=C_INT)        :: continuation_converged
+!      END FUNCTION continuation_hook
+!   END INTERFACE
 
    ! input variables
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: x_vec
-   TYPE(C_PTR), VALUE                 :: con_ptr
-   INTEGER(KIND=C_INT), VALUE         :: step_num
-   REAL(KIND=C_DOUBLE), VALUE         :: lambda
-   REAL(KIND=C_DOUBLE), VALUE         :: delta_s
+   REAL(KIND=8), DIMENSION(0:Nx-1) :: x_vec ! FixMe check (or change) the indices of the vector
+   TYPE(con_struct), POINTER       :: con_ptr
+   INTEGER                         :: step_num
+   REAL(KIND=8)                    :: lambda
+   REAL(KIND=8)                    :: delta_s
    ! output variables
-   INTEGER(KIND=C_INT)                :: num_newt_its
+   INTEGER                         :: num_newt_its
 
    ! common variables used
    ! Jacobian
@@ -149,11 +149,11 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
    REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dx, ww, rhs, dx0
 
 
-   INTEGER(KIND=C_INT)                       :: continuation_converged=0
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx)        :: x_hook
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx)        :: delta_x_hook
-   REAL(KIND=C_DOUBLE)                       :: Reltol = 1d-3
-   REAL(KIND=C_DOUBLE)                       :: Abstol = 1d-8
+   INTEGER                         :: continuation_converged=0
+   REAL(KIND=8), DIMENSION(0:Nx-1) :: x_hook       ! FixMe check (or change) the indices of the vector
+   REAL(KIND=8), DIMENSION(0:Nx-1) :: delta_x_hook ! FixMe check (or change) the indices of the vector
+   REAL(KIND=8)                    :: Reltol = 1d-3
+   REAL(KIND=8)                    :: Abstol = 1d-8
    ! (Reltol=1.0e-3, Abstol=1.0e-8 are good defaults.)
 
 
@@ -282,8 +282,10 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
       !             Jacobian  <--- [(u0.V)_ + (_.V)u0)]  +  K_  +  V_ (ibp)
       !
 
-!write(*,*) '*check*'
-!write(*,*) '    Re = ', Re
+#if DEBUG > 1
+      WRITE(*,*) '*check*'
+      WRITE(*,*) '    Re = ', Re
+#endif
       CALL extract (x0,  u0)
       CALL ComputeJacobianMatrix (np, mm, jj, jj_L, js_Axis, js_D, DESINGULARIZE, Jacobian, Re, u0)
       CALL par_mumps_master (NUMER_FACTOR, 1, Jacobian, 0)
@@ -301,12 +303,14 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
       !------------------------------------------------------------------
       !-------------LOCA'S STUFF-----------------------------------------
       
-      IF ( C_ASSOCIATED(con_ptr) ) THEN
+      IF ( ASSOCIATED(con_ptr) ) THEN
 
          WRITE(*,*)
          WRITE(*,*) '    --> CALL to continuation_hook'
-!write(*,*) '    |x0|_L-infty = ', MAXVAL(ABS(x0))
-!write(*,*) '    |dx|_L-infty = ', MAXVAL(ABS(dx))
+#if DEBUG > 2
+         WRITE(*,*) '    |x0|_L-infty = ', MAXVAL(ABS(x0))
+         WRITE(*,*) '    |dx|_L-infty = ', MAXVAL(ABS(dx))
+#endif
          WRITE(*,*)
          !-------------------------------------
          ! WARNING: continuation_hook expects the solution of
@@ -317,7 +321,7 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
          x_hook       = x0
          delta_x_hook = - dx
 
-         continuation_converged = continuation_hook(x_hook(1), delta_x_hook(1), &
+         continuation_converged = continuation_hook(x_hook, delta_x_hook, &
                                                       con_ptr, Reltol, Abstol);
          dx = - delta_x_hook
 
@@ -348,7 +352,7 @@ FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
 
    x0   = x_vec
    xx   = x_vec
-   pd%x = C_LOC(xx)
+   pd%x = C_LOC(xx) ! FixMe remove C_LOC and change pd in loca_types to have x as a normal vector and not a pointer
    CALL extract (x0,  u0, p0)
    CALL extract (xx,  uu, pp)
 

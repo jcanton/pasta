@@ -37,7 +37,7 @@ MODULE global_variables
    REAL(KIND=8), ALLOCATABLE, DIMENSION(:)   :: pp, p0
 
    REAL(KIND=8), DIMENSION(:), POINTER             :: x0 ! used for passing from C to F
-   REAL(KIND=8), ALLOCATABLE, DIMENSION(:), TARGET :: xx ! used for passing from F to C
+   REAL(KIND=8), ALLOCATABLE, DIMENSION(:), TARGET :: xx ! used for passing from F to C     ! FixMe transform into a normal array
                                                          !
    REAL(KIND=8) :: Re                                    ! when used inside F they
    INTEGER      :: beta, Nx                              ! behave in the same way

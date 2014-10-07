@@ -378,7 +378,7 @@ END FUNCTION nonlinear_solver_conwrap
 !------------------------------------------------------------------------------
 
 FUNCTION linear_solver_conwrap(xsol, jac_flag, tmp) &
-   RESULT(ires) BIND(C, NAME='linear_solver_conwrap')
+   RESULT(ires)
 !
 ! Put the call to your linear solver here. There are three options
 ! about the reuse of the preconditioner. It is always safe to
@@ -402,21 +402,21 @@ FUNCTION linear_solver_conwrap(xsol, jac_flag, tmp) &
 ! Return Value:
 !    Negative value means there was an error.
 
-   USE ISO_C_BINDING
-
    IMPLICIT NONE
    
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: xsol, tmp
-   INTEGER(KIND=C_INT), VALUE         :: jac_flag
+   REAL(KIND=8), DIMENSION(Nx) :: xsol, tmp
+   INTEGER                     :: jac_flag
 
-   INTEGER(KIND=C_INT)                :: ires
+   INTEGER                     :: ires
    
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to linear_solver_conwrap'
 
-!write(*,*) '*check*'
-!write(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(xsol))
+#if DEBUG > 1
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(xsol))
+#endif
    
    pd%num_linear_its = pd%num_linear_its + 1
 
@@ -442,8 +442,10 @@ FUNCTION linear_solver_conwrap(xsol, jac_flag, tmp) &
    
    CALL par_mumps_master (DIRECT_SOLUTION, 1, Jacobian, 0, xsol)
 
-!write(*,*) '*check*'
-!write(*,*) '    |sol|_L-infty = ', MAXVAL(ABS(xsol))
+#if DEBUG > 2
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |sol|_L-infty = ', MAXVAL(ABS(xsol))
+#endif
    
 
    ires = 1

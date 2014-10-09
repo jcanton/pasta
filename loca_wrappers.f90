@@ -2,7 +2,7 @@ MODULE loca_wrappers
 !
 ! Author: Jacopo Canton
 ! E-mail: jcanton@mech.kth.se
-! Last revision: 07/10/2014
+! Last revision: 09/10/2014
 !
    USE ISO_C_BINDING
    USE loca_parameters
@@ -455,7 +455,7 @@ END FUNCTION linear_solver_conwrap
 !------------------------------------------------------------------------------
 
 FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) & 
-         RESULT(ires) BIND(C, NAME='komplex_linear_solver_conwrap')
+         RESULT(ires)
 !
 ! Put the call to your linear solver here. There are three options
 ! about the reuse of the preconditioner. It is always safe to
@@ -477,14 +477,12 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
 ! Return Value:
 !    Negative value means linear solver didn't converge.
 !
-   USE ISO_C_BINDING
-
    IMPLICIT NONE
    ! input/output variables 
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: c, d, tmp
-   INTEGER(KIND=C_INT), VALUE         :: jac_flag
-   REAL(KIND=C_DOUBLE), INTENT(IN)    :: omega
-   INTEGER(KIND=C_INT)                :: ires
+   REAL(KIND=8), DIMENSION(Nx) :: c, d, tmp
+   INTEGER                     :: jac_flag
+   REAL(KIND=8), INTENT(IN)    :: omega
+   INTEGER                     :: ires
    ! local variables
    COMPLEX(KIND=8), DIMENSION(:), ALLOCATABLE :: rhs
    INTEGER       :: i
@@ -496,10 +494,12 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
 
    ALLOCATE(rhs(Nx))
    
-   rhs = CMPLX(c, d)
+   rhs = CMPLX(c, d, KIND=8)
 
-!write(*,*) '*check*'
-!write(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(DBLE(rhs))), MAXVAL(ABS(AIMAG(rhs)))
+#if DEBUG > 2
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(DBLE(rhs))), MAXVAL(ABS(AIMAG(rhs)))
+#endif
    
 
    IF (jac_flag == NEW_JACOBIAN) THEN
@@ -515,8 +515,12 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
          ! impose boundary conditions on the Mass Matrix
          CALL Dirichlet_c_M_MASS (np, js_Axis, js_D,  Mass)
          Mass_init = .TRUE.
-!write(*,*) '*check*'
-!write(*,*) '    |Mass%e|_L-infty = ', MAXVAL(ABS(Mass%e))
+
+#if DEBUG > 2
+         WRITE(*,*) '*check*'
+         WRITE(*,*) '    |Mass%e|_L-infty = ', MAXVAL(ABS(Mass%e))
+#endif
+
       ENDIF
 
 
@@ -535,10 +539,12 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
          JmoM_init=.TRUE.
       ENDIF
 
-write(*,*) '*check*'
-write(*,*) '    Re    = ', Re
-write(*,*) '    beta  = ', beta
-write(*,*) '    omega = ', omega
+#if DEBUG > 1
+      WRITE(*,*) '*check*'
+      WRITE(*,*) '    Re    = ', Re
+      WRITE(*,*) '    beta  = ', beta
+      WRITE(*,*) '    omega = ', omega
+#endif
 
       IF ( beta /= 0 ) THEN
          WRITE(*,*) '*******************************************************************'
@@ -559,16 +565,21 @@ write(*,*) '    omega = ', omega
          JmoM%e(i) = CMPLX( Jacobian%e(i), - omega*Mass%e(i) )
       ENDDO
 
-!write(*,*) '*check*'
-!write(*,*) '    |[J-i*omega*M]%e|_L-infty = ', MAXVAL(ABS(DBLE(JmoM%e))), MAXVAL(ABS(AIMAG(JmoM%e)))
+#if DEBUG > 2
+      WRITE(*,*) '*check*'
+      WRITE(*,*) '    |[J-i*omega*M]%e|_L-infty = ', MAXVAL(ABS(DBLE(JmoM%e))), MAXVAL(ABS(AIMAG(JmoM%e)))
+#endif
 
       CALL par_mumps_master (NUMER_FACTOR, 2, JmoM, 0)
 
    ENDIF
 
    CALL par_mumps_master (DIRECT_SOLUTION, 2, JmoM, 0, rhs)
-!write(*,*) '*check*'
-!write(*,*) '    |sol|_L-infty = ', MAXVAL(ABS(DBLE(rhs))), MAXVAL(ABS(AIMAG(rhs)))
+
+#if DEBUG > 2
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |sol|_L-infty = ', MAXVAL(ABS(DBLE(rhs))), MAXVAL(ABS(AIMAG(rhs)))
+#endif
 
 
    IF (jac_flag == OLD_JACOBIAN_DESTROY) THEN

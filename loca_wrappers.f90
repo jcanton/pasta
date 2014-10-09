@@ -730,8 +730,7 @@ END SUBROUTINE matrix_residual_fill_conwrap
 
 !------------------------------------------------------------------------------
 
-SUBROUTINE mass_matrix_fill_conwrap(xsol, rhs) &
-   BIND(C, NAME='mass_matrix_fill_conwrap')
+SUBROUTINE mass_matrix_fill_conwrap(xsol, rhs)
 !
 ! Put the call to your matrix/residual fill routine here.
 ! Input:
@@ -743,11 +742,9 @@ SUBROUTINE mass_matrix_fill_conwrap(xsol, rhs) &
 !
 ! Return Value:
 !
-   USE ISO_C_BINDING
-
    IMPLICIT NONE
 
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: xsol, rhs
+   REAL(KIND=8), DIMENSION(Nx) :: xsol, rhs
 
 
    WRITE(*,*)
@@ -762,21 +759,23 @@ SUBROUTINE mass_matrix_fill_conwrap(xsol, rhs) &
       ALLOCATE( Mass%i_mumps(SIZE(Jacobian%i_mumps)) ); Mass%i_mumps = Jacobian%i_mumps
       ALLOCATE( Mass%j      (SIZE(Jacobian%j))       ); Mass%j       = Jacobian%j
       ALLOCATE( Mass%e      (SIZE(Jacobian%e))       ); Mass%e       = 0d0
-      CALL qc_0y0_zero_sp_M (mm, jj, 1d0, Mass)
+      CALL qc_0y0_zero_sp_M (mm, jj, 1d0,  Mass)
       ! impose boundary conditions on the Mass Matrix
       CALL Dirichlet_c_M_MASS (np, js_Axis, js_D,  Mass)
       Mass_init = .TRUE.
 
-!write(*,*) '*check*'
-!write(*,*) '    |Mass%e|_L-infty = ', MAXVAL(ABS(Mass%e))
+#if DEBUG > 2
+      WRITE(*,*) '*check*'
+      WRITE(*,*) '    |Mass%e|_L-infty = ', MAXVAL(ABS(Mass%e))
+#endif
+
    ENDIF
 
 END SUBROUTINE mass_matrix_fill_conwrap
 
 !------------------------------------------------------------------------------
 
-SUBROUTINE matvec_mult_conwrap(xxx, yyy) &
-   BIND(C, NAME='matvec_mult_conwrap')
+SUBROUTINE matvec_mult_conwrap(xxx, yyy)
 !
 ! Put the call to your matrix-vector multiply here.
 ! Input:
@@ -787,37 +786,33 @@ SUBROUTINE matvec_mult_conwrap(xxx, yyy) &
 !
 ! Return Value:
 !
-
-   USE ISO_C_BINDING
-
    IMPLICIT NONE
  
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx)         :: xxx
+   REAL(KIND=8), DIMENSION(Nx)         :: xxx
 
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx)         :: yyy
-
-   ! local variables
-   REAL(KIND=8) :: yi
-   INTEGER      :: number_of_rows, i, p
+   REAL(KIND=8), DIMENSION(Nx)         :: yyy
 
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to matvec_mult_conwrap'
 
-!write(*,*) '*check*'
-!write(*,*) '    |x|_L-infty = ', MAXVAL(ABS(xxx))
+#if DEBUG > 2
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |x|_L-infty = ', MAXVAL(ABS(xxx))
+#endif
 
    CALL dAtimx(yyy, Jacobian%e, Jacobian%j, Jacobian%i, xxx)
 
-!write(*,*) '*check*'
-!write(*,*) '    |y|_L-infty = ', MAXVAL(ABS(yyy))
+#if DEBUG > 2
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |y|_L-infty = ', MAXVAL(ABS(yyy))
+#endif
 
 END SUBROUTINE matvec_mult_conwrap
 
 !------------------------------------------------------------------------------
 
-SUBROUTINE mass_matvec_mult_conwrap(xxx, yyy) &
-   BIND(C, NAME='mass_matvec_mult_conwrap')
+SUBROUTINE mass_matvec_mult_conwrap(xxx, yyy)
 !
 ! Put the call to your matrix-vector multiply here.
 ! Input:
@@ -828,18 +823,11 @@ SUBROUTINE mass_matvec_mult_conwrap(xxx, yyy) &
 !
 ! Return Value:
 !
-
-   USE ISO_C_BINDING
-
    IMPLICIT NONE
  
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx)         :: xxx
+   REAL(KIND=8), DIMENSION(Nx)         :: xxx
 
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx)         :: yyy
-
-   ! local variables
-   REAL(KIND=8) :: yi
-   INTEGER      :: number_of_rows, i, p
+   REAL(KIND=8), DIMENSION(Nx)         :: yyy
 
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
@@ -855,13 +843,17 @@ SUBROUTINE mass_matvec_mult_conwrap(xxx, yyy) &
       CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    ENDIF
 
-!write(*,*) '*check*'
-!write(*,*) '    |x|_L-infty = ', MAXVAL(ABS(xxx))
+#if DEBUG > 2
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |x|_L-infty = ', MAXVAL(ABS(xxx))
+#endif
 
    CALL dAtimx(yyy, Mass%e, Mass%j, Mass%i, xxx)
 
-!write(*,*) '*check*'
-!write(*,*) '    |y|_L-infty = ', MAXVAL(ABS(yyy))
+#if DEBUG > 2
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |y|_L-infty = ', MAXVAL(ABS(yyy))
+#endif
 
 END SUBROUTINE mass_matvec_mult_conwrap
 

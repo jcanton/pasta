@@ -10,7 +10,6 @@ PROGRAM  main
 !=========================
 !=========================
 
-   USE ISO_C_BINDING
    USE loca_wrappers
 
    USE dynamic_structures

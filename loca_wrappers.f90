@@ -2,9 +2,8 @@ MODULE loca_wrappers
 !
 ! Author: Jacopo Canton
 ! E-mail: jcanton@mech.kth.se
-! Last revision: 09/10/2014
+! Last revision: 13/10/2014
 !
-   USE ISO_C_BINDING
    USE loca_parameters
    USE dynamic_structures
    USE sparse_matrix_profiles
@@ -1139,7 +1138,201 @@ SUBROUTINE assign_bif_parameter_conwrap(bif_param)
 
 END SUBROUTINE assign_bif_parameter_conwrap
 
+!******************************************************************************
+!******************************************************************************
+!**** what follows is a collection of conwraps that have not been modified ****
+!******************************************************************************
+!******************************************************************************
 
+SUBROUTINE assign_multi_parameter_conwrap(param_vec)
+! Put the call to a routine to assign the continuation parameters here.
+! Input:
+!    param_vec     New values of continuation parameters.
+!
+
+   IMPLICIT NONE
+   
+   REAL(KIND=8), DIMENSION(:), INTENT(IN) ::  param_vec  
+   
+   WRITE(*,*) 'multi_param not implemented'
+   STOP
+  
+END SUBROUTINE assign_multi_parameter_conwrap
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE calc_scale_vec_conwrap(x, scale_vec, numUnks)
+! Put the call to a routine to calculate a scaling vector here.
+! Input:
+!    x          New value of continuation parameter.
+!    numUnks    Number of unknowns on this proc, the length of x
+!               and scale_vec.
+!
+! Output:
+!    scale_vec  Vector of length number of unknowns used to scale
+!               variables so that one type of unknown (e.g. pressure)
+!               doesn't dominate over others. Used to balance the
+!               variables and the arc-length variable in arc-length
+!               continuation, and for scaling the NULL vector in
+!               turning point tracking. Using reciprocal of the average
+!               value of that variable type is a good choice. Vector
+!               of all ones should suffice for most problems.
+!
+
+   IMPLICIT NONE
+   
+   REAL(KIND=8), DIMENSION(:), INTENT(IN) :: x
+   REAL(KIND=8), DIMENSION(:)             :: scale_vec
+   INTEGER,                    INTENT(IN) :: numUnks
+
+
+   scale_vec = 1d0 
+
+END SUBROUTINE calc_scale_vec_conwrap
+
+!------------------------------------------------------------------------------
+
+FUNCTION gsum_double_conwrap(summ) RESULT(output)
+! Put the call to a routine to calculate a global sum.
+! Just return summ for single processor jobs.
+! Input:
+!    summ    Value of double on this processor to be summed on all procs.
+!
+! Return Value:
+!    The global sum is returned on all processors.
+
+   IMPLICIT NONE
+   
+   REAL(KIND=8), INTENT(IN) :: summ
+   REAL(KIND=8)             :: output
+ 
+   output = summ
+  
+END FUNCTION gsum_double_conwrap
+
+!------------------------------------------------------------------------------
+
+FUNCTION  gmax_int_conwrap(maxx) RESULT(output)
+! Put the call to a routine to calculate a global max.
+! Just return maxx for single processor jobs.
+! Input:
+!    maxx    Value of integer on this processor to be maxed on all procs.
+!
+! Return Value:
+!    The global max is returned on all processors.
+!
+! Only used by Eigensolver
+
+   IMPLICIT NONE
+ 
+   INTEGER, INTENT(IN) :: maxx
+   INTEGER :: output
+ 
+   output = maxx
+  
+END FUNCTION gmax_int_conwrap
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE random_vector_conwrap(x, numOwnedUnks)
+! Put a routine to calculate a random vector.
+! Input:
+!    numOwnedUnks  Length of owned nodes part of x.
+!
+! Output:
+!    x             Random vector.
+!
+! Used by eigensolver only
+
+   IMPLICIT NONE
+   
+   REAL(KIND=8), DIMENSION(:) :: x
+   INTEGER :: numOwnedUnks
+
+   CALL RANDOM_SEED()    ! initialize seed based on date and time (at least with Intel compilers)
+   CALL RANDOM_NUMBER(x) ! generate random number
+  
+END SUBROUTINE random_vector_conwrap
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE perturb_solution_conwrap(x, x_old, scale_vec, numOwnedUnks)
+! Put a routine to perturb the solution vector a little bit here.
+! This is to move a converged solution at a singularity off
+! of the singularity before doing continuation. This ain't pretty
+! but has helped convergence on some turning point tracking problems.
+! Input:
+!    x_old         Current solution vector.
+!    scale_vec     Work space for a vector to scale x.
+!    numOwnedUnks  Length of owned nodes part of x, x_old, scale_vec
+!
+! Output:
+!    x             Solution vector perturbed a bit.
+
+   IMPLICIT NONE
+   
+   REAL(KIND=8), DIMENSION(0:) :: x
+   REAL(KIND=8), DIMENSION(0:) :: x_old
+   REAL(KIND=8), DIMENSION(0:) :: scale_vec
+   INTEGER :: numOwnedUnks   
+                  
+   CALL random_vector_conwrap(x, numOwnedUnks)
+
+   x = x_old * (1d0 + 1d-4 * (x - 0.5d0))
+
+END SUBROUTINE perturb_solution_conwrap
+
+!------------------------------------------------------------------------------
+
+FUNCTION free_energy_diff_conwrap(x, x2) RESULT(output)
+! Call to return the free energy difference betwen two solutions
+! Input:
+!    x    One solution vector
+!    x2   Second solution vector
+!
+! Output:
+!
+! Return Value:
+!    The difference in the free energy beween the two solutions
+
+   IMPLICIT NONE
+
+   REAL(KIND=8), DIMENSION(0:) :: x
+   REAL(KIND=8), DIMENSION(0:) :: x2   
+
+   REAL(KIND=8) :: output
+ 
+   output = 1.0d0
+  
+END FUNCTION free_energy_diff_conwrap
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE eigenvector_output_conwrap(j, num_soln_flag, xr, evr, xi, evi, step_num)
+! Call to write out eigenvectors
+! Input:
+!    j    Eigenvector index/mode
+!    num_soln_flag  =1 for real vector, real eigenvalue
+!                    =2 for complex (imaginary part has info)
+!    xr   Real part of eigenvector
+!    evr  Real part of eigenvalue
+!    xi   Imaginary part of eigenvector (NULL if num_soln_flag==1)
+!    evi  Imaginary part of eigenvalue
+!    step_num  integer step number for use in output
+
+   IMPLICIT NONE
+
+   INTEGER :: j
+   INTEGER :: num_soln_flag
+   REAL(KIND=8), DIMENSION(0:) :: xr
+   REAL(KIND=8) :: evr
+   REAL(KIND=8), DIMENSION(0:) :: xi
+   REAL(KIND=8) :: evi
+   INTEGER :: step_num
+
+   ! dummy because we use our own
+
+END SUBROUTINE eigenvector_output_conwrap
 
 ! END OF LOCA'S WRAPPERS
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

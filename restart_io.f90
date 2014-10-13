@@ -13,7 +13,6 @@ MODULE restart_io
 !
 !==============================================================================
 
-USE ISO_C_BINDING
 USE global_variables
 USE prep_mesh_p1p2_sp ! for some global variables as np
 USE miscellaneous_subroutines  ! for collect and extract subroutines
@@ -205,45 +204,36 @@ END SUBROUTINE write_restart
 
 !------------------------------------------------------------------------------
 
-SUBROUTINE read_restart(x, param, filenm, filenmLen) &
-   BIND(C, NAME='read_restart')
+SUBROUTINE read_restart(x, param, filenm)
 !
 ! Author: Jacopo Canton
 ! E-mail: jcanton@mech.kth.se
-! Last revision: 9/9/2014
+! Last revision: 13/10/2014
 !
 ! - x      :: solution vector
 ! - param  :: value of important parameter
 !
-   USE ISO_C_BINDING
-
    IMPLICIT NONE
    ! input variables
-   CHARACTER(KIND=C_CHAR)             :: filenm
-   INTEGER(KIND=C_INT), VALUE         :: filenmLen
+   CHARACTER(*) :: filenm
    ! output variables
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: x
-   REAL(KIND=C_DOUBLE)                :: param
+   REAL(KIND=8), DIMENSION(Nx) :: x
+   REAL(KIND=8)                :: param
    !CHARACTER(KIND=C_CHAR),DIMENSION(filenmLen) :: filenm
    ! local variables
-   INTEGER                            :: step_num, max_steps
+   INTEGER :: step_num, max_steps
    INTEGER :: i, uc_in, np_in, np_L_in
-!   CHARACTER(LEN=128) :: Ffilenm
 #ifdef ASCIIRESTART
    REAL(KIND=8), DIMENSION(velCmpnnts,np) :: u_save
    REAL(KIND=8), DIMENSION(np_L)          :: p_save
 #endif
 
-   !Ffilenm = transfer(filenm(1:filenmLen), Ffilenm)
-
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
-   WRITE(*,*) '--> Reading restart file: '//trim(p_in%restart_directory)//filenm(1:filenmLen)//' ...'
-   !WRITE(*,*) '--> Reading restart file: '//trim(p_in%restart_directory)//trim(Ffilenm)//' ...'
+   WRITE(*,*) '--> Reading restart file: '//trim(p_in%restart_directory)//trim(filenm)//' ...'
 
 #ifdef ASCIIRESTART
-   OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//filenm(1:filenmLen), FORM = 'FORMATTED' )
-   !OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//trim(Ffilenm) )
+   OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//trim(filenm), FORM = 'FORMATTED' )
 
    READ(20, *) param
    READ(20, *) step_num, max_steps
@@ -251,8 +241,7 @@ SUBROUTINE read_restart(x, param, filenm, filenmLen) &
    READ(20, *) np_in   ! number of P2 nodes
    READ(20, *) np_L_in ! number of P1 nodes
 #else
-   OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//filenm(1:filenmLen), FORM = 'UNFORMATTED' )
-   !OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//trim(Ffilenm) )
+   OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//trim(filenm), FORM = 'UNFORMATTED' )
 
    READ(20) param
    READ(20) step_num, max_steps
@@ -303,6 +292,107 @@ SUBROUTINE read_restart(x, param, filenm, filenmLen) &
    WRITE(*,*) '    Done.'
 
 END SUBROUTINE read_restart
+!
+! C compatible version follows
+!
+!! SUBROUTINE read_restart(x, param, filenm, filenmLen) &
+!!    BIND(C, NAME='read_restart')
+!! !
+!! ! Author: Jacopo Canton
+!! ! E-mail: jcanton@mech.kth.se
+!! ! Last revision: 9/9/2014
+!! !
+!! ! - x      :: solution vector
+!! ! - param  :: value of important parameter
+!! !
+!!    USE ISO_C_BINDING
+!! 
+!!    IMPLICIT NONE
+!!    ! input variables
+!!    CHARACTER(KIND=C_CHAR)             :: filenm
+!!    INTEGER(KIND=C_INT), VALUE         :: filenmLen
+!!    ! output variables
+!!    REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: x
+!!    REAL(KIND=C_DOUBLE)                :: param
+!!    !CHARACTER(KIND=C_CHAR),DIMENSION(filenmLen) :: filenm
+!!    ! local variables
+!!    INTEGER                            :: step_num, max_steps
+!!    INTEGER :: i, uc_in, np_in, np_L_in
+!! !   CHARACTER(LEN=128) :: Ffilenm
+!! #ifdef ASCIIRESTART
+!!    REAL(KIND=8), DIMENSION(velCmpnnts,np) :: u_save
+!!    REAL(KIND=8), DIMENSION(np_L)          :: p_save
+!! #endif
+!! 
+!!    !Ffilenm = transfer(filenm(1:filenmLen), Ffilenm)
+!! 
+!!    WRITE(*,*)
+!!    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+!!    WRITE(*,*) '--> Reading restart file: '//trim(p_in%restart_directory)//filenm(1:filenmLen)//' ...'
+!!    !WRITE(*,*) '--> Reading restart file: '//trim(p_in%restart_directory)//trim(Ffilenm)//' ...'
+!! 
+!! #ifdef ASCIIRESTART
+!!    OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//filenm(1:filenmLen), FORM = 'FORMATTED' )
+!!    !OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//trim(Ffilenm) )
+!! 
+!!    READ(20, *) param
+!!    READ(20, *) step_num, max_steps
+!!    READ(20, *) uc_in   ! number of velocity components
+!!    READ(20, *) np_in   ! number of P2 nodes
+!!    READ(20, *) np_L_in ! number of P1 nodes
+!! #else
+!!    OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//filenm(1:filenmLen), FORM = 'UNFORMATTED' )
+!!    !OPEN( UNIT = 20, FILE = trim(p_in%restart_directory)//trim(Ffilenm) )
+!! 
+!!    READ(20) param
+!!    READ(20) step_num, max_steps
+!!    READ(20) uc_in   ! number of velocity components
+!!    READ(20) np_in   ! number of P2 nodes
+!!    READ(20) np_L_in ! number of P1 nodes
+!! #endif
+!! 
+!! #if DEBUG > 0
+!!    WRITE(*,*) '    param      = ', param
+!!    WRITE(*,*) '    velCmpnnts = ', uc_in
+!!    WRITE(*,*) '    np         = ', np_in
+!!    WRITE(*,*) '    np_L       = ', np_L_in
+!! #endif
+!! 
+!!    ! check dimension consistency
+!!    ! uu
+!!    IF ( velCmpnnts /= uc_in .OR. np /= np_in ) THEN
+!!       WRITE(*,*) '    Error: wrong uu size'
+!!       WRITE(*,*) '    SIZE(uu,1) = ', velCmpnnts, ', saved in this file: ', uc_in
+!!       WRITE(*,*) '    SIZE(uu,2) = ', np,         ', saved in this file: ', np_in
+!!       WRITE(*,*) '    STOP.'
+!!       CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
+!!    END IF
+!!    ! pp
+!!    IF ( np_L /= np_L_in ) THEN
+!!       WRITE(*,*) '    Error: wrong pp size'
+!!       WRITE(*,*) '    SIZE(pp) = ', np_L, ', saved in this file: ', np_L_in
+!!       WRITE(*,*) '    STOP.'
+!!       CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
+!!    END IF
+!! 
+!!    ! read fields
+!! #ifdef ASCIIRESTART
+!!    DO i = 1, np
+!!       READ(20, *) u_save(:,i)
+!!    END DO
+!!    DO i = 1, np_L
+!!       READ(20, *) p_save(i)
+!!    END DO
+!!    CALL collect(u_save, p_save, x)
+!! #else
+!!    READ(20) x
+!! #endif
+!! 
+!!    CLOSE(20)
+!! 
+!!    WRITE(*,*) '    Done.'
+!! 
+!! END SUBROUTINE read_restart
 
 !------------------------------------------------------------------------------
 

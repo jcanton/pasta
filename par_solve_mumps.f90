@@ -918,11 +918,11 @@ SUBROUTINE par_mumps (parMumpsJob, matrID)
       CASE (FINALIZATION)
       ! finalization
       !
-      CALL MPI_FINALIZE(mpiIerr)
       WRITE(*,*) '============================================================'
       WRITE(*,*) '             END of program for process.', myRank
       WRITE(*,*) '============================================================'
-      CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
+      CALL MPI_FINALIZE(mpiIerr)
+      !CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
 
    END SELECT
 

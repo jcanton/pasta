@@ -23,14 +23,21 @@ OBJ    = dirichlet_neumann.o         \
          vtk_plot.o                  \
          restart_io.o                \
          read_input_files.o          \
-         loca_wrappers.o             \
-         loca_interface.o            \
-         loca_parameters.o           \
+			newton.o                    \
          eigensolve.o                \
          transient_growth.o          \
          dns_algorithms.o            \
          vorticity_stream.o          \
-			case_dependent.o
+			case_dependent.o            \
+			\
+			loca_types.o                \
+			loca_pd.o                   \
+			loca_util.o                 \
+			loca_interface_i.o          \
+			loca_interface_o.o          \
+			loca_lib.o                  \
+			loca_bord.o                 \
+         loca_wrappers.o
            
 ###############################################################################
 # Dependencies
@@ -99,24 +106,23 @@ axisym_boundary_values.o: global_variables.o   \
                           dirichlet_neumann.o  \
                           gauss_points_2d_p_sp.o
 
-loca_wrappers.o: loca_parameters.o           \
-                 par_solve_mumps.o           \
-                 qv_sp.o                     \
-                 qc_sp_m.o                   \
-                 qs_l_sp.o                   \
-                 dynamic_structures.o        \
-                 sparse_matrix_profiles.o    \
-                 sparse_matrix_operations.o  \
-                 global_variables.o          \
-                 miscellaneous_subroutines.o \
-                 prep_mesh_p1p2_sp.o         \
-                 start_sparse_kit.o          \
-                 dirichlet_neumann.o         \
-                 read_input_files.o          \
-                 eigensolve.o                \
-                 axisym_boundary_values.o    \
-                 vtk_plot.o                  \
-					  case_dependent.o
+newton.o: par_solve_mumps.o           \
+          qv_sp.o                     \
+          qc_sp_m.o                   \
+          qs_l_sp.o                   \
+          dynamic_structures.o        \
+          sparse_matrix_profiles.o    \
+          sparse_matrix_operations.o  \
+          global_variables.o          \
+          miscellaneous_subroutines.o \
+          prep_mesh_p1p2_sp.o         \
+          start_sparse_kit.o          \
+          dirichlet_neumann.o         \
+          axisym_boundary_values.o    \
+			 case_dependent.o            \
+			 loca_types.o                \
+			 loca_pd.o                   \
+			 loca_bord.o
 
 eigensolve.o: sparse_matrix_profiles.o   \
               sparse_matrix_operations.o \
@@ -166,5 +172,55 @@ case_dependent.o: global_variables.o          \
 						vorticity_stream.o          \
 						vtk_plot.o
 
-# C
-loca_interface.o: loca_wrappers.o
+loca_wrappers.o: par_solve_mumps.o           \
+                 qv_sp.o                     \
+                 qc_sp_m.o                   \
+                 qs_l_sp.o                   \
+                 dynamic_structures.o        \
+                 sparse_matrix_profiles.o    \
+                 sparse_matrix_operations.o  \
+                 global_variables.o          \
+                 miscellaneous_subroutines.o \
+                 prep_mesh_p1p2_sp.o         \
+                 start_sparse_kit.o          \
+                 dirichlet_neumann.o         \
+                 read_input_files.o          \
+                 eigensolve.o                \
+                 axisym_boundary_values.o    \
+                 vtk_plot.o                  \
+					  case_dependent.o            \
+					  loca_types.o                \
+					  loca_pd.o
+
+###############################################################################
+# Dependencies for LOCA90
+###############################################################################
+
+loca_types.o:
+
+loca_pd.o: loca_types.o
+
+loca_util.o: loca_types.o    \
+             loca_wrappers.o
+
+loca_interface_i.o: loca_types.o       \
+                    loca_pd.o          \
+						  loca_lib.o         \
+						  loca_interface_o.o
+
+loca_interface_o.o: loca_types.o    \
+                    loca_pd.o       \
+						  eigensolve.o    \
+						  restart_io.o    \
+						  loca_wrappers.o
+
+loca_lib.o: loca_types.o       \
+            loca_util.o        \
+				loca_bord.o        \
+				loca_interface_o.o \
+				loca_wrappers.o    \
+				newton.o
+
+loca_bord.o: loca_types.o    \
+             loca_util.o     \
+				 loca_wrappers.o

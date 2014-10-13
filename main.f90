@@ -10,10 +10,6 @@ PROGRAM  main
 !=========================
 !=========================
 
-   USE loca_types
-   USE loca_pd
-   USE loca_wrappers
-
    USE dynamic_structures
    USE prep_mesh_p1p2_sp
    USE sparse_matrix_profiles
@@ -33,6 +29,12 @@ PROGRAM  main
    USE dns_algorithms
    USE vorticity_stream
    USE case_dependent
+   USE newton
+
+   USE loca_types
+   USE loca_pd
+   USE loca_interface_i
+   USE loca_wrappers
 
 !------------------------------------------------------------------------------
 
@@ -40,6 +42,8 @@ PROGRAM  main
    IMPLICIT NONE
 
    REAL(KIND=8), PARAMETER :: zero = 0,  one = 1
+
+   INTEGER :: ite_num
 
    INTEGER      :: k, m
    REAL(KIND=8) :: dummy
@@ -144,7 +148,7 @@ IF ( myRank == 0 ) THEN
  
    IF ( p_in%read_restart_flag ) THEN
 
-      CALL read_restart(x0, dummy, p_in%input_restart_file, LEN(trim(p_in%input_restart_file)))
+      CALL read_restart(x0, dummy, trim(p_in%input_restart_file))
 
       CALL extract(x0, u0, p0)
 
@@ -184,13 +188,13 @@ IF ( myRank == 0 ) THEN
    !---------------------------
 
       ! my_null_ptr could be substituted with C_NULL_PTR?
-      ite_num = nonlinear_solver_conwrap (xx, my_null_ptr, 1, Re, 0d0)
+      ite_num = nonlinear_solver_conwrap (xx, 1, Re, 0d0)
 
       CALL extract (xx,  uu, pp)
 
       IF ( p_in%write_restart_flag ) THEN
          ! WRITE RESTART FILE
-         CALL write_restart(xx, Re, ite_num, p_in%nwtn_maxite, p_in%output_restart_file)
+         CALL write_restart(xx, Re, ite_num, p_in%nwtn_maxite, trim(p_in%output_restart_file))
       END IF
 
       ! WRITE QP RESTART FILE
@@ -234,7 +238,7 @@ IF ( myRank == 0 ) THEN
 
       ! passdown structure
       pd%ldz      = Nx
-      pd%x        = C_LOC(xx)
+      pd%x        => xx
       pd%reynolds = Re
       pd%oscar    = flow_parameters(1)
       pd%romeo    = flow_parameters(2)
@@ -242,8 +246,7 @@ IF ( myRank == 0 ) THEN
       pd%maxiter  = p_in%nwtn_maxite
       pd%tol      = p_in%nwtn_tol
 
-      CALL do_loca(C_LOC(pd))
-      ! FixMe pass the structure, not a pointer ?
+      CALL do_loca(pd)
       
    CASE (3)
    !-------------------------------

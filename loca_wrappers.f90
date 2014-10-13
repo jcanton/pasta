@@ -4,7 +4,6 @@ MODULE loca_wrappers
 ! E-mail: jcanton@mech.kth.se
 ! Last revision: 13/10/2014
 !
-   USE loca_parameters
    USE dynamic_structures
    USE sparse_matrix_profiles
    USE sparse_matrix_operations
@@ -23,7 +22,9 @@ MODULE loca_wrappers
    USE vtk_plot
    USE case_dependent
    !
+   USE loca_types
    USE loca_pd
+   USE loca_interface_i
 
 
 !------------------------------------------------------------------------------

@@ -10,6 +10,8 @@ PROGRAM  main
 !=========================
 !=========================
 
+   USE loca_types
+   USE loca_pd
    USE loca_wrappers
 
    USE dynamic_structures

@@ -239,6 +239,7 @@ IF ( myRank == 0 ) THEN
       ! passdown structure
       pd%ldz      = Nx
       pd%x        => xx
+      pd%beta     = beta
       pd%reynolds = Re
       pd%oscar    = flow_parameters(1)
       pd%romeo    = flow_parameters(2)

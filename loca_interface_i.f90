@@ -112,6 +112,14 @@ SUBROUTINE do_loca(pd)
 !         con%hopf_info%z_vec       = con_input%hopf_info%z_vec
 !         con%hopf_info%mass_flag   = con_input%hopf_info%mass_flag
 
+      CASE (HOPF_BETA_CONTINUATION)
+!         pd%matrix_save = FALSE
+!         con%hopf_info%bif_param   = con_input%hopf_info%bif_param
+!         con%hopf_info%omega       = con_input%hopf_info%omega
+!         con%hopf_info%y_vec       = con_input%hopf_info%y_vec
+!         con%hopf_info%z_vec       = con_input%hopf_info%z_vec
+!         con%hopf_info%mass_flag   = con_input%hopf_info%mass_flag
+
       CASE (MANIFOLD_CONTINUATION)
          WRITE(*,*) 'manifold continuation not yet implemented'
          con%manifold_info%k =  2                      ! number of parameters
@@ -172,7 +180,9 @@ SUBROUTINE do_loca(pd)
          DEALLOCATE(con%hopf_info%y_vec)
          DEALLOCATE(con%hopf_info%z_vec)
 
-      ! FixMe if hopf_complex is added, add here the deallocation
+      CASE(HOPF_BETA_CONTINUATION)
+         DEALLOCATE(con%hopf_info%y_vec)
+         DEALLOCATE(con%hopf_info%z_vec)
 
    END SELECT
 

@@ -85,7 +85,7 @@ SUBROUTINE cvarsparser(con, pd, filename)
    con%general_info%numOwnedUnks = pd%ldz
    con%general_info%x            => pd%x
 
-#if DEBUG > 2
+#if DEBUG > 1
    ! FixMe need to check if the indices of this vector go from 0 to ldz-1 or from 1 to ldz
    WRITE(*,*) 'Check to have correctly received the initial solution'
    WRITE(*,*) '   pd->x[1]   = ', con%general_info%x(1)
@@ -99,6 +99,11 @@ SUBROUTINE cvarsparser(con, pd, filename)
    !*************************************
    READ(11,*)  temp, con%general_info%method
    READ(11,*)  temp, pd%bif_param
+
+   ! if Hopd .AND. beta /= 0 => complex Hopf
+   !
+   IF (con%general_info%method == HOPF_CONTINUATION .AND. pd%beta /= 0) &
+      con%general_info%method = HOPF_BETA_CONTINUATION
 
    ! Assign initial value of bifurcation param based on flag value
    !
@@ -171,6 +176,10 @@ SUBROUTINE cvarsparser(con, pd, filename)
 
       CASE (HOPF_CONTINUATION)
          WRITE(*,*) '    Hopf continuation'
+         con%hopf_info%bif_param = bif_param_init
+
+      CASE (HOPF_BETA_CONTINUATION)
+         WRITE(*,*) '    Hopf beta continuation'
          con%hopf_info%bif_param = bif_param_init
 
       CASE (PHASE_TRANSITION_CONTINUATION)
@@ -254,7 +263,7 @@ SUBROUTINE cvarsparser(con, pd, filename)
    READ(11,*)  temp, hopf_nev
    READ(11,'(a18,a90)')  temp, temp1
 
-   IF (con%general_info%method == HOPF_CONTINUATION) THEN
+   IF (con%general_info%method == HOPF_CONTINUATION .OR. con%general_info%method == HOPF_BETA_CONTINUATION) THEN
       IF (ADJUSTL(temp1) /= "none") THEN
          ALLOCATE(con%hopf_info%y_vec(0:pd%ldz-1))
          ALLOCATE(con%hopf_info%z_vec(0:pd%ldz-1))
@@ -334,7 +343,7 @@ SUBROUTINE print_con_struct(con)
    IF(con%general_info%method==PITCHFORK_CONTINUATION) &
       WRITE(*,*) '    con%pitchfork_info%bif_param =       ', con%pitchfork_info%bif_param
 
-   IF(con%general_info%method==HOPF_CONTINUATION) &
+   IF(con%general_info%method==HOPF_CONTINUATION .OR. con%general_info%method==HOPF_BETA_CONTINUATION) &
       WRITE(*,*) '    con%hopf_info%bif_param =            ', con%hopf_info%bif_param
 
    IF(con%eigen_info%Num_Eigenvalues > 0) THEN

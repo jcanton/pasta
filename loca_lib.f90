@@ -132,6 +132,11 @@ FUNCTION con_lib(con) RESULT(output)
          ALLOCATE(y_vec_old(0:con%general_info%numUnks-1))
          ALLOCATE(z_vec_old(0:con%general_info%numUnks-1))
 
+      CASE(HOPF_BETA_CONTINUATION)
+         omega_old = con%hopf_info%omega
+         ALLOCATE(y_vec_old(0:con%general_info%numUnks-1))
+         ALLOCATE(z_vec_old(0:con%general_info%numUnks-1))
+
       CASE(PHASE_TRANSITION_CONTINUATION)
          ALLOCATE(x2_old(0:con%general_info%numUnks-1))
 
@@ -171,6 +176,10 @@ FUNCTION con_lib(con) RESULT(output)
       CALL assign_bif_parameter_conwrap(con%pitchfork_info%bif_param)
 
    ELSE IF (con%general_info%method == HOPF_CONTINUATION) THEN
+
+      CALL assign_bif_parameter_conwrap(con%hopf_info%bif_param)
+
+   ELSE IF (con%general_info%method == HOPF_BETA_CONTINUATION) THEN
 
       CALL assign_bif_parameter_conwrap(con%hopf_info%bif_param)
 
@@ -318,6 +327,13 @@ FUNCTION con_lib(con) RESULT(output)
                            con%phase_transition_info%bif_param = bif_param_old
 
                         CASE(HOPF_CONTINUATION)
+                           con%hopf_info%y_vec = y_vec_old
+                           con%hopf_info%z_vec = z_vec_old
+                           CALL assign_bif_parameter_conwrap(bif_param_old)
+                           con%hopf_info%bif_param = bif_param_old
+                           con%hopf_info%omega = omega_old
+
+                        CASE(HOPF_BETA_CONTINUATION)
                            con%hopf_info%y_vec = y_vec_old
                            con%hopf_info%z_vec = z_vec_old
                            CALL assign_bif_parameter_conwrap(bif_param_old)
@@ -530,6 +546,11 @@ FUNCTION con_lib(con) RESULT(output)
                                                con%hopf_info%bif_param, con%hopf_info%z_vec, con%hopf_info%omega,  &
                                                con%private_info%step_num, num_newt_conv, con)
 
+               CASE(HOPF_BETA_CONTINUATION)
+                  CALL solution_output_conwrap(3, con%general_info%x, con%general_info%param, con%hopf_info%y_vec, &
+                                               con%hopf_info%bif_param, con%hopf_info%z_vec, con%hopf_info%omega,  &
+                                               con%private_info%step_num, num_newt_conv, con)
+
                CASE(PHASE_TRANSITION_CONTINUATION)
                   CALL solution_output_conwrap(2, con%general_info%x, con%general_info%param, con%phase_transition_info%x2, &
                                                con%phase_transition_info%bif_param, NULL, 0d0,                              &
@@ -637,6 +658,12 @@ FUNCTION con_lib(con) RESULT(output)
                            bif_param_old = con%phase_transition_info%bif_param
 
                         CASE(HOPF_CONTINUATION)
+                           y_vec_old     = con%hopf_info%y_vec
+                           z_vec_old     = con%hopf_info%z_vec
+                           bif_param_old = con%hopf_info%bif_param
+                           omega_old     = con%hopf_info%omega
+
+                        CASE(HOPF_BETA_CONTINUATION)
                            y_vec_old     = con%hopf_info%y_vec
                            z_vec_old     = con%hopf_info%z_vec
                            bif_param_old = con%hopf_info%bif_param
@@ -839,6 +866,10 @@ FUNCTION con_lib(con) RESULT(output)
           DEALLOCATE (y_vec_old)
           DEALLOCATE (z_vec_old)
 
+      CASE(HOPF_BETA_CONTINUATION)
+          DEALLOCATE (y_vec_old)
+          DEALLOCATE (z_vec_old)
+
    END SELECT
 
    ! Send back the overall result of the time step
@@ -1018,6 +1049,10 @@ SUBROUTINE print_cont_step1(order, step, step_old, con)
 
       string = 'Zero-order Hopf Continuation'
 
+   ELSE IF (con%general_info%method == HOPF_BETA_CONTINUATION) THEN
+
+      string = 'Zero-order Hopf-beta Continuation'
+
    ELSE IF (order == 0)  THEN
 
       string = 'Zero-order Continuation'
@@ -1079,6 +1114,10 @@ SUBROUTINE print_cont_step2(order, step, con)
       WRITE(*,*) '   Pitchfork Bifurcation located at: ', con%general_info%param, con%pitchfork_info%bif_param
 
    ELSE IF (con%general_info%method == HOPF_CONTINUATION) THEN
+
+      WRITE(*,*) '   Hopf Bifurcation located at: ', con%general_info%param, con%hopf_info%bif_param, con%hopf_info%omega
+
+   ELSE IF (con%general_info%method == HOPF_BETA_CONTINUATION) THEN
 
       WRITE(*,*) '   Hopf Bifurcation located at: ', con%general_info%param, con%hopf_info%bif_param, con%hopf_info%omega
 

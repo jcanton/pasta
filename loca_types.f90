@@ -15,12 +15,11 @@ MODULE Loca_types
    INTEGER, PARAMETER :: TURNING_POINT_CONTINUATION    = 3
    INTEGER, PARAMETER :: PITCHFORK_CONTINUATION        = 4
    INTEGER, PARAMETER :: HOPF_CONTINUATION             = 5
+   INTEGER, PARAMETER :: HOPF_BETA_CONTINUATION        = 51
    INTEGER, PARAMETER :: PHASE_TRANSITION_CONTINUATION = 6
    INTEGER, PARAMETER :: AUGMENTING_CONDITION          = 7
    INTEGER, PARAMETER :: MANIFOLD_CONTINUATION         = 8
    INTEGER, PARAMETER :: LOCA_LSA_ONLY                 = 9
-
-   INTEGER, PARAMETER :: SUBORSUPER                    =10 ! FixMe only used in test problems, remove
 
    ! Choices for matrix fill -- what quantities to calculate
    INTEGER, PARAMETER ::  RHS_ONLY        = 100
@@ -101,7 +100,7 @@ MODULE Loca_types
 
    TYPE pitchfork_info_struct
       REAL(KIND=8) :: bif_param                  ! Initial guess of bifurcation parameter
-      REAL(KIND=8), DIMENSION(:), POINTER :: psi ! Antisymmetry vector (also init guess for the null vector, y_vec FixMe remove pointer?
+      REAL(KIND=8), DIMENSION(:), POINTER :: psi ! Antisymmetry vector (also init guess for the null vector, y_vec)
    END TYPE pitchfork_info_struct
 
    TYPE hopf_info_struct
@@ -111,8 +110,6 @@ MODULE Loca_types
       REAL(KIND=8), DIMENSION(:), POINTER :: z_vec ! Initial guess of null vector (imag)
       INTEGER :: mass_flag
    END TYPE hopf_info_struct
-
-   ! FixMe add hopf_cmplx_info_struct?
 
    TYPE phase_transition_info_struct
       REAL(KIND=8) :: bif_param                 ! Initial guess of bifurcation parameter
@@ -194,25 +191,10 @@ MODULE Loca_types
 
    TYPE passdown_struct
       REAL(KIND=8), DIMENSION(:), POINTER :: x ! FixMe remove pointer and transform in allocatable?
+      INTEGER                             :: beta
       REAL(KIND=8)                        :: reynolds, oscar, romeo, whisky, h, tol
       INTEGER                             :: bif_param, param, maxiter, ldz, num_linear_its, debug
    END TYPE passdown_struct
-!!
-!!   TYPE passdown_struct
-!!
-!!      REAL(KIND=8), DIMENSION(:), POINTER :: d2, d1, z, &
-!!                                             J, M, savedJ, ShiftedMat, &
-!!                                             work, workS, s
-!!      REAL(KIND=8) :: lambda, gamma, mu, alpha, h, tol
-!!
-!!      INTEGER, DIMENSION(:), POINTER :: ipiv, ipivS
-!!
-!!      INTEGER :: bif_param, param, maxiter, ldz, ldx, n, num_mat_fills, &
-!!                 num_res_fills, num_linear_its, debug, method
-!!
-!!      INTEGER :: problem, matrix_save
-!!
-!!   END TYPE passdown_struct
 
 !****************************************************************************
 !****************************************************************************

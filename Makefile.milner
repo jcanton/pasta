@@ -6,8 +6,8 @@
 ###############################################################################
 # Rules
 #
-all: pasta_axi.exe
-default: pasta_axi.exe
+all: pasta_loca.exe
+default: pasta_loca.exe
 
 include Dependencies.inc
 # Is Dependencies.inc available ?
@@ -21,9 +21,9 @@ Dependencies.inc:
 release:
 	@echo making release
 	@rm -f *.mod *.o
-	@cd .. && tar -czf ./backups/pasta_axi_$(NOW).tar.gz pasta_axi/
+	@cd .. && tar -czf ./backups/pasta_loca_$(NOW).tar.gz pasta_loca/
 
-pasta_axi.exe: main.o $(OBJ) 
+pasta_loca.exe: main.o $(OBJ) 
 	$(F90LNK) $(F90FLAGS) main.o $(OBJ) $(LIBS) -o $(FOLDER)$(NAME)
 
 clean:
@@ -37,42 +37,30 @@ NOW := $(shell date +"%c" | tr ' :' '__')
 
 # Compilers
 FC = ftn -fpp
-CC = cc
 
 F90CMP = $(FC) -c
 F90LNK = $(FC)
 F90OPT = -O3 -openmp #-Ofast -unroll-aggressive -align -fp-model fast=2
-F90DEB = -DASCIIRESTART -DDEBUG=3 #-g
+F90DEB = -DASCIIRESTART -DDEBUG=3 -DMUMPSDEBUG=0 #-g
 F90FLAGS = $(F90OPT) $(F90DEB)
-
-CCMP   = $(CC) -c
-CLNK   = $(CC)
-COPT   = -O3 #-Ofast -unroll-aggressive -align -fp-model fast=2
-CDEB   = #-g
-CFLAGS = $(COPT) $(CDEB)
 
 # Include paths
 F90INCDIR =
-CINCDIR   = -I libLOCA
 
 # Libraries
 LIBARPACK    = # needs to be compiled
 LIBMUPS		 = -ldmumps -lzmumps -lmumps_common -lpord
-LIBLOCA      = -L./libLOCA/ -lloca
-LIBS         = $(LIBMUMPS) $(LIBLOCA) $(LIBARPACK)
+LIBS         = $(LIBMUMPS) $(LIBARPACK)
 
 FOLDER = ./testCase/
-NAME   = pasta_axi
+NAME   = pasta_loca
 
 
 ###############################################################################
 # Rules
 
 .SUFFIXES:
-.SUFFIXES: .c .f90 .o
+.SUFFIXES: .f90 .o
 
 .f90.o:
 	$(F90CMP) $(F90FLAGS) $(F90INCDIR) $<
-
-.c.o:
-	$(CCMP) $(CFLAGS) $(CINCDIR) $<

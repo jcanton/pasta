@@ -8,8 +8,8 @@
 ###############################################################################
 # Rules
 #
-all: pasta_axi.exe
-default: pasta_axi.exe
+all: pasta_loca.exe
+default: pasta_loca.exe
 
 include Dependencies.inc
 # Is Dependencies.inc available ?
@@ -23,9 +23,9 @@ Dependencies.inc:
 release:
 	@echo making release
 	@rm -f *.mod *.o
-	@cd .. && tar -czf ./backups/pasta_axi_$(NOW).tar.gz pasta_axi/
+	@cd .. && tar -czf ./backups/pasta_loca_$(NOW).tar.gz pasta_loca/
 
-pasta_axi.exe: main.o $(OBJ) 
+pasta_loca.exe: main.o $(OBJ) 
 	$(F90LNK) $(F90FLAGS) main.o $(OBJ) $(LIBS) -o $(FOLDER)$(NAME)
 
 clean:
@@ -39,23 +39,15 @@ NOW := $(shell date +"%c" | tr ' :' '__')
 
 # Compilers
 FC = mpif90 -cpp
-CC = mpicc
 
 F90CMP = $(FC) -c
 F90LNK = $(FC)
 F90OPT = -O2 #-fopenmp
-F90DEB = -g -DASCIIRESTART -DDEBUG=0 #-Wall -Wextra -pedantic -fcheck=all
+F90DEB = -DASCIIRESTART -DDEBUG=0 -DMUMPSDEBUG=0 -g #-Wall -Wextra -pedantic -fcheck=all
 F90FLAGS = $(F90OPT) $(F90DEB)
-
-CCMP   = $(CC) -c
-CLNK   = $(CC)
-COPT   = -O2
-CDEB   = -g
-CFLAGS = $(COPT) $(CDEB)
 
 # Include paths
 F90INCDIR = -I/pdc/vol/mumps/4.10.0/include
-CINCDIR   = -I libLOCA
 
 # Libraries
 LIBARPACK    = -L/pdc/vol/arpack/2003-05-22/amd64_co5/GNU/lib -larpack
@@ -66,22 +58,18 @@ LIBSCOTCH    =
 LIBMKL       = -L/pdc/vol/i-compilers/11.1/icc/mkl/lib/em64t -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core  -lpthread -Wl,--rpath,/pdc/vol/i-compilers/11.1/icc/mkl/lib/em64t
 LIBMUMPS     = -L/pdc/vol/mumps/4.10.0/amd64_co5/GNU/lib -ldmumps -lzmumps -lmumps_common -lpord
 LIBMPI       = -L/afs/pdc.kth.se/pdc/vol/openmpi/1.5.4/gcc/4.6/lib -lmpi_f77 -lmpi
-LIBLOCA      = -L./libLOCA/ -lloca
-LIBS         = $(LIBMUMPS) $(LIBLOCA) $(LIBARPACK) $(LIBMKL) $(LIBMPI)
-#LIBS         = $(LIBMUMPS) $(LIBMPI) $(LIBLOCA) $(LIBARPACK) $(LIBSCOTCH) $(LIBSCALAPACK) $(LIBMKL) $(LIBLAPACK) $(LIBBLAS) $(LIBMUMPS) $(LIBSCOTCH)
+LIBS         = $(LIBMUMPS) $(LIBARPACK) $(LIBMKL) $(LIBMPI)
+#LIBS         = $(LIBMUMPS) $(LIBMPI) $(LIBARPACK) $(LIBSCOTCH) $(LIBSCALAPACK) $(LIBMKL) $(LIBLAPACK) $(LIBBLAS) $(LIBMUMPS) $(LIBSCOTCH)
 
 FOLDER = $(HOME)/software/bin/
-NAME   = pasta_axi
+NAME   = pasta_loca
 
 
 ###############################################################################
 # Rules
 
 .SUFFIXES:
-.SUFFIXES: .c .f90 .o
+.SUFFIXES: .f90 .o
 
 .f90.o:
 	$(F90CMP) $(F90FLAGS) $(F90INCDIR) $<
-
-.c.o:
-	$(CCMP) $(CFLAGS) $(CINCDIR) $<

@@ -84,9 +84,11 @@ FUNCTION linear_solver_conwrap(xsol, jac_flag, tmp) &
 
    INTEGER                     :: ires
    
+#if DEBUG > 0
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to linear_solver_conwrap'
+#endif
 
 #if DEBUG > 1
    WRITE(*,*) '*check*'
@@ -97,9 +99,10 @@ FUNCTION linear_solver_conwrap(xsol, jac_flag, tmp) &
 
    IF (jac_flag == NEW_JACOBIAN .OR. jac_flag == SAME_BUT_UNSCALED_JACOBIAN) THEN
     
+#if DEBUG > 0
       WRITE(*,*) '   *NOT updating Jacobian matrix*'
       ! WRITE(*,*) '    updating Jacobian matrix'
-
+#endif
       ! fixme
       !      I think that there is no need to update the Jacobian matrix as it
       !      gets updated in matrix_residual_fill_conwrap!
@@ -117,7 +120,7 @@ FUNCTION linear_solver_conwrap(xsol, jac_flag, tmp) &
    
    CALL par_mumps_master (DIRECT_SOLUTION, 1, Jacobian, 0, xsol)
 
-#if DEBUG > 2
+#if DEBUG > 1
    WRITE(*,*) '*check*'
    WRITE(*,*) '    |sol|_L-infty = ', MAXVAL(ABS(xsol))
 #endif
@@ -163,15 +166,17 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
    INTEGER       :: i
    LOGICAL, SAVE :: JmoM_init=.FALSE.
 
+#if DEBUG > 0
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to komplex_linear_solver_conwrap'
+#endif
 
    ALLOCATE(rhs(Nx))
    
    rhs = CMPLX(c, d, KIND=8)
 
-#if DEBUG > 2
+#if DEBUG > 1
    WRITE(*,*) '*check*'
    WRITE(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(DBLE(rhs))), MAXVAL(ABS(AIMAG(rhs)))
 #endif
@@ -180,7 +185,9 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
    IF (jac_flag == NEW_JACOBIAN) THEN
 
       IF ( .NOT.Mass_init ) THEN
+#if DEBUG > 0
          WRITE(*,*) '    creating Mass matrix'
+#endif
 
          ALLOCATE( Mass%i      (SIZE(Jacobian%i))       ); Mass%i       = Jacobian%i
          ALLOCATE( Mass%i_mumps(SIZE(Jacobian%i_mumps)) ); Mass%i_mumps = Jacobian%i_mumps
@@ -191,7 +198,7 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
          CALL Dirichlet_c_M_MASS (np, js_Axis, js_D,  Mass)
          Mass_init = .TRUE.
 
-#if DEBUG > 2
+#if DEBUG > 1
          WRITE(*,*) '*check*'
          WRITE(*,*) '    |Mass%e|_L-infty = ', MAXVAL(ABS(Mass%e))
 #endif
@@ -200,7 +207,9 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
 
 
       IF ( .NOT.JmoM_init ) THEN
+#if DEBUG > 0
          WRITE(*,*) '    creating [J-i*omega*M] matrix'
+#endif
 
          ! Create the matrix [J-i*omega*M] and store it in position 2 of the MUMPS
          ! array id
@@ -233,14 +242,16 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
          CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
       ENDIF
 
+#if DEBUG > 0
       WRITE(*,*) '    filling [J-i*omega*M] matrix'
+#endif
       DO i = 1, SIZE(Jacobian%e)
          ! we can do this as J and M have the same sparsity pattern 
          ! because they have been lazily built
          JmoM%e(i) = CMPLX( Jacobian%e(i), - omega*Mass%e(i) )
       ENDDO
 
-#if DEBUG > 2
+#if DEBUG > 1
       WRITE(*,*) '*check*'
       WRITE(*,*) '    |[J-i*omega*M]%e|_L-infty = ', MAXVAL(ABS(DBLE(JmoM%e))), MAXVAL(ABS(AIMAG(JmoM%e)))
 #endif
@@ -251,7 +262,7 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
 
    CALL par_mumps_master (DIRECT_SOLUTION, 2, JmoM, 0, rhs)
 
-#if DEBUG > 2
+#if DEBUG > 0
    WRITE(*,*) '*check*'
    WRITE(*,*) '    |sol|_L-infty = ', MAXVAL(ABS(DBLE(rhs))), MAXVAL(ABS(AIMAG(rhs)))
 #endif
@@ -260,7 +271,9 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
    IF (jac_flag == OLD_JACOBIAN_DESTROY) THEN
     
       IF ( JmoM_init ) THEN
+#if DEBUG > 0
          WRITE(*,*) '    destroying [J-i*omega*M] matrix'
+#endif
 
          CALL par_mumps_master (DEALLOCATION, 2, JmoM, 0)
          DEALLOCATE(JmoM%i, JmoM%i_mumps, JmoM%j, JmoM%e)
@@ -288,8 +301,7 @@ END FUNCTION komplex_linear_solver_conwrap
 
 !------------------------------------------------------------------------------
 
-SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
-   BIND(C, NAME='matrix_residual_fill_conwrap')
+SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag)
 !
 ! Put the call to your matrix/residual fill routine here.
 ! Input:
@@ -302,28 +314,32 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
 ! 
 ! Return Value:
 ! 
-   USE ISO_C_BINDING
-
    IMPLICIT NONE
    ! input variables
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: xsol
-   INTEGER(KIND=C_INT), VALUE         :: matflag
+   REAL(KIND=8), DIMENSION(Nx) :: xsol
+   INTEGER                     :: matflag
    ! output variables
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: rhs
+   REAL(KIND=8), DIMENSION(Nx) :: rhs
    ! local variables
    REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: vv, ff
    REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: ww
 
+#if DEBUG > 0
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to matrix_residual_fill_conwrap'
+#endif
 
-!write(*,*) '*check*'
-!write(*,*) '    |xsol|_L-infty = ', MAXVAL(ABS(xsol))
+#if DEBUG > 1
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |xsol|_L-infty = ', MAXVAL(ABS(xsol))
+#endif
 
    IF (matflag == RHS_ONLY .OR. matflag == RHS_MATRIX .OR. matflag == RHS_MATRIX_SAVE) THEN
 
+#if DEBUG > 0
       WRITE(*,*) '    generating new RHS'
+#endif
 
       ALLOCATE ( vv(SIZE(u0,1), SIZE(u0,2)) )
       ALLOCATE ( ff(SIZE(u0,1), SIZE(u0,2)) )
@@ -334,8 +350,11 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
       ! INCREMENTAL FORM
       ! rhs <-- - (u0 \dot \nabla)u0 + 1/Re lapl{u0} - grad{p0} + f
       !      ~~ - div{u0} ~~
-! WRITE(*,*) '*check*'
-! WRITE(*,*) '    Re = ', Re
+#if DEBUG > 1
+      WRITE(*,*) '*check*'
+      WRITE(*,*) '    Re = ', Re
+#endif
+
       vv = 0
       CALL extract (xsol,  u0, p0)
 
@@ -355,7 +374,7 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
       !enddo
       !stop
 
-      ww = 0
+      ww = 0d0
       ! no need to use this (furthermore the subroutine commented here
       ! is for 2d cartesian problems)
       !CALL qs_01_hybrid_L_sp (mm, jj, jj_L, u0,   ww) ! div{u0}
@@ -372,11 +391,13 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
 
       IF (DESINGULARIZE) rhs(Nx) = 0d0
 
-!write(*,*) '*check*'
-!do ii = 1, SIZE(u0, 1)
-!   write(*,*) 'MAXdelta_bvs_D = ', MAXVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
-!   write(*,*) 'MINdelta_bvs_D = ', MINVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
-!enddo
+#if DEBUG > 2
+      WRITE(*,*) '*check*'
+      DO ii = 1, SIZE(u0, 1)
+         WRITE(*,*) 'MAXdelta_bvs_D = ', MAXVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
+         WRITE(*,*) 'MINdelta_bvs_D = ', MINVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
+      ENDDO
+#endif
 
       DEALLOCATE( ff, vv, ww )
 
@@ -387,13 +408,18 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
       !-------------------------------------
       rhs = -rhs
 
-!write(*,*) '*check*'
-!write(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(rhs))
+#if DEBUG > 1
+      WRITE(*,*) '*check*'
+      WRITE(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(rhs))
+#endif
+
    ENDIF  
 
    IF (matflag == MATRIX_ONLY .OR. matflag == RHS_MATRIX .OR. matflag == RECOVER_MATRIX ) THEN
 
+#if DEBUG > 0
       WRITE(*,*) '    filling new Jacobian matrix'
+#endif
 
       CALL extract (xsol,  u0) 
       !------------------------------------------------------------------
@@ -401,16 +427,20 @@ SUBROUTINE matrix_residual_fill_conwrap(xsol, rhs, matflag) &
       !-------------OF THE COUPLED EQUATION SYSTEM-----------------------
       !             Jacobian  <--- [(u0.V)_ + (_.V)u0)]  +  K_  +  V_ (ibp)
 
-! WRITE(*,*) '*check*'
-! WRITE(*,*) '    Re = ', Re
+#if DEBUG > 1
+      WRITE(*,*) '*check*'
+      WRITE(*,*) '    Re = ', Re
+#endif
+
       CALL ComputeJacobianMatrix (np, mm, jj, jj_L, js_Axis, js_D, DESINGULARIZE, Jacobian, Re, u0)
       CALL par_mumps_master (NUMER_FACTOR, 1, Jacobian, 0)
 
-!write(*,*) '*check*'
-!write(*,*) '    |Jacobian%e|_L-infty = ', MAXVAL(ABS(Jacobian%e))
-   ENDIF
+#if DEBUG > 1
+      WRITE(*,*) '*check*'
+      WRITE(*,*) '    |Jacobian%e|_L-infty = ', MAXVAL(ABS(Jacobian%e))
+#endif
 
-   WRITE(*,*)
+   ENDIF
 
 END SUBROUTINE matrix_residual_fill_conwrap
 
@@ -432,14 +462,17 @@ SUBROUTINE mass_matrix_fill_conwrap(xsol, rhs)
 
    REAL(KIND=8), DIMENSION(Nx) :: xsol, rhs
 
-
+#if DEBUG > 0
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to mass_matrix_fill_conwrap'
+#endif
 
 
    IF ( .NOT.Mass_init ) THEN
+#if DEBUG > 0
       WRITE(*,*) '    creating Mass matrix'
+#endif
 
       ALLOCATE( Mass%i      (SIZE(Jacobian%i))       ); Mass%i       = Jacobian%i
       ALLOCATE( Mass%i_mumps(SIZE(Jacobian%i_mumps)) ); Mass%i_mumps = Jacobian%i_mumps
@@ -450,7 +483,7 @@ SUBROUTINE mass_matrix_fill_conwrap(xsol, rhs)
       CALL Dirichlet_c_M_MASS (np, js_Axis, js_D,  Mass)
       Mass_init = .TRUE.
 
-#if DEBUG > 2
+#if DEBUG > 1
       WRITE(*,*) '*check*'
       WRITE(*,*) '    |Mass%e|_L-infty = ', MAXVAL(ABS(Mass%e))
 #endif
@@ -478,18 +511,20 @@ SUBROUTINE matvec_mult_conwrap(xxx, yyy)
 
    REAL(KIND=8), DIMENSION(Nx)         :: yyy
 
+#if DEBUG > 0
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to matvec_mult_conwrap'
+#endif
 
-#if DEBUG > 2
+#if DEBUG > 1
    WRITE(*,*) '*check*'
    WRITE(*,*) '    |x|_L-infty = ', MAXVAL(ABS(xxx))
 #endif
 
    CALL dAtimx(yyy, Jacobian%e, Jacobian%j, Jacobian%i, xxx)
 
-#if DEBUG > 2
+#if DEBUG > 1
    WRITE(*,*) '*check*'
    WRITE(*,*) '    |y|_L-infty = ', MAXVAL(ABS(yyy))
 #endif
@@ -515,9 +550,11 @@ SUBROUTINE mass_matvec_mult_conwrap(xxx, yyy)
 
    REAL(KIND=8), DIMENSION(Nx)         :: yyy
 
+#if DEBUG > 0
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to mass_matvec_mult_conwrap'
+#endif
 
    IF ( .NOT.Mass_init ) THEN
       WRITE(*,*) '***************************'
@@ -529,165 +566,19 @@ SUBROUTINE mass_matvec_mult_conwrap(xxx, yyy)
       CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    ENDIF
 
-#if DEBUG > 2
+#if DEBUG > 1
    WRITE(*,*) '*check*'
    WRITE(*,*) '    |x|_L-infty = ', MAXVAL(ABS(xxx))
 #endif
 
    CALL dAtimx(yyy, Mass%e, Mass%j, Mass%i, xxx)
 
-#if DEBUG > 2
+#if DEBUG > 1
    WRITE(*,*) '*check*'
    WRITE(*,*) '    |y|_L-infty = ', MAXVAL(ABS(yyy))
 #endif
 
 END SUBROUTINE mass_matvec_mult_conwrap
-
-!------------------------------------------------------------------------------
-
-SUBROUTINE create_shifted_matrix_conwrap() &
-   BIND(C, NAME='create_shifted_matrix_conwrap')
-!
-! Allocates a sets sparsity pointers for shifted matrix.
-! Only used by eigensolver
-! 
-
-   USE ISO_C_BINDING
-
-   IMPLICIT NONE
- 
-   WRITE(*,*)
-   WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
-   WRITE(*,*) '--> CALL to create_shifted_matrix_conwrap'
-   WRITE(*,*)
-! 
-!   IF ( .NOT.JmsM_init ) THEN
-!      ! Create the matrix [J-sigma_loca*M] and store it in position 3 of the MUMPS
-!      ! array id
-!      ! JmsM <-- [J-sigma_loca*M]
-!      ALLOCATE( JmsM%i      (SIZE(Jacobian%i))       ); JmsM%i       = Jacobian%i
-!      ALLOCATE( JmsM%i_mumps(SIZE(Jacobian%i_mumps)) ); JmsM%i_mumps = Jacobian%i_mumps
-!      ALLOCATE( JmsM%j      (SIZE(Jacobian%j))       ); JmsM%j       = Jacobian%j
-!      ALLOCATE( JmsM%e      (SIZE(Jacobian%e))       ); JmsM%e       = 0d0
-!      CALL par_mumps_master (INITIALIZATION, 3, JmsM, 0)
-!      CALL par_mumps_master (SYMBO_FACTOR,   3, JmsM, 0)
-!      JmsM_init=.TRUE.
-!   ENDIF
-   
-END SUBROUTINE create_shifted_matrix_conwrap
-
-!------------------------------------------------------------------------------
-
-SUBROUTINE shifted_matrix_fill_conwrap (sigma_loca) &
-   BIND(C, NAME='shifted_matrix_fill_conwrap')
-!
-! Routine to create shifted matrix  J-sigma_loca*M
-! Only called by eigensolver
-! 
-
-   USE ISO_C_BINDING
-
-   IMPLICIT NONE
- 
-   REAL(KIND=C_DOUBLE), INTENT(IN) :: sigma_loca
-
-!   INTEGER :: i
-!
-!   WRITE(*,*)
-!   WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
-!   WRITE(*,*) '--> CALL to shifted_matrix_fill_conwrap'
-!   WRITE(*,*)
-! 
-!   DO i = 1, SIZE(Jacobian%e)
-!         ! we can do this as J and M have the same sparsity pattern 
-!         ! because they have been lazily built
-!         JmsM%e(i) = Jacobian%e(i) - sigma_loca*Mass%e(i)
-!   END DO
-
-END SUBROUTINE shifted_matrix_fill_conwrap
-
-!------------------------------------------------------------------------------
-
-SUBROUTINE shifted_linear_solver_conwrap(xvec, yvec, jac_flag, tol) &
-   BIND(C, NAME='shifted_linear_solver_conwrap')
-!
-! Put the call to your linear solver here. There are three options
-! about the reuse of the preconditioner. It is always safe to
-! just solve the matrix from scratch.
-! Input:
-!    xvec       Right hand side
-!    jac_flag   Flag indicating the status of the Jacobian so that
-!               preconditioners can be used:
-!               NEW_JACOBIAN:   recalculate preconditioner
-!               OLD_JACOBIAN:   reuse preconditioner
-!    tol        linear solver tolerance
-!
-! Output:
-!    yvec       Solution vector
-!
-! Return Value:
-!    Negative value means linear solver didn't converge.
-!
-
-   USE ISO_C_BINDING
-
-   IMPLICIT NONE
- 
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: xvec
-   REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: yvec
-   INTEGER(KIND=C_INT), VALUE         :: jac_flag
-   REAL(KIND=C_DOUBLE), VALUE         :: tol
-
-   WRITE(*,*)
-   WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
-   WRITE(*,*) '--> CALL to shifted_linear_solver_conwrap'
-   WRITE(*,*)
-
-
-!   IF ( jac_flag == NEW_JACOBIAN ) THEN
-! 
-!      CALL par_mumps_master (NUMER_FACTOR, 3, JmsM, 0)
-! 
-!   END IF
-! 
-!   CALL par_mumps_master (DIRECT_SOLUTION, 3, JmsM, 0, xvec)
-! 
-!   yvec = xvec
-
-END SUBROUTINE shifted_linear_solver_conwrap
-
-!------------------------------------------------------------------------------
-
-SUBROUTINE destroy_shifted_matrix_conwrap() &
-   BIND(C, NAME='destroy_shifted_matrix_conwrap')
-!
-! Deletes memory for shifted matrix.
-! Only used by eigensolver
-!
-
-   USE ISO_C_BINDING
-
-   IMPLICIT NONE
-
-   WRITE(*,*)
-   WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
-   WRITE(*,*) '--> CALL to destroy_shifted_matrix_conwrap'
-   WRITE(*,*)
-
-!   IF ( JmsM_init ) THEN
-! 
-!      DEALLOCATE(JmsM%i, JmsM%i_mumps, JmsM%j, JmsM%e)
-!      JmsM_init=.FALSE.
-!      ! the MUMPS module will take care of deallocating isave(3) the next time
-!      ! it will be used
-! 
-!   ELSE
-! 
-!      WRITE(*,*) 'JmsM was already unallocated'
-! 
-!   ENDIF
-
-END SUBROUTINE destroy_shifted_matrix_conwrap
 
 !------------------------------------------------------------------------------
 
@@ -706,40 +597,51 @@ SUBROUTINE assign_parameter_conwrap(param)
    ! input variables
    REAL(KIND=8) :: param
 
+#if DEBUG > 0
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to assign_parameter_conwrap'
    WRITE(*,*)
-
    WRITE(*,*) '    assigning parameter'
+#endif
+
 
    SELECT CASE( pd%param )
 
       CASE( REYNOLDS )
+#if DEBUG > 0
          WRITE(*,*) '    Reynolds = ', param
          WRITE(*,*) '    oldRe    = ', Re
+#endif
+
          Re          = param
          pd%reynolds = param
 
       CASE( OSCAR )
+#if DEBUG > 0
          WRITE(*,*) '    oscar    = ', param
          WRITE(*,*) '    oldOscar = ', flow_parameters(1)
+#endif
 
          CALL case_loca_changeOscar(param)
          flow_parameters(1)  = param
          pd%oscar            = param
 
       CASE( ROMEO )
+#if DEBUG > 0
          WRITE(*,*) '    romeo    = ', param
          WRITE(*,*) '    oldRomeo = ', flow_parameters(2)
+#endif
 
          CALL case_loca_changeRomeo(param)
          flow_parameters(2) = param
          pd%romeo           = param
 
       CASE( WHISKY )
+#if DEBUG > 0
          WRITE(*,*) '    whisky    = ', param
          WRITE(*,*) '    oldWhisky = ', flow_parameters(3)
+#endif
 
          CALL case_loca_changeWhisky(param)
          flow_parameters(3) = param
@@ -747,7 +649,6 @@ SUBROUTINE assign_parameter_conwrap(param)
 
    END SELECT
 
-   WRITE(*,*) ''
 
 END SUBROUTINE assign_parameter_conwrap
 
@@ -768,41 +669,50 @@ SUBROUTINE assign_bif_parameter_conwrap(bif_param)
    ! input variables
    REAL(KIND=8) :: bif_param
 
-
+#if DEBUG > 0
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to assign_bif_parameter_conwrap'
    WRITE(*,*)
-
    WRITE(*,*) '    assigning bifurcation parameter'
+#endif
 
    SELECT CASE( pd%bif_param )
 
       CASE( REYNOLDS )
+#if DEBUG > 0
          WRITE(*,*) '    Reynolds = ', bif_param
          WRITE(*,*) '    oldRe    = ', Re
+#endif
+
          Re          = bif_param
          pd%reynolds = bif_param
 
       CASE( OSCAR )
+#if DEBUG > 0
          WRITE(*,*) '    oscar    = ', bif_param
          WRITE(*,*) '    oldOscar = ', flow_parameters(1)
+#endif
        
          CALL case_loca_changeOscar(bif_param)
          flow_parameters(1)  = bif_param
          pd%oscar            = bif_param
 
       CASE( ROMEO )
+#if DEBUG > 0
          WRITE(*,*) '    romeo    = ', bif_param
          WRITE(*,*) '    oldRomeo = ', flow_parameters(2)
+#endif
 
          CALL case_loca_changeRomeo(bif_param)
          flow_parameters(2) = bif_param
          pd%romeo           = bif_param
 
       CASE( WHISKY )
+#if DEBUG > 0
          WRITE(*,*) '    whisky    = ', bif_param
          WRITE(*,*) '    oldWhisky = ', flow_parameters(3)
+#endif
 
          CALL case_loca_changeWhisky(bif_param)
          flow_parameters(3) = bif_param
@@ -810,7 +720,6 @@ SUBROUTINE assign_bif_parameter_conwrap(bif_param)
 
    END SELECT
 
-   WRITE(*,*) ''
 
 END SUBROUTINE assign_bif_parameter_conwrap
 
@@ -1010,6 +919,121 @@ SUBROUTINE eigenvector_output_conwrap(j, num_soln_flag, xr, evr, xi, evi, step_n
 
 END SUBROUTINE eigenvector_output_conwrap
 
+!------------------------------------------------------------------------------
+
+SUBROUTINE create_shifted_matrix_conwrap()
+!
+! Allocates a sets sparsity pointers for shifted matrix.
+! Only used by eigensolver
+! 
+   IMPLICIT NONE
+ 
+! 
+!   IF ( .NOT.JmsM_init ) THEN
+!      ! Create the matrix [J-sigma_loca*M] and store it in position 3 of the MUMPS
+!      ! array id
+!      ! JmsM <-- [J-sigma_loca*M]
+!      ALLOCATE( JmsM%i      (SIZE(Jacobian%i))       ); JmsM%i       = Jacobian%i
+!      ALLOCATE( JmsM%i_mumps(SIZE(Jacobian%i_mumps)) ); JmsM%i_mumps = Jacobian%i_mumps
+!      ALLOCATE( JmsM%j      (SIZE(Jacobian%j))       ); JmsM%j       = Jacobian%j
+!      ALLOCATE( JmsM%e      (SIZE(Jacobian%e))       ); JmsM%e       = 0d0
+!      CALL par_mumps_master (INITIALIZATION, 3, JmsM, 0)
+!      CALL par_mumps_master (SYMBO_FACTOR,   3, JmsM, 0)
+!      JmsM_init=.TRUE.
+!   ENDIF
+   
+END SUBROUTINE create_shifted_matrix_conwrap
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE shifted_matrix_fill_conwrap (sigma_loca)
+!
+! Routine to create shifted matrix  J-sigma_loca*M
+! Only called by eigensolver
+! 
+   IMPLICIT NONE
+ 
+   REAL(KIND=8), INTENT(IN) :: sigma_loca
+
+!   INTEGER :: i
+!
+!   WRITE(*,*)
+!   WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+!   WRITE(*,*) '--> CALL to shifted_matrix_fill_conwrap'
+!   WRITE(*,*)
+! 
+!   DO i = 1, SIZE(Jacobian%e)
+!         ! we can do this as J and M have the same sparsity pattern 
+!         ! because they have been lazily built
+!         JmsM%e(i) = Jacobian%e(i) - sigma_loca*Mass%e(i)
+!   END DO
+
+END SUBROUTINE shifted_matrix_fill_conwrap
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE shifted_linear_solver_conwrap(xvec, yvec, jac_flag, tol)
+!
+! Put the call to your linear solver here. There are three options
+! about the reuse of the preconditioner. It is always safe to
+! just solve the matrix from scratch.
+! Input:
+!    xvec       Right hand side
+!    jac_flag   Flag indicating the status of the Jacobian so that
+!               preconditioners can be used:
+!               NEW_JACOBIAN:   recalculate preconditioner
+!               OLD_JACOBIAN:   reuse preconditioner
+!    tol        linear solver tolerance
+!
+! Output:
+!    yvec       Solution vector
+!
+! Return Value:
+!    Negative value means linear solver didn't converge.
+!
+   IMPLICIT NONE
+ 
+   REAL(KIND=8), DIMENSION(Nx) :: xvec
+   REAL(KIND=8), DIMENSION(Nx) :: yvec
+   INTEGER                     :: jac_flag
+   REAL(KIND=8)                :: tol
+
+!   IF ( jac_flag == NEW_JACOBIAN ) THEN
+! 
+!      CALL par_mumps_master (NUMER_FACTOR, 3, JmsM, 0)
+! 
+!   END IF
+! 
+!   CALL par_mumps_master (DIRECT_SOLUTION, 3, JmsM, 0, xvec)
+! 
+!   yvec = xvec
+
+END SUBROUTINE shifted_linear_solver_conwrap
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE destroy_shifted_matrix_conwrap()
+!
+! Deletes memory for shifted matrix.
+! Only used by eigensolver
+!
+   IMPLICIT NONE
+
+!   IF ( JmsM_init ) THEN
+! 
+!      DEALLOCATE(JmsM%i, JmsM%i_mumps, JmsM%j, JmsM%e)
+!      JmsM_init=.FALSE.
+!      ! the MUMPS module will take care of deallocating isave(3) the next time
+!      ! it will be used
+! 
+!   ELSE
+! 
+!      WRITE(*,*) 'JmsM was already unallocated'
+! 
+!   ENDIF
+
+END SUBROUTINE destroy_shifted_matrix_conwrap
+
 ! END OF LOCA'S WRAPPERS
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1021,47 +1045,55 @@ END SUBROUTINE eigenvector_output_conwrap
 !------------------------------------------------------------------------------
 ! other LOCA's subroutines which are not wrappers
 
-SUBROUTINE param_output(param)
+SUBROUTINE param_output(param, omega)
 ! 
 ! Print parameter(s) to file
 ! 
    IMPLICIT NONE
    ! input variables
-   REAL(KIND=8) :: param
+   REAL(KIND=8)           :: param
+   REAL(KIND=8), OPTIONAL :: omega ! for Hopf tracking
    ! local variables
    INTEGER           :: fid = 22
    CHARACTER(LEN=50) :: filenm
 
 
+#if DEBUG > 0
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to param_output'
    WRITE(*,*)
+#endif
 
    SELECT CASE( pd%param )
       CASE( REYNOLDS )
          filenm = './locaOut/reynolds.dat'
-         WRITE(*,*) 'writing file: ', trim(filenm)
       CASE( OSCAR )
          filenm = './locaOut/oscar.dat'
-         WRITE(*,*) 'writing file: ', trim(filenm)
       CASE( ROMEO )
          filenm = './locaOut/romeo.dat'
-         WRITE(*,*) 'writing file: ', trim(filenm)
       CASE( WHISKY )
          filenm = './locaOut/whisky.dat'
-         WRITE(*,*) 'writing file: ', trim(filenm)
    END SELECT
 
-   OPEN(UNIT= fid, FILE= trim(filenm), ACCESS= 'APPEND')
+#if DEBUG > 0
+   WRITE(*,*) 'writing file: ', trim(filenm)
+#endif
+
+   OPEN(UNIT= fid, FILE= trim(filenm), POSITION= 'APPEND')
    WRITE(fid,*) param
    CLOSE(fid)
 
    ! print all parameters to file
    filenm = './locaOut/all.dat'
-   OPEN(UNIT= fid, FILE= trim(filenm), ACCESS= 'APPEND')
+   OPEN(UNIT= fid, FILE= trim(filenm), POSITION= 'APPEND')
    WRITE(*,*) 'writing file: ', trim(filenm)
-   WRITE(fid,*) pd%reynolds, pd%oscar, pd%romeo, pd%whisky
+
+   IF (PRESENT(omega)) THEN
+      WRITE(fid,*) pd%reynolds, pd%oscar, pd%romeo, pd%whisky, omega
+   ELSE
+      WRITE(fid,*) pd%reynolds, pd%oscar, pd%romeo, pd%whisky
+   ENDIF
 
    CLOSE(fid)
 
@@ -1106,13 +1138,13 @@ END SUBROUTINE param_output
 !!          WRITE(*,*) 'writing file: ', trim(filenm)
 !!    END SELECT
 !! 
-!!    OPEN(UNIT= fid, FILE= trim(filenm), ACCESS= 'APPEND')
+!!    OPEN(UNIT= fid, FILE= trim(filenm), POSITION= 'APPEND')
 !!    WRITE(fid,*) param
 !!    CLOSE(fid)
 !! 
 !!    ! print all parameters to file
 !!    filenm = './locaOut/all.dat'
-!!    OPEN(UNIT= fid, FILE= trim(filenm), ACCESS= 'APPEND')
+!!    OPEN(UNIT= fid, FILE= trim(filenm), POSITION= 'APPEND')
 !!    WRITE(*,*) 'writing file: ', trim(filenm)
 !!    WRITE(fid,*) pd%reynolds, pd%oscar, pd%romeo, pd%whisky
 !! 
@@ -1259,7 +1291,7 @@ SUBROUTINE compute_eigen(x_vec, filenm, shiftIm)
    ! (1)
    ! prepare boundary conditions
    !
-#if DEBUG > 2
+#if DEBUG > 1
    WRITE(*,*) '*check*'
    WRITE(*,*) '    number_of_sides = ', number_of_sides
 #endif
@@ -1316,7 +1348,7 @@ SUBROUTINE compute_eigen(x_vec, filenm, shiftIm)
    ! since the problem we are solving is:
    ! lambda*Mass*x = -Lns*x
    !
-#if DEBUG > 2
+#if DEBUG > 1
    WRITE(*,*) '*check*'
    WRITE(*,*) '    Re   = ', Re
    WRITE(*,*) '    beta = ', beta
@@ -1447,9 +1479,9 @@ SUBROUTINE compute_eigen(x_vec, filenm, shiftIm)
                                trim(p_in%eigen_output_directory)// &
                                 'directEigenvalues'//trim(filenm)//trim(shiftName)//'.dat')
 
-!            CALL Save_eigenvectors (directEigenvectors, &
-!                               trim(p_in%eigen_output_directory)// &
-!                               'directEigenvectors'//trim(filenm)//trim(shiftName)//'.dat')
+            CALL Save_eigenvectors (directEigenvectors, &
+                               trim(p_in%eigen_output_directory)// &
+                               'directEigenvectors'//trim(filenm)//trim(shiftName)//'.dat')
 
             !------------------
             ! PLOT EIGENVECTORS
@@ -1513,9 +1545,9 @@ SUBROUTINE compute_eigen(x_vec, filenm, shiftIm)
                                 trim(p_in%eigen_output_directory)// &
                                  'adjointEigenvalues'//trim(filenm)//trim(shiftName)//'.dat')
 
-!            CALL Save_eigenvectors (adjointEigenvectors, &
-!                                trim(p_in%eigen_output_directory)// &
-!                                'adjointEigenvectors'//trim(filenm)//trim(shiftName)//'.dat')
+            CALL Save_eigenvectors (adjointEigenvectors, &
+                                trim(p_in%eigen_output_directory)// &
+                                'adjointEigenvectors'//trim(filenm)//trim(shiftName)//'.dat')
 
             !------------------
             ! PLOT EIGENVECTORS
@@ -1745,340 +1777,3 @@ END SUBROUTINE compute_structSens
 !==============================================================================
 
 END MODULE loca_wrappers
-
-!------------------------------------------------------------------------------
-! qui sotto e` riportato qualcosa che non deve essre perso
-
-!!   FUNCTION nonlinear_solver_conwrap (x_vec, con_ptr, step_num, lambda, delta_s) &
-!!      RESULT(num_newt_its) BIND(C, NAME='nonlinear_solver_conwrap')
-!!   !
-!!   ! Put the call to your nonlinear solver here.
-!!   ! Input:
-!!   !    x_vec     solution vector
-!!   !    con_ptr   pointer to continuation structure, cast to (void *)
-!!   !              must be passed to nonlinear solver and then passed
-!!   !              to bordering algorithms.
-!!   !    step_num  Continuation step number
-!!   ! 
-!!   ! Output:
-!!   !    x_vec     solution vector
-!!   ! 
-!!   ! Return Value:
-!!   !    num_newt_its  Number of Newton iterations needed for
-!!   !                  convergence, used to pick next step size.
-!!   !                  Negative value means nonlinear solver didn't converge.
-!!   ! 
-!!   
-!!      USE ISO_C_BINDING
-!!   
-!!      IMPLICIT NONE
-!!   
-!!      INTERFACE
-!!         FUNCTION continuation_hook(x_hook, delta_x_hook, con_ptr, Reltol, Abstol) &
-!!            RESULT(continuation_converged) BIND(C, NAME='continuation_hook')
-!!            USE ISO_C_BINDING
-!!            REAL(KIND=C_DOUBLE)        :: x_hook
-!!            REAL(KIND=C_DOUBLE)        :: delta_x_hook
-!!            TYPE(C_PTR),         VALUE :: con_ptr
-!!            REAL(KIND=C_DOUBLE), VALUE :: Reltol
-!!            REAL(KIND=C_DOUBLE), VALUE :: Abstol
-!!            INTEGER(KIND=C_INT)        :: continuation_converged
-!!         END FUNCTION continuation_hook
-!!      END INTERFACE
-!!   
-!!      ! input variables
-!!      REAL(KIND=C_DOUBLE), DIMENSION(Nx) :: x_vec
-!!      TYPE(C_PTR), VALUE                 :: con_ptr
-!!      INTEGER(KIND=C_INT), VALUE         :: step_num
-!!      REAL(KIND=C_DOUBLE), VALUE         :: lambda
-!!      REAL(KIND=C_DOUBLE), VALUE         :: delta_s
-!!      ! output variables
-!!      INTEGER(KIND=C_INT)                :: num_newt_its
-!!   
-!!      ! common variables used
-!!      ! Jacobian
-!!      ! p_in
-!!      ! velCmpnnts, np, np_L, Nx
-!!      ! x0, u0, p0
-!!      ! mm, jj, jj_L, js_D, zero_bvs_D
-!!      ! DESINGULARIZE
-!!      ! Re
-!!   
-!!      ! local variables
-!!      INTEGER                                   :: n
-!!      REAL(KIND=8)                              :: residual
-!!      REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE ::     vv, du0
-!!      REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dx, ww, dx0
-!!   
-!!   
-!!      INTEGER(KIND=C_INT)                       :: continuation_converged=0
-!!      REAL(KIND=C_DOUBLE), DIMENSION(Nx)        :: x_hook
-!!      REAL(KIND=C_DOUBLE), DIMENSION(Nx)        :: delta_x_hook
-!!      REAL(KIND=C_DOUBLE)                       :: Reltol = 1d-3
-!!      REAL(KIND=C_DOUBLE)                       :: Abstol = 1d-8
-!!      ! (Reltol=1.0e-3, Abstol=1.0e-8 are good defaults.)
-!!   
-!!   
-!!      ! executable statements
-!!   
-!!      WRITE(*,*)
-!!      WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
-!!      WRITE(*,*) '--> CALL to nonlinear_solver_conwrap'
-!!      WRITE(*,*)
-!!   
-!!   
-!!      ALLOCATE ( vv (velCmpnnts, np) )
-!!      ALLOCATE ( ww (np_L) )
-!!      ALLOCATE ( dx (Nx) )
-!!      ALLOCATE ( dx0(Nx) )
-!!      ALLOCATE ( du0(velCmpnnts, np) )
-!!   
-!!   
-!!      x0 = x_vec
-!!      xx = x_vec
-!!   
-!!   
-!!      !============================================
-!!      ! start of FIRST STEP IN NON-INCREMENTAL FORM
-!!      !
-!!      WRITE(*,*) '    First step in NON-INCREMENTAL form'
-!!      !
-!!      !------------------------------------------------------------------
-!!      !-------------GENERATION OF THE RIGHT-HAND SIDE--------------------
-!!      !
-!!      ! NON-INCREMENTAL FORM
-!!      ! rhs <---  (u0 \dot \nabla)u0
-!!      !           0
-!!      vv = 0
-!!   !   CALL extract (x0,  u0, p0)
-!!      CALL extract (x0,  u0)
-!!      CALL qv_0y01_sp (mm, jj, u0,  vv)
-!!   !   CALL qc_ty0_sp_s (ms_2, jjs, iis,  c_2,  vv)  !  cumulative
-!!   !   CALL qc_ny0_sp_s (ms_3, jjs, iis, -q_3,  vv)  !  cumulative
-!!   
-!!      u0(1,:) = volumeForcing(1,1)
-!!      u0(2,:) = volumeForcing(2,1)
-!!      u0(3,:) = volumeForcing(3,1)
-!!      CALL qv_0y0_sp   (mm, jj, u0, 1d0, vv)
-!!   
-!!      u0(1,:) = volumeForcing(1,2)
-!!      u0(2,:) = volumeForcing(2,2)
-!!      u0(3,:) = volumeForcing(3,2)
-!!      CALL qv_0y0_dR_sp(mm, jj, u0, 1d0, vv)
-!!   
-!!      ww = 0
-!!      CALL collect (vv, ww,  dx) ! here dx is the RHS
-!!      !------------------------------------------------------------------
-!!      !-------------ENFORCING DIRICHLET BOUNDARY CONDITIONS ON THE RHS---
-!!      !
-!!      ! NON-INCREMENTAL FORM
-!!      ! non-homogeneous boundary conditions
-!!      !
-!!      CALL Dirichlet_c (np, js_Axis, js_D, bvs_D,  dx)
-!!      IF (DESINGULARIZE) dx(Nx) = 0d0
-!!      !------------------------------------------------------------------
-!!      !-------------GENERATION OF THE JACOBIAN MATRIX--------------------
-!!      !-------------OF THE COUPLED EQUATION SYSTEM-----------------------
-!!      !             Jacobian  <--- [(u0.V)_ + (_.V)u0)]  +  K_  +  V_ (ibp)
-!!      !
-!!   !write(*,*) '*check*'
-!!   !write(*,*) '    Re = ', Re
-!!      CALL extract (x0,  u0)
-!!      CALL ComputeJacobianMatrix (np, mm, jj, jj_L, js_Axis, js_D, DESINGULARIZE, Jacobian, Re, u0)
-!!      CALL par_mumps_master (NUMER_FACTOR, 1, Jacobian, 0)
-!!      !------------------------------------------------------------------
-!!      !-------------DIRECT SOLUTION OF THE COUPLED SYSTEM----------------
-!!      CALL par_mumps_master (DIRECT_SOLUTION, 1, Jacobian, 0, dx)
-!!      ! as the first step is done in NON-INCREMENTAL FORM,
-!!      ! we actually compute x_1 even though we call it dx,
-!!      ! dx has then to be computed as dx = x_1 - x_0
-!!      !
-!!      dx = dx - x0
-!!      !------------------------------------------------------------------
-!!      !-------------UPDATE SOLUTION VECTOR-------------------------------
-!!      x_vec = x0 + dx 
-!!      x0  = x_vec
-!!      dx0 = dx
-!!      !
-!!      ! end of FIRST STEP IN NON-INCREMENTAL FORM
-!!      !============================================
-!!   
-!!   
-!!      WRITE(*,*)
-!!   
-!!   
-!!      !=============================================================
-!!      ! start of NEWTON'S ITERATIONS IN BI-INCREMENTAL FORM
-!!      !
-!!      WRITE(*,*) '    Start of Newton''s iterations'
-!!      WRITE(*,*) '    in BI-INCREMENTAL form'
-!!      !
-!!      DO n = 1, p_in%nwtn_maxite
-!!         
-!!         WRITE(*,*)
-!!         WRITE(*,*) '    n = ', n
-!!   
-!!         IF (n == p_in%nwtn_maxite) THEN
-!!          
-!!            WRITE(*,*) '   ************************************************'
-!!            WRITE(*,*) '   *Maximum number of Newton''s iterations reached:'
-!!            WRITE(*,*) '   *ite_max = ', p_in%nwtn_maxite
-!!            WRITE(*,*) '   ************************************************'
-!!            WRITE(*,*)
-!!         
-!!         ENDIF
-!!         
-!!         CALL extract (x0,  u0)
-!!   
-!!   !      CALL extract (x0,  u0, p0)
-!!   !      CALL vtk_plot_P2 (rr, jj, jj_L, u0, p0, trim(p_in%plot_directory) // 'iteSol.vtk')
-!!   
-!!         !------------------------------------------------------------------
-!!         ! call case dependent subroutine
-!!         !
-!!         CALL case_newton_iteprocess(n, continuation_converged)
-!!   
-!!         !------------------------------------------------------------------
-!!         !-------------GENERATION OF THE RIGHT-HAND SIDE--------------------
-!!         !
-!!         ! BI-INCREMENTAL FORM
-!!         ! rhs  <---  - (du0 \dot \nabla)du0
-!!         !            0
-!!         !
-!!         vv = 0
-!!         CALL extract (dx0,  du0)
-!!         CALL qv_0y01_sp (mm, jj, du0,  vv)
-!!   
-!!         ww = 0
-!!   
-!!         CALL collect (-vv, ww,  dx) ! here dx is the RHS
-!!   
-!!         !------------------------------------------------------------------
-!!         !-------------ENFORCING DIRICHLET BOUNDARY CONDITIONS ON THE RHS---
-!!         !
-!!         ! BI-INCREMENTAL FORM
-!!         ! differential type boundary conditions
-!!         ! (homogeneous if not calling LOCA)
-!!         !
-!!         CALL extract_Dirichlet_c (np, js_Axis, js_D, x0,  old_bvs_D)
-!!         CALL Dirichlet_c_DIFF (np, js_Axis, js_D, bvs_D, old_bvs_D,  dx)
-!!   
-!!         IF (DESINGULARIZE) dx(Nx) = 0d0
-!!   
-!!   !write(*,*) '*check*'
-!!   !do ii = 1, SIZE(du0, 1)
-!!   !   write(*,*) 'MAXdelta_bvs_D = ', MAXVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
-!!   !   write(*,*) 'MINdelta_bvs_D = ', MINVAL(bvs_D(ii)%DRL-old_bvs_D(ii)%DRL)
-!!   !enddo
-!!   
-!!         !------------------------------------------------------------------
-!!         !-------------COMPUTE RESIDUAL-------------------------------------
-!!   
-!!         residual = MAXVAL(ABS(dx))
-!!         
-!!         WRITE(*,*) '    |res|_L-infty = ', residual
-!!   
-!!         !===================================================================
-!!         !===================================================================
-!!         IF (residual < p_in%nwtn_tol .AND. continuation_converged == 1) THEN
-!!            x_vec = x0
-!!            WRITE (*,*)
-!!            WRITE (*,*) '    Residual on the converged solution:'
-!!            WRITE (*,*) '    |res|_L-infty = ', residual
-!!            WRITE (*,*) '    End of Newton''s iterations.'
-!!            WRITE (*,*)
-!!            EXIT
-!!         ENDIF
-!!         !===================================================================
-!!         !===================================================================
-!!   
-!!         !------------------------------------------------------------------
-!!         !-------------GENERATION OF THE JACOBIAN MATRIX--------------------
-!!         !-------------OF THE COUPLED EQUATION SYSTEM-----------------------
-!!         !             Jacobian  <--- [(u0.V)_ + (_.V)u0)]  +  K_  +  V_ (ibp)
-!!         !
-!!   
-!!   !write(*,*) '*check*'
-!!   !write(*,*) '    Re = ', Re
-!!         CALL extract (x0,  u0)
-!!         CALL ComputeJacobianMatrix (np, mm, jj, jj_L, js_Axis, js_D, DESINGULARIZE, Jacobian, Re, u0)
-!!         CALL par_mumps_master (NUMER_FACTOR, 1, Jacobian, 0)
-!!   
-!!         !------------------------------------------------------------------
-!!         !-------------DIRECT SOLUTION OF THE COUPLED SYSTEM----------------
-!!   
-!!         CALL par_mumps_master (DIRECT_SOLUTION, 1, Jacobian, 0, dx)
-!!   
-!!         !------------------------------------------------------------------
-!!         !-------------LOCA'S STUFF-----------------------------------------
-!!         
-!!         IF ( C_ASSOCIATED(con_ptr) ) THEN
-!!   
-!!            WRITE(*,*)
-!!            WRITE(*,*) '    --> CALL to continuation_hook'
-!!            !WRITE(*,*) '    |x0|_L-infty = ', MAXVAL(ABS(x0))
-!!            !WRITE(*,*) '    |dx|_L-infty = ', MAXVAL(ABS(dx))
-!!            WRITE(*,*)
-!!            !-------------------------------------
-!!            ! WARNING: continuation_hook expects the solution of
-!!            ! J(-x) = + R   and not
-!!            ! J( x) = - R
-!!            !-------------------------------------
-!!   
-!!            x_hook       = x0
-!!            delta_x_hook = - dx
-!!   
-!!            continuation_converged = continuation_hook(x_hook(1), delta_x_hook(1), &
-!!                                                         con_ptr, Reltol, Abstol);
-!!            dx = - delta_x_hook
-!!   
-!!            WRITE(*,*) '    done.'
-!!            WRITE(*,*)
-!!   
-!!         ELSE
-!!            continuation_converged = 1
-!!         ENDIF
-!!   
-!!         !------------------------------------------------------------------
-!!         !-------------UPDATE SOLUTION VECTOR-------------------------------
-!!   
-!!         x_vec = x0 + dx
-!!   
-!!         x0  = x_vec
-!!         dx0 = dx
-!!   
-!!      ENDDO
-!!      !
-!!      ! end of NEWTON'S ITERATIONS IN BI-INCREMENTAL FORM
-!!      !=============================================================
-!!   
-!!   
-!!      !------------------------------------------------------------------
-!!      !-------------UPDATE EVERYTHING------------------------------------
-!!   
-!!      x0   = x_vec
-!!      xx   = x_vec
-!!      pd%x = C_LOC(xx)
-!!      CALL extract (x0,  u0, p0)
-!!      CALL extract (xx,  uu, pp)
-!!   
-!!   
-!!      IF ( n <= p_in%nwtn_maxite ) THEN
-!!         num_newt_its = n
-!!      ELSE
-!!         num_newt_its = -1
-!!      ENDIF
-!!   
-!!      !------------------------------------------------------------------
-!!      ! call case dependent subroutine
-!!      !
-!!      CALL case_newton_postprocess()
-!!   
-!!   
-!!   
-!!      DEALLOCATE( vv, ww, dx, dx0, du0 )
-!!   
-!!   
-!!   END FUNCTION nonlinear_solver_conwrap
-!!   
-!!   !------------------------------------------------------------------------------

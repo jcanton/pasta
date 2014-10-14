@@ -40,8 +40,7 @@ SUBROUTINE cvarsparser(con, pd, filename)
    TYPE(passdown_struct) :: pd
    CHARACTER(*)          :: filename
    ! output variable
-   !TYPE(con_struct) :: con
-   TYPE(con_struct), POINTER :: con
+   TYPE(con_struct) :: con
    ! local variables
    INTEGER           :: i
    INTEGER           :: hopf_nev,  hopf_ind
@@ -89,8 +88,8 @@ SUBROUTINE cvarsparser(con, pd, filename)
 #if DEBUG > 2
    ! FixMe need to check if the indices of this vector go from 0 to ldz-1 or from 1 to ldz
    WRITE(*,*) 'Check to have correctly received the initial solution'
-   WRITE(*,*) '   pd->x[0]   = ', con%general_info%x(0)
-   WRITE(*,*) '   pd->x[end] = ', con%general_info%x(pd%ldz-1)
+   WRITE(*,*) '   pd->x[1]   = ', con%general_info%x(1)
+   WRITE(*,*) '   pd->x[end] = ', con%general_info%x(pd%ldz)
 #endif
 
    !... General Info ...
@@ -253,26 +252,28 @@ SUBROUTINE cvarsparser(con, pd, filename)
    READ(11,*)  tmp
    !*************************************
    READ(11,*)  temp, hopf_nev
-   READ(11,*)  temp, temp1
+   READ(11,'(a18,a90)')  temp, temp1
 
    IF (con%general_info%method == HOPF_CONTINUATION) THEN
       IF (ADJUSTL(temp1) /= "none") THEN
          ALLOCATE(con%hopf_info%y_vec(0:pd%ldz-1))
          ALLOCATE(con%hopf_info%z_vec(0:pd%ldz-1))
          IF (hopf_nev == 1) THEN
-            CALL read_eigenvector(pd%ldz, hopf_nev, trim(temp1), con%hopf_info%y_vec, con%hopf_info%z_vec)
-            WRITE(*,*) 'loaded y and z vectors (for hopf) from filename: ', trim(temp1)
+            CALL read_eigenvector(pd%ldz, hopf_nev, trim(adjustl(temp1)), con%hopf_info%y_vec, con%hopf_info%z_vec)
+            WRITE(*,*) 'loaded y and z vectors (for hopf) from filename: ', trim(adjustl(temp1))
 #if DEBUG > 2
             WRITE(*,*) 'Check to have correctly received the eigenvector for hopf'
             WRITE(*,*) '    y_vec[0] = ', con%hopf_info%y_vec(0), ' y_vec[end] = ', con%hopf_info%y_vec(pd%ldz-1)
             WRITE(*,*) '    z_vec[0] = ', con%hopf_info%z_vec(0), ' z_vec[end] = ', con%hopf_info%z_vec(pd%ldz-1)
 #endif
          ELSE
-            ! FixMe need to understand what's needed here
+            ! FixMe need to do something here
+            STOP
          ENDIF
       ELSE
          ! FixMe why would I end up here?
          WRITE(*,*) '*** Not loading hopf eigenvector?? ***'
+         STOP
       END IF
    END IF
 
@@ -301,7 +302,7 @@ SUBROUTINE print_con_struct(con)
 
    IMPLICIT NONE
 
-   TYPE(con_struct), POINTER :: con
+   TYPE(con_struct) :: con
 
    WRITE(*,*)
    WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
@@ -416,7 +417,7 @@ SUBROUTINE solution_output_conwrap(num_soln_flag, x,  param,  &
    REAL(KIND=8)                :: param3
    INTEGER                     :: step_num
    INTEGER                     :: num_its
-   TYPE(con_struct), POINTER   :: con
+   TYPE(con_struct)            :: con
 
    CHARACTER(LEN=64) :: filenm
    CHARACTER(LEN=6)  :: str1, str2
@@ -478,20 +479,25 @@ SUBROUTINE solution_output_conwrap(num_soln_flag, x,  param,  &
       !CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
    ENDIF
    WRITE (str3,*) '_'//trim(str1)//'_'//trim(str2)
+   str3 = trim(adjustl(str3))
 
    ! Any Continuation run
    !
    IF(num_soln_flag==1 .OR. num_soln_flag==2 .OR. num_soln_flag==3) THEN
 
       WRITE (filenm,*) 'locaCont'//trim(str3)//'.dat'
-      CALL write_restart(x, param, step_num, con%stepping_info%max_steps, trim(filenm))
+      CALL write_restart(x, param, step_num, con%stepping_info%max_steps, trim(adjustl(filenm)))
 
       WRITE (filenm,*) 'suite'//trim(str3)//'.QPrestart'
-      CALL write_QP_restart(x, trim(filenm))
+      CALL write_QP_restart(x, trim(adjustl(filenm)))
 
       ! Print out parameter to file
       !
-      CALL param_output(param)
+      IF(num_soln_flag==1 .OR. num_soln_flag==2) THEN
+         CALL param_output(param)
+      ELSEIF(num_soln_flag==3) THEN
+         CALL param_output(param, param3) ! save omega
+      ENDIF
 
    END IF
 
@@ -500,7 +506,7 @@ SUBROUTINE solution_output_conwrap(num_soln_flag, x,  param,  &
    IF(num_soln_flag==2 .OR. num_soln_flag==3) THEN
 
       WRITE (filenm,*) 'locaBifTrack'//trim(str3)//'.dat'
-      CALL write_restart(x2, param2, step_num, con%stepping_info%max_steps, trim(filenm))
+      CALL write_restart(x2, param2, step_num, con%stepping_info%max_steps, trim(adjustl(filenm)))
 
    END IF
 
@@ -509,7 +515,7 @@ SUBROUTINE solution_output_conwrap(num_soln_flag, x,  param,  &
    IF(num_soln_flag==3) THEN
 
       WRITE (filenm,*) 'locaHopf'//trim(str3)//'.dat'
-      CALL write_restart(x3, param3, step_num, con%stepping_info%max_steps, trim(filenm))
+      CALL write_restart(x3, param3, step_num, con%stepping_info%max_steps, trim(adjustl(filenm)))
 
       shiftIm = param3
 

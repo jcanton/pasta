@@ -452,8 +452,6 @@ SUBROUTINE read_restart_bin(x, param, filenm)
 ! - x      :: solution vector
 ! - param  :: value of important parameter
 !
-   USE ISO_C_BINDING
-
    ! input variables
    CHARACTER(*)               :: filenm
    ! output variables
@@ -551,8 +549,6 @@ SUBROUTINE read_cmplx_restart_bin(x, param, filenm)
 ! - x      :: solution vector
 ! - param  :: value of important parameter
 !
-   USE ISO_C_BINDING
-
    ! input variables
    CHARACTER(*)                  :: filenm
    ! output variables

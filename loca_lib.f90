@@ -32,8 +32,8 @@ FUNCTION con_lib(con) RESULT(output)
 !*  Input Variables:
 !*
 !****************************************************************************
-   TYPE(con_struct), POINTER :: con
-   INTEGER                   :: output
+   TYPE(con_struct) :: con
+   INTEGER          :: output
 
    ! Local Variables
    !

@@ -148,17 +148,39 @@ SUBROUTINE par_mumps_master_real (parMumpsJob, matrID, A, symFlag, rhsSol)
       WRITE(*,*) '             using a centralized assembled matrix'
       WRITE(*,*) '             using a centralized dense rhs_sol'
       WRITE(*,*) '             not using out-of-core'
-      WRITE(*,*) '             on : error messages'
-      WRITE(*,*) '             on : diagnostic, statistics and warnings'
-      WRITE(*,*) '             on : global information'
 #endif
+
+
       id_real(matrID)%SYM = symFlag
       CALL MPI_BARRIER (MPI_COMM_WORLD, mpiIerr)
       CALL par_mumps (parMumpsJob, matrID)
 
+
 		! diagnostic, statistics and warnings
+#if MUMPSDEBUG > 0
+      id_real(matrID)%ICNTL(2)  = 6
+      id_real(matrID)%ICNTL(3)  = 6
+      WRITE(*,*) '             on : global information'
+#else
       id_real(matrID)%ICNTL(2)  = 0
+      id_real(matrID)%ICNTL(3)  = 0
       id_real(matrID)%ICNTL(4)  = 0
+#endif
+#if MUMPSDEBUG == 1
+      id_real(matrID)%ICNTL(4)  = 2
+      WRITE(*,*) '             on : errors, warnings and main statistics'
+#elif MUMPSDEBUG == 2
+      id_real(matrID)%ICNTL(4)  = 3
+      WRITE(*,*) '             on : errors, warnings and terse diagnostic'
+#elif MUMPSDEBUG == 3
+      id_real(matrID)%ICNTL(4)  = 3
+      WRITE(*,*) '             on : errors, warnings and terse diagnostic'
+#elif MUMPSDEBUG >= 4
+      id_real(matrID)%ICNTL(4)  = 4
+      WRITE(*,*) '             on : errors, warnings and input/output'
+#endif
+
+
       ! centralized assembled matrix
       id_real(matrID)%ICNTL(5)  = 0
       id_real(matrID)%ICNTL(18) = 0
@@ -497,17 +519,38 @@ SUBROUTINE par_mumps_master_cmpl (parMumpsJob, matrID, A, symFlag, rhsSol)
       WRITE(*,*) '             using a centralized assembled matrix'
       WRITE(*,*) '             using a centralized dense rhs_sol'
       WRITE(*,*) '             not using out-of-core'
-      WRITE(*,*) '             on : error messages'
-      WRITE(*,*) '             on : diagnostic, statistics and warnings'
-      WRITE(*,*) '             on : global information'
 #endif
+
+
       id_cmpl(matrID)%SYM = symFlag
       CALL MPI_BARRIER (MPI_COMM_WORLD, mpiIerr)
       CALL par_mumps (parMumpsJob, matrID)
 
+
 		! diagnostic, statistics and warnings
+#if MUMPSDEBUG > 0
+      id_cmpl(matrID)%ICNTL(2)  = 6
+      id_cmpl(matrID)%ICNTL(3)  = 6
+      WRITE(*,*) '             on : global information'
+#else
       id_cmpl(matrID)%ICNTL(2)  = 0
+      id_cmpl(matrID)%ICNTL(3)  = 0
       id_cmpl(matrID)%ICNTL(4)  = 0
+#endif
+#if MUMPSDEBUG == 1
+      id_cmpl(matrID)%ICNTL(4)  = 2
+      WRITE(*,*) '             on : errors, warnings and main statistics'
+#elif MUMPSDEBUG == 2
+      id_cmpl(matrID)%ICNTL(4)  = 3
+      WRITE(*,*) '             on : errors, warnings and terse diagnostic'
+#elif MUMPSDEBUG == 3
+      id_cmpl(matrID)%ICNTL(4)  = 3
+      WRITE(*,*) '             on : errors, warnings and terse diagnostic'
+#elif MUMPSDEBUG >= 4
+      id_cmpl(matrID)%ICNTL(4)  = 4
+      WRITE(*,*) '             on : errors, warnings and input/output'
+#endif
+
       ! centralized assembled matrix
       id_cmpl(matrID)%ICNTL(5)  = 0
       id_cmpl(matrID)%ICNTL(18) = 0
@@ -921,7 +964,8 @@ SUBROUTINE par_mumps (parMumpsJob, matrID)
       WRITE(*,*) '============================================================'
       WRITE(*,*) '             END of program for process.', myRank
       WRITE(*,*) '============================================================'
-      CALL MPI_FINALIZE(mpiIerr)
+      !CALL MPI_FINALIZE(mpiIerr)
+      STOP
       !CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
 
    END SELECT

@@ -38,8 +38,7 @@ SUBROUTINE do_loca(pd)
    ! input variable
    TYPE(passdown_struct) :: pd
    ! local variables
-   !TYPE(con_struct) :: con
-   TYPE(con_struct), POINTER :: con
+   TYPE(con_struct) :: con
    INTEGER                   :: nstep
 
    WRITE(*,*) ''

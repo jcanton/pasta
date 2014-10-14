@@ -29,7 +29,7 @@ FUNCTION continuation_hook(x, delta_x, con, reltol, abstol) RESULT (output)
 
    REAL(KIND=8), DIMENSION(0:) :: x
    REAL(KIND=8), DIMENSION(0:) :: delta_x
-   TYPE(con_struct), POINTER   :: con
+   TYPE(con_struct)            :: con
    REAL(KIND=8)                :: reltol
    REAL(KIND=8)                :: abstol
 
@@ -679,8 +679,7 @@ FUNCTION hopf_alg(x, delta_x, con, reltol, abstol) RESULT (output)
 
    REAL(KIND=8), DIMENSION(0:) :: x
    REAL(KIND=8), DIMENSION(0:) :: delta_x
-   !TYPE(con_struct)            :: con ! FixMe shouldn't this be a POINTER?
-   TYPE(con_struct), POINTER   :: con ! FixMe shouldn't this be a POINTER?
+   TYPE(con_struct)            :: con
    REAL(KIND=8)                :: reltol
    REAL(KIND=8)                :: abstol
 

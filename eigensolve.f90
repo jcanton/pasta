@@ -7,7 +7,6 @@ MODULE EigenSolve
    USE sparse_matrix_profiles
    USE sparse_matrix_operations
    USE par_solve_mumps
-   USE ISO_C_BINDING
    USE miscellaneous_subroutines
 
    IMPLICIT NONE

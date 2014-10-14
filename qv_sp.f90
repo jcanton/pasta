@@ -165,7 +165,7 @@ SUBROUTINE qv_y_10_hybrid_sp (m0, jj, jj_L, ff_L,  v0)
    INTEGER,      DIMENSION(:),   INTENT(IN)  :: m0
    INTEGER,      DIMENSION(:,:), INTENT(IN)  :: jj, jj_L
    REAL(KIND=8), DIMENSION(:),   INTENT(IN)  :: ff_L
-   REAL(KIND=8), DIMENSION(:,:), INTENT(OUT) :: v0
+   REAL(KIND=8), DIMENSION(:,:)              :: v0
 
    REAL(KIND=8), DIMENSION(k_d, n_w) :: dwl
    REAL(KIND=8), DIMENSION(n_w_L)    :: ffm_L   
@@ -215,7 +215,7 @@ SUBROUTINE qv_y_10_hybrid_sp (m0, jj, jj_L, ff_L,  v0)
          
          fl = SUM(ffm_L * w_L(:,l)) * pp_w(l) 
          
-         v0(:, jjm) = v0(:, jjm)  +  dwl * fl * yy_G(l,m)  ! new * yy_G(l,m)
+         v0(1:2, jjm) = v0(1:2, jjm)  +  dwl * fl * yy_G(l,m)  ! new * yy_G(l,m)
        
          v0(2, jjm) = v0(2, jjm)  +  ww(:,l) * fl          ! new  tutta la linea
        

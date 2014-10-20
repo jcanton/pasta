@@ -699,6 +699,46 @@ END SUBROUTINE write_QP_restart
 !! 
 !! END SUBROUTINE write_QP_restart
 
+!------------------------------------------------------------------------------
+
+SUBROUTINE save_vector(x, filenm)
+!
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 17/10/2014
+!
+! - x :: vector
+!
+
+   IMPLICIT NONE
+   ! input variables
+   REAL(KIND=8), DIMENSION(:) :: x
+   CHARACTER(*)               :: filenm
+   ! local variables
+   INTEGER :: i
+
+
+   WRITE(*,*)
+   WRITE(*,*) '--> Saving vector file: '//trim(filenm)//' ...'
+
+   OPEN( UNIT = 18, FILE = trim(filenm), FORM='FORMATTED' )
+
+   WRITE(18,*) SIZE(x)
+
+   WRITE(*,*) '    size(x) = ', SIZE(x)
+
+   ! write field
+   DO i = 1, SIZE(x)
+      WRITE(18,*) x(i)
+   ENDDO
+
+   CLOSE(18)
+
+
+   WRITE(*,*) '    Done.'
+
+END SUBROUTINE save_vector
+
 !==============================================================================
 
 END MODULE restart_io

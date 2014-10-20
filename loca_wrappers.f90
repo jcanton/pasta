@@ -21,6 +21,7 @@ MODULE loca_wrappers
    USE axisym_boundary_values
    USE vtk_plot
    USE case_dependent
+   USE restart_io
    !
    USE loca_types
    USE loca_pd
@@ -32,10 +33,10 @@ MODULE loca_wrappers
    IMPLICIT NONE
 
    TYPE(CSR_MUMPS_Complex_Matrix) :: JmoM ! shifted matrix [J-i*omega*M]
-   !TYPE(CSR_MUMPS_Matrix)         :: JmsM ! shifted matrix [J-sigma_loca*M]
+   !TYPE(CSR_MUMPS_Matrix)         :: JmsM ! shifted matrix [J-sigma_loca*M] ! USELESS
 
-   LOGICAL :: Mass_init=.FALSE.
-   LOGICAL :: JmsM_init=.FALSE.
+   !LOGICAL :: Mass_init=.FALSE. ! moved to global_variables
+   !LOGICAL :: JmsM_init=.FALSE. ! USELESS
 
    INTEGER :: ii
 
@@ -158,7 +159,7 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
    IMPLICIT NONE
    ! input/output variables 
    REAL(KIND=8), DIMENSION(Nx) :: c, d, tmp
-   INTEGER                     :: jac_flag
+   INTEGER,      INTENT(IN)    :: jac_flag
    REAL(KIND=8), INTENT(IN)    :: omega
    INTEGER                     :: ires
    ! local variables
@@ -176,33 +177,24 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
    
    rhs = CMPLX(c, d, KIND=8)
 
+!#if DEBUG > 3
+!   CALL save_vector(c,'rhs_r.vector')
+!   CALL save_vector(d,'rhs_i.vector')
+!#endif
+
 #if DEBUG > 1
    WRITE(*,*) '*check*'
    WRITE(*,*) '    |rhs|_L-infty = ', MAXVAL(ABS(DBLE(rhs))), MAXVAL(ABS(AIMAG(rhs)))
+   WRITE(*,*) '    rhs(1)        = ',  DBLE(rhs(1)),  AIMAG(rhs(1))
+   WRITE(*,*) '    rhs(end)      = ',  DBLE(rhs(Nx)), AIMAG(rhs(Nx))
 #endif
    
 
    IF (jac_flag == NEW_JACOBIAN) THEN
 
       IF ( .NOT.Mass_init ) THEN
-#if DEBUG > 0
-         WRITE(*,*) '    creating Mass matrix'
-#endif
-
-         ALLOCATE( Mass%i      (SIZE(Jacobian%i))       ); Mass%i       = Jacobian%i
-         ALLOCATE( Mass%i_mumps(SIZE(Jacobian%i_mumps)) ); Mass%i_mumps = Jacobian%i_mumps
-         ALLOCATE( Mass%j      (SIZE(Jacobian%j))       ); Mass%j       = Jacobian%j
-         ALLOCATE( Mass%e      (SIZE(Jacobian%e))       ); Mass%e       = 0d0
-         CALL qc_0y0_zero_sp_M (mm, jj, 1d0, Mass)
-         ! impose boundary conditions on the Mass Matrix
-         CALL Dirichlet_c_M_MASS (np, js_Axis, js_D,  Mass)
-         Mass_init = .TRUE.
-
-#if DEBUG > 1
-         WRITE(*,*) '*check*'
-         WRITE(*,*) '    |Mass%e|_L-infty = ', MAXVAL(ABS(Mass%e))
-#endif
-
+         WRITE(*,*) 'should not get here'
+         STOP
       ENDIF
 
 
@@ -230,25 +222,17 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
       WRITE(*,*) '    omega = ', omega
 #endif
 
-      IF ( beta /= 0 ) THEN
-         WRITE(*,*) '*******************************************************************'
-         WRITE(*,*) ''
-         WRITE(*,*) 'gran cazzata!'
-         WRITE(*,*) 'la continuazione della biforcazione di Hopf non puo` essere fatta'
-         WRITE(*,*) 'per beta /= 0 per via di come e` scritta LOCA'
-         WRITE(*,*) ''
-         WRITE(*,*) '*******************************************************************'
-         WRITE(*,*) 'STOP.'
-         CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
-      ENDIF
-
 #if DEBUG > 0
       WRITE(*,*) '    filling [J-i*omega*M] matrix'
 #endif
+
+!#if DEBUG > 3
+!   CALL save_vector( Jacobian%e,'Jacobian.vector')
+!#endif
       DO i = 1, SIZE(Jacobian%e)
          ! we can do this as J and M have the same sparsity pattern 
          ! because they have been lazily built
-         JmoM%e(i) = CMPLX( Jacobian%e(i), - omega*Mass%e(i) )
+         JmoM%e(i) = CMPLX( Jacobian%e(i), - omega*Mass%e(i), KIND=8 )
       ENDDO
 
 #if DEBUG > 1
@@ -260,11 +244,75 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
 
    ENDIF
 
+   IF (jac_flag == NEW_LNS_BETA) THEN
+
+      IF ( .NOT.Mass_init ) THEN
+         WRITE(*,*) 'should not get here 1'
+         STOP
+      ENDIF
+      IF ( .NOT.Lns_cmplx_init ) THEN
+         WRITE(*,*) 'should not get here 2'
+         STOP
+      ENDIF
+
+      IF ( .NOT.JmoM_init ) THEN
+#if DEBUG > 0
+         WRITE(*,*) '    allocating [Lns-i*omega*M] matrix'
+#endif
+
+         ! Create the matrix [Lns-i*omega*M] and store it in position 2 of the MUMPS
+         ! array id
+         ! JmoM <-- [Lns-i*omega*M]
+         ALLOCATE( JmoM%i      (SIZE(Jacobian%i))       ); JmoM%i       = Jacobian%i
+         ALLOCATE( JmoM%i_mumps(SIZE(Jacobian%i_mumps)) ); JmoM%i_mumps = Jacobian%i_mumps
+         ALLOCATE( JmoM%j      (SIZE(Jacobian%j))       ); JmoM%j       = Jacobian%j
+         ALLOCATE( JmoM%e      (SIZE(Jacobian%e))       ); JmoM%e       = CMPLX(0d0, 0d0, KIND=8)
+         CALL par_mumps_master (INITIALIZATION, 2, JmoM, 0)
+         CALL par_mumps_master (SYMBO_FACTOR,   2, JmoM, 0)
+         JmoM_init=.TRUE.
+      ENDIF
+
+#if DEBUG > 1
+      WRITE(*,*) '*check*'
+      WRITE(*,*) '    omega = ', omega
+#endif
+
+#if DEBUG > 0
+      WRITE(*,*) '    filling [Lns-i*omega*M] matrix'
+#endif
+
+      !JmoM%e = Lns_cmplx%e - CMPLX( 0d0, omega*Mass%e )
+      DO i = 1, SIZE(Lns_cmplx%e)
+         ! we can do this as Lns and M have the same sparsity pattern 
+         ! because they have been lazily built
+         JmoM%e(i) = Lns_cmplx%e(i) - CMPLX( 0d0, omega, KIND=8 )*Mass%e(i)
+      ENDDO
+
+#if DEBUG > 1
+      WRITE(*,*) '*check*'
+      WRITE(*,*) '    |[Lns-i*omega*M]%e|_L-infty = ', MAXVAL(ABS(DBLE(JmoM%e))), MAXVAL(ABS(AIMAG(JmoM%e)))
+#endif
+
+      CALL par_mumps_master (NUMER_FACTOR, 2, JmoM, 0)
+
+   ENDIF
+
+!#if DEBUG > 3
+!   CALL save_vector( DBLE(JmoM%e),'JmoM_r.vector')
+!   CALL save_vector(AIMAG(JmoM%e),'JmoM_i.vector')
+!#endif
+!#if DEBUG > 3
+!   CALL save_vector( Mass%e,'Mass.vector')
+!#endif
+
    CALL par_mumps_master (DIRECT_SOLUTION, 2, JmoM, 0, rhs)
+
 
 #if DEBUG > 0
    WRITE(*,*) '*check*'
    WRITE(*,*) '    |sol|_L-infty = ', MAXVAL(ABS(DBLE(rhs))), MAXVAL(ABS(AIMAG(rhs)))
+   WRITE(*,*) '    sol(1)        = ',  DBLE(rhs(1)),  AIMAG(rhs(1))
+   WRITE(*,*) '    sol(end)      = ',  DBLE(rhs(Nx)), AIMAG(rhs(Nx))
 #endif
 
 
@@ -292,10 +340,14 @@ FUNCTION komplex_linear_solver_conwrap(c, d, jac_flag, omega, tmp) &
    c = DBLE (rhs)
    d = AIMAG(rhs)
 
+!#if DEBUG > 3
+!   CALL save_vector(c,'sol_r.vector')
+!   CALL save_vector(d,'sol_i.vector')
+!#endif
+
    DEALLOCATE(rhs)
 
    ires = 0
-
 
 END FUNCTION komplex_linear_solver_conwrap
 
@@ -471,26 +523,126 @@ SUBROUTINE mass_matrix_fill_conwrap(xsol, rhs)
 
    IF ( .NOT.Mass_init ) THEN
 #if DEBUG > 0
-      WRITE(*,*) '    creating Mass matrix'
+      WRITE(*,*) '    allocating Mass matrix'
 #endif
 
       ALLOCATE( Mass%i      (SIZE(Jacobian%i))       ); Mass%i       = Jacobian%i
       ALLOCATE( Mass%i_mumps(SIZE(Jacobian%i_mumps)) ); Mass%i_mumps = Jacobian%i_mumps
       ALLOCATE( Mass%j      (SIZE(Jacobian%j))       ); Mass%j       = Jacobian%j
       ALLOCATE( Mass%e      (SIZE(Jacobian%e))       ); Mass%e       = 0d0
-      CALL qc_0y0_zero_sp_M (mm, jj, 1d0,  Mass)
-      ! impose boundary conditions on the Mass Matrix
-      CALL Dirichlet_c_M_MASS (np, js_Axis, js_D,  Mass)
       Mass_init = .TRUE.
-
-#if DEBUG > 1
-      WRITE(*,*) '*check*'
-      WRITE(*,*) '    |Mass%e|_L-infty = ', MAXVAL(ABS(Mass%e))
-#endif
 
    ENDIF
 
+   Mass%e = 0d0
+   CALL qc_0y0_zero_sp_M (mm, jj, 1d0,  Mass)
+   ! impose boundary conditions on the Mass Matrix
+   CALL Dirichlet_c_M_MASS (np, js_Axis, js_D,  Mass)
+
+#if DEBUG > 1
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |Mass%e|_L-infty = ', MAXVAL(ABS(Mass%e))
+#endif
+
 END SUBROUTINE mass_matrix_fill_conwrap
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE Lns_matrix_fill_conwrap(xsol, matflag)
+!
+! Input:
+!    xsol      Solution vector
+!    matflag
+! 
+! Return Value:
+! 
+   IMPLICIT NONE
+   ! input variables
+   REAL(KIND=8), DIMENSION(Nx) :: xsol
+   INTEGER, INTENT(IN)         :: matflag
+   ! local variables
+   INTEGER       :: i
+   LOGICAL, SAVE :: base_alloc = .FALSE.
+   COMPLEX(KIND=8), DIMENSION(:), ALLOCATABLE, SAVE :: Lns_save
+
+#if DEBUG > 0
+   WRITE(*,*)
+   WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+   WRITE(*,*) '--> CALL to Lns_matrix_fill_conwrap'
+   WRITE(*,*) '    matflag = ', matflag
+#endif
+
+#if DEBUG > 1
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |xsol|_L-infty = ', MAXVAL(ABS(xsol))
+#endif
+
+   IF (matflag == NEW_BASE_LNS .OR. matflag == PERT_LNS) THEN
+
+      IF (.NOT. Lns_cmplx_init) THEN
+         ALLOCATE( Lns_cmplx%i      (SIZE(Jacobian%i))       ); Lns_cmplx%i       = Jacobian%i
+         ALLOCATE( Lns_cmplx%i_mumps(SIZE(Jacobian%i_mumps)) ); Lns_cmplx%i_mumps = Jacobian%i_mumps
+         ALLOCATE( Lns_cmplx%j      (SIZE(Jacobian%j))       ); Lns_cmplx%j       = Jacobian%j
+         ALLOCATE( Lns_cmplx%e      (SIZE(Jacobian%e))       ); Lns_cmplx%e       = CMPLX(0d0, 0d0,KIND=8)
+         Lns_cmplx_init = .TRUE.
+      ENDIF
+
+      ! fill the Lns matrix
+      !
+#if DEBUG > 1
+      WRITE(*,*) '*check*'
+      WRITE(*,*) '    Re   = ', Re
+      WRITE(*,*) '    beta = ', beta
+#endif
+
+      CALL extract(xsol, u0)
+      Lns_cmplx%e = CMPLX(0d0, 0d0,KIND=8)
+      CALL qc_1y1_sp_gg_3d_M  (mm, jj,            1d0/Re, beta,  Lns_cmplx) ! stifness (GRAD:GRAD)
+      CALL qc_oseen2y_sp_3d_M (mm, jj,             u0,    beta,  Lns_cmplx) ! + linearized terms
+      CALL qc_1y0_sp_3d_M     (mm, jj, jj_L,     -1d0,    beta,  Lns_cmplx) ! + pressure gradient (ibp)
+      CALL qc_0y1_sp_3d_M     (mm, jj, jj_L,     -1d0,    beta,  Lns_cmplx) ! - velocity divergence
+      CALL Dirichlet_c_3d_M   (np, js_Axis, js_D,                Lns_cmplx) ! Dirichlet BCs
+   
+      IF (DESINGULARIZE) THEN
+         !! column
+         !WHERE (Lns_cmplx%j == Nx)
+         !   Lns_cmplx%e = CMPLX(0d0,0d0,KIND=8)
+         !ENDWHERE
+         ! row
+         DO i = Lns_cmplx%i(Nx), Lns_cmplx%i(Nx + 1) - 1
+            Lns_cmplx%e(i) = CMPLX(0d0,0d0,KIND=8)
+            IF (Lns_cmplx%j(i) == Nx) Lns_cmplx%e(i) = CMPLX(1d0,0d0,KIND=8)
+         ENDDO
+      ENDIF
+
+      IF (matflag == NEW_BASE_LNS) THEN
+
+         IF (.NOT.base_alloc) THEN
+            ALLOCATE(Lns_save(SIZE(Lns_cmplx%e)))
+            base_alloc = .TRUE.
+         ENDIF
+
+         Lns_save = Lns_cmplx%e
+
+      ENDIF
+
+   ELSEIF (matflag == BASE_LNS) THEN
+
+      Lns_cmplx%e = Lns_save
+
+   ENDIF
+
+!#if DEBUG > 3
+!   CALL save_vector( DBLE(Lns_cmplx%e),'Lns_r.vector')
+!   CALL save_vector(AIMAG(Lns_cmplx%e),'Lns_i.vector')
+!#endif
+
+#if DEBUG > 1
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |Lns_cmplx%e|_L-infty = ', MAXVAL(ABS(DBLE(Lns_cmplx%e))), MAXVAL(ABS(AIMAG(Lns_cmplx%e)))
+#endif
+
+END SUBROUTINE Lns_matrix_fill_conwrap
 
 !------------------------------------------------------------------------------
 
@@ -579,6 +731,53 @@ SUBROUTINE mass_matvec_mult_conwrap(xxx, yyy)
 #endif
 
 END SUBROUTINE mass_matvec_mult_conwrap
+
+!------------------------------------------------------------------------------
+
+SUBROUTINE Lns_matvec_mult_conwrap(xxx_r, xxx_i, yyy_r, yyy_i)
+!
+! Put the call to your matrix-vector multiply here.
+! Input:
+!    xxx         Vector of length number of unknowns
+!
+! Output:
+!    yyy         Lns matrix times xxx.
+!
+! Return Value:
+!
+   IMPLICIT NONE
+ 
+   REAL(KIND=8), DIMENSION(Nx) :: xxx_r, xxx_i
+
+   REAL(KIND=8), DIMENSION(Nx) :: yyy_r, yyy_i
+
+   COMPLEX(KIND=8), DIMENSION(Nx) :: xxx, yyy
+
+#if DEBUG > 0
+   WRITE(*,*)
+   WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
+   WRITE(*,*) '--> CALL to Lns_matvec_mult_conwrap'
+#endif
+
+   xxx = CMPLX(xxx_r, xxx_i, KIND=8)
+   yyy = 0d0
+
+#if DEBUG > 1
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |x|_L-infty = ', MAXVAL(ABS(DBLE(xxx))), MAXVAL(ABS(AIMAG(xxx)))
+#endif
+
+   CALL zAtimx(yyy, Lns_cmplx%e, Lns_cmplx%j, Lns_cmplx%i, xxx)
+
+#if DEBUG > 1
+   WRITE(*,*) '*check*'
+   WRITE(*,*) '    |y|_L-infty = ', MAXVAL(ABS(DBLE(yyy))), MAXVAL(ABS(AIMAG(yyy)))
+#endif
+
+   yyy_r = DBLE(yyy)
+   yyy_i = AIMAG(yyy)
+
+END SUBROUTINE Lns_matvec_mult_conwrap
 
 !------------------------------------------------------------------------------
 
@@ -1223,7 +1422,7 @@ SUBROUTINE compute_eigen(x_vec, filenm, shiftIm)
    REAL(KIND=8)                :: shiftIm
 
    ! local variables
-   TYPE(CSR_MUMPS_Complex_Matrix)     :: Lns_cmplx, Mass_cmplx
+   !TYPE(CSR_MUMPS_Complex_Matrix) :: Lns_cmplx, Mass_cmplx ! moved to global_variables
 
    LOGICAL, DIMENSION(velCmpnnts, number_of_sides) :: Dir_eigen
    TYPE(dyn_int_line), DIMENSION(velCmpnnts)       :: js_D_eigen
@@ -1332,15 +1531,21 @@ SUBROUTINE compute_eigen(x_vec, filenm, shiftIm)
    WRITE(*,*) '--> Creating complex matrices'
 #endif
 
-   ALLOCATE( Lns_cmplx%i      (SIZE(Jacobian%i))       ); Lns_cmplx%i       = Jacobian%i
-   ALLOCATE( Lns_cmplx%i_mumps(SIZE(Jacobian%i_mumps)) ); Lns_cmplx%i_mumps = Jacobian%i_mumps
-   ALLOCATE( Lns_cmplx%j      (SIZE(Jacobian%j))       ); Lns_cmplx%j       = Jacobian%j
-   ALLOCATE( Lns_cmplx%e      (SIZE(Jacobian%e))       ); Lns_cmplx%e       = CMPLX(0d0, 0d0,KIND=8)
+   IF (.NOT. Lns_cmplx_init) THEN
+      ALLOCATE( Lns_cmplx%i      (SIZE(Jacobian%i))       ); Lns_cmplx%i       = Jacobian%i
+      ALLOCATE( Lns_cmplx%i_mumps(SIZE(Jacobian%i_mumps)) ); Lns_cmplx%i_mumps = Jacobian%i_mumps
+      ALLOCATE( Lns_cmplx%j      (SIZE(Jacobian%j))       ); Lns_cmplx%j       = Jacobian%j
+      ALLOCATE( Lns_cmplx%e      (SIZE(Jacobian%e))       ); Lns_cmplx%e       = CMPLX(0d0, 0d0,KIND=8)
+      Lns_cmplx_init = .TRUE.
+   ENDIF
 
-   ALLOCATE( Mass_cmplx%i      (SIZE(Jacobian%i))       ); Mass_cmplx%i       = Jacobian%i
-   ALLOCATE( Mass_cmplx%i_mumps(SIZE(Jacobian%i_mumps)) ); Mass_cmplx%i_mumps = Jacobian%i_mumps
-   ALLOCATE( Mass_cmplx%j      (SIZE(Jacobian%j))       ); Mass_cmplx%j       = Jacobian%j
-   ALLOCATE( Mass_cmplx%e      (SIZE(Jacobian%e))       ); Mass_cmplx%e       = CMPLX(0d0, 0d0, KIND=8)
+   IF (.NOT. Mass_cmplx_init) THEN
+      ALLOCATE( Mass_cmplx%i      (SIZE(Jacobian%i))       ); Mass_cmplx%i       = Jacobian%i
+      ALLOCATE( Mass_cmplx%i_mumps(SIZE(Jacobian%i_mumps)) ); Mass_cmplx%i_mumps = Jacobian%i_mumps
+      ALLOCATE( Mass_cmplx%j      (SIZE(Jacobian%j))       ); Mass_cmplx%j       = Jacobian%j
+      ALLOCATE( Mass_cmplx%e      (SIZE(Jacobian%e))       ); Mass_cmplx%e       = CMPLX(0d0, 0d0, KIND=8)
+      Mass_cmplx_init = .TRUE.
+   ENDIF
 
    ! (3)
    ! fill the Lns matrix
@@ -1616,6 +1821,8 @@ SUBROUTINE compute_eigen(x_vec, filenm, shiftIm)
    !
    DEALLOCATE( Lns_cmplx%i,  Lns_cmplx%i_mumps,  Lns_cmplx%j,  Lns_cmplx%e )
    DEALLOCATE( Mass_cmplx%i, Mass_cmplx%i_mumps, Mass_cmplx%j, Mass_cmplx%e )
+   Lns_cmplx_init  = .FALSE.
+   Mass_cmplx_init = .FALSE.
 
 
 END SUBROUTINE compute_eigen

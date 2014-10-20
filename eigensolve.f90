@@ -564,38 +564,47 @@ END SUBROUTINE Save_eigenvalues
 !---------------------------------------------------------------------------
 !---------------------------------------------------------------------------
 
-SUBROUTINE Save_eigenvectors (eigenvectors, file_name)
+SUBROUTINE Save_eigenvectors (eigenvectors, filenm)
 !
 ! Author: Jacopo Canton
 ! E-mail: jcanton@mech.kth.se
-! Last revision: 16/5/2013
+! Last revision: 17/10/2014
 !
 !-----------------------------------------------------------
    IMPLICIT NONE
 
    COMPLEX(KIND=8), DIMENSION(:,:), INTENT(IN) :: eigenvectors
-   CHARACTER(*), OPTIONAL :: file_name
+   CHARACTER(*)                   , INTENT(IN) :: filenm
    
    ! local variables
    INTEGER :: i, nev, Nx
+   LOGICAL :: existFlag
 !-----------------------------------------------------------
-   
 
-   IF (PRESENT(file_name)) THEN
-      OPEN (UNIT = 19, FILE = file_name, FORM = 'formatted', STATUS = 'unknown')
-      WRITE(*,*) '--> Writing eigenvector file: ' // trim(file_name) // ' ...'
+   INQUIRE( FILE = trim(filenm), EXIST = existFlag )
+   IF (.NOT.existFlag) THEN
+
+      WRITE(*,*)
+      WRITE(*,*) '--> Writing eigenvector file: '//trim(filenm)//' ...'
+
    ELSE
-      OPEN (UNIT = 19, FILE = 'eigenvectors', FORM = 'formatted', STATUS = 'unknown')
-      WRITE(*,*) '--> Writing eigenvector file: eigenvectors ...'
-   END IF
+
+      ! may not be very portable
+      !CALL RENAME(trim(p_in%restart_directory)//filenm(1:filenmLen), trim(p_in%restart_directory)//filenm(1:filenmLen)//'.bak')
+      WRITE(*,*)
+      WRITE(*,*) '--> Eigenvector file '//trim(filenm)//' exists, OVERWRITING'
+
+   ENDIF
+
+   OPEN( UNIT = 19, FILE = trim(filenm), FORM = 'UNFORMATTED' )
 
    Nx  = SIZE(eigenvectors,1)
    nev = SIZE(eigenvectors,2)
 
-   WRITE (19,*) nev, Nx
+   WRITE (19) nev, Nx
    
-   DO i = 1, Nx
-      WRITE (19,*) eigenvectors(i,:)
+   DO i = 1, nev
+      WRITE (19) eigenvectors(:,i)
    END DO
    
    CLOSE (19)
@@ -610,7 +619,7 @@ SUBROUTINE read_eigenvector (Nx, nevRead, filenm, eigenvectorRe, eigenvectorIm)
 !
 ! Author: Jacopo Canton
 ! E-mail: jcanton@mech.kth.se
-! Last revision: 2/10/2014
+! Last revision: 17/10/2014
 !
 !-----------------------------------------------------------
 
@@ -627,12 +636,18 @@ SUBROUTINE read_eigenvector (Nx, nevRead, filenm, eigenvectorRe, eigenvectorIm)
    COMPLEX(KIND=8), DIMENSION(:,:), ALLOCATABLE :: eigenvectors
 !-----------------------------------------------------------
 
+   WRITE(*,*)
    WRITE(*,*) '--> Reading eigenvector file: ' // trim(filenm) // ' ...'
    WRITE(*,*) '    eigenvector number: ', nevRead
 
-   OPEN (UNIT = 19, FILE = trim(filenm))
 
+#ifdef ASCIIEIGENVECTOR
+   OPEN (UNIT = 19, FILE = trim(filenm))
    READ (19,*) nev, NxRead
+#else
+   OPEN (UNIT = 19, FILE = trim(filenm), FORM='UNFORMATTED')
+   READ (19) nev, NxRead
+#endif
    
    IF ( Nx /= NxRead ) THEN
       WRITE(*,*) '    inconsistent dimensions:'
@@ -645,9 +660,15 @@ SUBROUTINE read_eigenvector (Nx, nevRead, filenm, eigenvectorRe, eigenvectorIm)
 
    ALLOCATE( eigenvectors(Nx,nev) )
 
+#ifdef ASCIIEIGENVECTOR
    DO i = 1, Nx
       READ (19,*) eigenvectors(i,:)
    ENDDO
+#else
+   DO i = 1, nev
+      READ(19) eigenvectors(:,i)
+   ENDDO
+#endif
 
    CLOSE(19)
 

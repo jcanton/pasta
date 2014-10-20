@@ -140,7 +140,9 @@ SUBROUTINE read_BVS (sideNumber, scaleFactor, nodes_on_this_side, velCmpnnts, rr
    ! (2)
    ! read point values
    !
+#if DEBUG > 0
    WRITE(*,*) '--> Reading boundary values from file ', trim(dataFileName)
+#endif
 
    OPEN( UNIT = 20, FILE = trim(dataFileName) )
 
@@ -155,7 +157,9 @@ SUBROUTINE read_BVS (sideNumber, scaleFactor, nodes_on_this_side, velCmpnnts, rr
    ENDDO
 
    CLOSE(20)
+#if DEBUG > 0
    WRITE(*,*) '    Done.'
+#endif
 
    dataSideData(1:velCmpnnts,:) = dataSideData(1:velCmpnnts,:) * scaleFactor
 
@@ -207,7 +211,9 @@ SUBROUTINE read_BVS (sideNumber, scaleFactor, nodes_on_this_side, velCmpnnts, rr
    ! (4)
    ! interpolate read values
    !
+#if DEBUG > 0
    WRITE(*,*) '    Interpolating values ...'
+#endif
 
    DO k = 1, velCmpnnts
       IF ( Dir(k,sideNumber) ) THEN
@@ -259,7 +265,9 @@ SUBROUTINE read_BVS (sideNumber, scaleFactor, nodes_on_this_side, velCmpnnts, rr
    ENDDO
    DEALLOCATE( dataSideData )
 
+#if DEBUG > 0
    WRITE(*,*) '    Done.'
+#endif
 
 
 END SUBROUTINE read_BVS

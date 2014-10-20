@@ -22,7 +22,7 @@ MODULE transient_growth
 
    IMPLICIT NONE
    ! variables "global" to this module
-   TYPE(CSR_MUMPS_Complex_Matrix)               :: Mass_cmplx, Lns_cmplx, Wd, Zd, Wa, Za, W0, Z0, MassV
+   TYPE(CSR_MUMPS_Complex_Matrix)               :: Wd, Zd, Wa, Za, W0, Z0, MassV
    COMPLEX(KIND=8), ALLOCATABLE, DIMENSION(:,:) :: uu_tg, u0_tg
    COMPLEX(KIND=8), ALLOCATABLE, DIMENSION(:)   :: pp_tg, p0_tg
    COMPLEX(KIND=8), DIMENSION(:), POINTER       :: xx_tg, x0_tg

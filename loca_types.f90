@@ -27,7 +27,9 @@ MODULE Loca_types
    INTEGER, PARAMETER ::  RHS_MATRIX      = 102
    INTEGER, PARAMETER ::  RHS_MATRIX_SAVE = 103
    INTEGER, PARAMETER ::  RECOVER_MATRIX  = 104
-   ! FixMe add new parameters for complex Hopf
+   INTEGER, PARAMETER ::  NEW_BASE_LNS    = 105
+   INTEGER, PARAMETER ::  BASE_LNS        = 106
+   INTEGER, PARAMETER ::  PERT_LNS        = 107
 
    ! Choices for linear solve about the state of the Jacobian matrix
    INTEGER, PARAMETER ::  NEW_JACOBIAN               = 200
@@ -35,18 +37,20 @@ MODULE Loca_types
    INTEGER, PARAMETER ::  SAME_BUT_UNSCALED_JACOBIAN = 202
    INTEGER, PARAMETER ::  OLD_JACOBIAN_DESTROY       = 203
    INTEGER, PARAMETER ::  CHECK_JACOBIAN             = 204
-   ! FixMe add new parameters for complex Hopf
+   INTEGER, PARAMETER ::  NEW_LNS_BETA               = 205
+   INTEGER, PARAMETER ::  LNS_BETA                   = 206
 
    ! Internal flags for rhs calculation for continuation linear solves
-   INTEGER, PARAMETER ::  CONT_TANGENT     = 300
-   INTEGER, PARAMETER ::  ARC_CONT_SOL2    = 301
-   INTEGER, PARAMETER ::  TP_CONT_SOL2     = 302
-   INTEGER, PARAMETER ::  TP_CONT_SOL3     = 303
-   INTEGER, PARAMETER ::  TP_CONT_SOL4     = 304
-   INTEGER, PARAMETER ::  HP_CONT_SOL3     = 305
-   INTEGER, PARAMETER ::  HP_CONT_DMDX     = 306
-   INTEGER, PARAMETER ::  HP_CONT_DMDPARAM = 307
-   ! FixMe add new parameters for complex Hopf
+   INTEGER, PARAMETER ::  CONT_TANGENT      = 300
+   INTEGER, PARAMETER ::  ARC_CONT_SOL2     = 301
+   INTEGER, PARAMETER ::  TP_CONT_SOL2      = 302
+   INTEGER, PARAMETER ::  TP_CONT_SOL3      = 303
+   INTEGER, PARAMETER ::  TP_CONT_SOL4      = 304
+   INTEGER, PARAMETER ::  HP_CONT_SOL3      = 305
+   INTEGER, PARAMETER ::  HP_CONT_DMDX      = 306
+   INTEGER, PARAMETER ::  HP_CONT_DMDPARAM  = 307
+   INTEGER, PARAMETER ::  HP_BETA_CONT_SOL3 = 308
+   INTEGER, PARAMETER ::  HP_BETA_CONT_SOL4 = 309
 
    INTEGER, PARAMETER :: REYNOLDS = 0
    INTEGER, PARAMETER :: OSCAR    = 1

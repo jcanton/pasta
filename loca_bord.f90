@@ -8,6 +8,7 @@ MODULE Loca_bord
    USE Loca_types
    USE Loca_util     ! scaled_dot_prod, dp
    USE loca_wrappers ! linear_solver_conwrap, assign_parameter_conwrap, assign_bif_parameter_conwrap, calc_scale_vec_conwrap, ...
+   USE restart_io    ! save_vector (for debugging purposes only)
 
    IMPLICIT NONE
 
@@ -108,7 +109,7 @@ FUNCTION continuation_hook(x, delta_x, con, reltol, abstol) RESULT (output)
    ELSE IF (     con%general_info%method == ZERO_ORDER_CONTINUATION &
             .OR. con%general_info%method == FIRST_ORDER_CONTINUATION &
             .OR. con%general_info%method == LOCA_LSA_ONLY &
-	         .OR. (con%general_info%method == ARC_LENGTH_CONTINUATION .AND. con%private_info%step_num == 0) &
+            .OR. (con%general_info%method == ARC_LENGTH_CONTINUATION .AND. con%private_info%step_num == 0) &
             .OR. (con%general_info%method == MANIFOLD_CONTINUATION .AND. con%private_info%step_num == 0)) THEN
 
       converged = TRUE
@@ -730,8 +731,11 @@ FUNCTION hopf_alg(x, delta_x, con, reltol, abstol) RESULT (output)
    ! non-zero and (2) the functional dependence of the Mass Matrix.
    IF (first == TRUE) THEN
 
-      IF (con%general_info%printproc > 4) &
+      IF (con%general_info%printproc > 4) THEN
+         WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
          WRITE(*,*) '   Entering Hopf Algorithm'
+         WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+      ENDIF
 
       tmp  = SQRT(dp(con%hopf_info%y_vec, con%hopf_info%y_vec))
 
@@ -775,8 +779,11 @@ FUNCTION hopf_alg(x, delta_x, con, reltol, abstol) RESULT (output)
          con%private_info%mass_param = 0
          con%private_info%mass_x     = 0
 
-         IF (con%general_info%printproc > 7) &
+         IF (con%general_info%printproc > 7) THEN
+            WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
             WRITE(*,*) 'Hopf Continuation: Determining  Mass Matrix Dependencies'
+            WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+         ENDIF
 
          CALL mass_matrix_fill_conwrap(x, x_tmp)
          CALL mass_matvec_mult_conwrap(con%hopf_info%y_vec, a)
@@ -842,6 +849,7 @@ FUNCTION hopf_alg(x, delta_x, con, reltol, abstol) RESULT (output)
             con%private_info%mass_param = 1
 
          IF (con%general_info%printproc > 7) THEN
+            WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
             IF(con%private_info%mass_x==1) THEN
                WRITE(*,*) 'Mass Matrix is a Function of Solution Vector!'
             ELSE
@@ -852,6 +860,7 @@ FUNCTION hopf_alg(x, delta_x, con, reltol, abstol) RESULT (output)
             ELSE
                WRITE(*,*) 'Mass Matrix is Independent of Bifurcation Parameter!'
             END IF
+            WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
          END IF
 
       ELSE
@@ -869,6 +878,7 @@ FUNCTION hopf_alg(x, delta_x, con, reltol, abstol) RESULT (output)
    END IF ! IF (first)
 
    IF (con%general_info%printproc > 7) THEN
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
       IF(con%private_info%mass_x == 1) THEN
          WRITE(*,*) 'dM/dx is included in Komplex solves'
       ELSE
@@ -879,6 +889,7 @@ FUNCTION hopf_alg(x, delta_x, con, reltol, abstol) RESULT (output)
       ELSE
          WRITE(*,*) 'dM/d(param) is NOT included in Komplex solves'
       END IF
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
    END IF
 
    ! If Mass Matrix is not constant, allocate extra work arrays
@@ -906,16 +917,26 @@ FUNCTION hopf_alg(x, delta_x, con, reltol, abstol) RESULT (output)
    END IF
 
    ! construct "a" vector from delta_x
-   IF (con%general_info%printproc > 4) &
-      WRITE(*,*) '   Hopf Continuation: Constructed *a* vector!'
+   IF (con%general_info%printproc > 4) THEN
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+      WRITE(*,*) '   Hopf Continuation: Constructing *a* vector!'
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+   ENDIF
 
    a = - delta_x
+
+#if DEBUG > 3
+   CALL save_vector(a,'a.vector')
+#endif
 
    ! Next, "b" is calculated. This is exactly
    ! the same linear solve as a continuation predictor step except
    ! the bif_param is perturbed, not the continuation param.
-   IF (con%general_info%printproc > 4) &
+   IF (con%general_info%printproc > 4) THEN
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
       WRITE(*,*) '   Hopf Continuation: Calculating *b* vector!'
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+   ENDIF
 
    CALL calc_rhs_continuation(TP_CONT_SOL2, x, b,                                      &
                               NULL, NULL, NULL,                                        &
@@ -924,14 +945,21 @@ FUNCTION hopf_alg(x, delta_x, con, reltol, abstol) RESULT (output)
 
    i = linear_solver_conwrap(b, CHECK_JACOBIAN, NULL)
 
+#if DEBUG > 3
+   CALL save_vector(b,'b.vector')
+#endif
+
    ! Fill the Mass Matrix for RHS and Komplex Solves
    CALL mass_matrix_fill_conwrap(x, x_tmp)
 
    ! Next, "c" and "d" are calculated as a function of y_vec, z_vec,
    ! and the Mass Matrix M. c and d hold the rhs vector on input to
    ! solver and have solution on exit.
-   IF (con%general_info%printproc > 4) &
+   IF (con%general_info%printproc > 4) THEN
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
       WRITE(*,*) '   Hopf Continuation: Calculating *c* and *d* vectors (Komplex solve)!'
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+   ENDIF
 
    CALL calc_rhs_continuation(HP_CONT_SOL3, x, c,                                   &
                               con%hopf_info%z_vec, con%hopf_info%y_vec, x_tmp,      &
@@ -940,11 +968,19 @@ FUNCTION hopf_alg(x, delta_x, con, reltol, abstol) RESULT (output)
 
    i = komplex_linear_solver_conwrap(c, d, NEW_JACOBIAN, con%hopf_info%omega, x_tmp)
 
+#if DEBUG > 3
+   CALL save_vector(c,'c.vector')
+   CALL save_vector(d,'d.vector')
+#endif
+
    ! Next, "e" and "f" are calculated as a function of a, y_vec, and z_vec.
    ! e and f hold the rhs vector on input to  solver and have solution
    ! on exit.
-   IF (con%general_info%printproc > 4) &
+   IF (con%general_info%printproc > 4) THEN
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
       WRITE(*,*) '   Hopf Continuation: Calculating *e* and *f* vectors (Komplex solve)!'
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+   ENDIF
 
    CALL calc_rhs_continuation(TP_CONT_SOL3, x, e,                                                     &
                               a, con%private_info%scale_vec, x_tmp,                                   &
@@ -970,11 +1006,6 @@ FUNCTION hopf_alg(x, delta_x, con, reltol, abstol) RESULT (output)
                                  con%hopf_info%bif_param, con%general_info%perturb, con%hopf_info%y_vec, &
                                  con%general_info%numUnks, con%general_info%numOwnedUnks)
 
-      ! FixMe I edited this, check it
-      !DO i = 0, con%general_info%numUnks-1
-      !   e(i) = e(i) + M_1(i) * con%hopf_info%omega
-      !   f(i) = f(i) - M_2(i) * con%hopf_info%omega
-      !END DO
       e = e + M_1 * con%hopf_info%omega
       f = f - M_2 * con%hopf_info%omega
 
@@ -982,11 +1013,19 @@ FUNCTION hopf_alg(x, delta_x, con, reltol, abstol) RESULT (output)
 
    i = komplex_linear_solver_conwrap(e, f, OLD_JACOBIAN, con%hopf_info%omega, x_tmp)
 
+#if DEBUG > 3
+   CALL save_vector(e,'e.vector')
+   CALL save_vector(f,'f.vector')
+#endif
+
    ! Next, "g" and "h" are calculated as a function of a, y_vec, and z_vec.
    ! g and h hold the rhs vector on input to  solver and have solution
    ! on exit.
-   IF (con%general_info%printproc > 4) &
+   IF (con%general_info%printproc > 4) THEN
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
       WRITE(*,*) '   Hopf Continuation: Calculating *g* and *h* vectors  (Komplex solve)!'
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+   ENDIF
 
    CALL calc_rhs_continuation(TP_CONT_SOL4, x, g,                                                     &
                               b, con%private_info%scale_vec, x_tmp,                                   &
@@ -1009,11 +1048,6 @@ FUNCTION hopf_alg(x, delta_x, con, reltol, abstol) RESULT (output)
                                  con%hopf_info%bif_param, con%general_info%perturb, con%hopf_info%y_vec, &
                                  con%general_info%numUnks, con%general_info%numOwnedUnks)
 
-      ! FixMe I edited this, check it
-      !DO i = 0, con%general_info%numUnks-1
-      !   g(i) = g(i) + M_1(i) * con%hopf_info%omega
-      !   h(i) = h(i) - M_2(i) * con%hopf_info%omega
-      !END DO
       g = g + M_1 * con%hopf_info%omega
       h = h - M_2 * con%hopf_info%omega
 
@@ -1033,11 +1067,6 @@ FUNCTION hopf_alg(x, delta_x, con, reltol, abstol) RESULT (output)
                                  con%hopf_info%bif_param, con%general_info%perturb, con%hopf_info%y_vec, &
                                  con%general_info%numUnks, con%general_info%numOwnedUnks)
 
-      ! FixMe I edited this, check it
-      !DO i = 0, con%general_info%numUnks-1
-      !  g(i) = g(i) + M_1(i) * con%hopf_info%omega
-      !  h(i) = h(i) - M_2(i) * con%hopf_info%omega
-      !END DO
       g = g + M_1 * con%hopf_info%omega
       h = h - M_2 * con%hopf_info%omega
 
@@ -1045,8 +1074,16 @@ FUNCTION hopf_alg(x, delta_x, con, reltol, abstol) RESULT (output)
 
    i = komplex_linear_solver_conwrap(g, h, OLD_JACOBIAN_DESTROY, con%hopf_info%omega, x_tmp)
 
-   IF (con%general_info%printproc > 4) &
+#if DEBUG > 3
+   CALL save_vector(g,'g.vector')
+   CALL save_vector(h,'h.vector')
+#endif
+
+   IF (con%general_info%printproc > 4) THEN
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
       WRITE(*,*) '   Hopf Continuation: Finished Komplex solves,  Updating solution'
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+   ENDIF
 
    ! Calculate the updates and scaled updates to bif_param,
    ! omega, y_vec, z_vec, and x.
@@ -1058,6 +1095,17 @@ FUNCTION hopf_alg(x, delta_x, con, reltol, abstol) RESULT (output)
    ltf = ltransnorm(f, con%private_info%scale_vec)
    ltg = ltransnorm(g, con%private_info%scale_vec)
    lth = ltransnorm(h, con%private_info%scale_vec)
+
+#if DEBUG > 1
+   WRITE(*,*) 'max(a) = ', MAXVAL(a)
+   WRITE(*,*) 'max(b) = ', MAXVAL(b)
+   WRITE(*,*) 'ltc    = ', ltc
+   WRITE(*,*) 'ltd    = ', ltd
+   WRITE(*,*) 'lte    = ', lte
+   WRITE(*,*) 'ltf    = ', ltf
+   WRITE(*,*) 'ltg    = ', ltg
+   WRITE(*,*) 'lth    = ', lth
+#endif
 
    ! Update turning point param
    dt_p = (ltc*ltf - lte*ltd + ltd) / (ltd*ltg - ltc*lth)
@@ -1113,6 +1161,7 @@ FUNCTION hopf_alg(x, delta_x, con, reltol, abstol) RESULT (output)
    END IF
 
    IF (con%general_info%printproc > 4) THEN
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
       WRITE(*,*) '   Hopf Continuation: Convergence Criteria'
       WRITE(*,*) '   Variable     Scaled Update (<1)  Unscaled Update  New Value'
       WRITE(*,*) '   ***********************************************************'
@@ -1122,6 +1171,7 @@ FUNCTION hopf_alg(x, delta_x, con, reltol, abstol) RESULT (output)
       WRITE(*,*) '   Y vector     ', y_update
       WRITE(*,*) '   Z vector     ', z_update
       WRITE(*,*) '   ***********************************************************'
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
    END IF
 
    DEALLOCATE(a)
@@ -1167,8 +1217,9 @@ FUNCTION hopf_beta_alg(x, delta_x, con, reltol, abstol) RESULT (output)
 
    INTEGER :: output
 
-   REAL(KIND=8),    DIMENSION(:), ALLOCATABLE :: a, b, x_tmp
-   COMPLEX(KIND=8), DIMENSION(:), ALLOCATABLE :: c, d, e, M_1, M_2
+   REAL(KIND=8),    DIMENSION(:), ALLOCATABLE :: a, b, v_r, v_i, M_1, M_2, x_tmp
+   !COMPLEX(KIND=8), DIMENSION(:), ALLOCATABLE :: c, d, e
+   REAL(KIND=8),    DIMENSION(:), ALLOCATABLE :: c_r, c_i, d_r, d_i, e_r, e_i
    REAL(KIND=8) :: dt_p
    INTEGER      :: i
    REAL(KIND=8) :: x_update, param_update, gnum_unks, tmp, RayQ, tmp2, alpha, beta
@@ -1176,7 +1227,7 @@ FUNCTION hopf_beta_alg(x, delta_x, con, reltol, abstol) RESULT (output)
    INTEGER      :: first=TRUE, first2=TRUE
    REAL(KIND=8) :: test, count
 
-   REAL(KIND=8) :: ltc, ltd, lte, ltf, ltg, lth, delta_omega, delta_y, delta_z
+   REAL(KIND=8) :: ltc_r, ltc_i, ltd_r, ltd_i, lte_r, lte_i, delta_omega, delta_y, delta_z
    REAL(KIND=8), DIMENSION(:), POINTER :: NULL
 
    !************************** BEGIN EXECUTION *******************************
@@ -1185,9 +1236,17 @@ FUNCTION hopf_beta_alg(x, delta_x, con, reltol, abstol) RESULT (output)
    ! Allocate arrays for hopf bordering algorithm */
    ALLOCATE(    a(0:con%general_info%numUnks-1))
    ALLOCATE(    b(0:con%general_info%numUnks-1))
-   ALLOCATE(    c(0:con%general_info%numUnks-1))
-   ALLOCATE(    d(0:con%general_info%numUnks-1))
-   ALLOCATE(    e(0:con%general_info%numUnks-1))
+   ALLOCATE(  c_r(0:con%general_info%numUnks-1))
+   ALLOCATE(  c_i(0:con%general_info%numUnks-1))
+   ALLOCATE(  d_r(0:con%general_info%numUnks-1))
+   ALLOCATE(  d_i(0:con%general_info%numUnks-1))
+   ALLOCATE(  e_r(0:con%general_info%numUnks-1))
+   ALLOCATE(  e_i(0:con%general_info%numUnks-1))
+   !ALLOCATE(    c(0:con%general_info%numUnks-1))
+   !ALLOCATE(    d(0:con%general_info%numUnks-1))
+   !ALLOCATE(    e(0:con%general_info%numUnks-1))
+   ALLOCATE(  v_r(0:con%general_info%numUnks-1))
+   ALLOCATE(  v_i(0:con%general_info%numUnks-1))
    ALLOCATE(x_tmp(0:con%general_info%numUnks-1))
    ALLOCATE( NULL(0:con%general_info%numUnks-1))
 
@@ -1195,8 +1254,11 @@ FUNCTION hopf_beta_alg(x, delta_x, con, reltol, abstol) RESULT (output)
    ! non-zero and (2) the functional dependence of the Mass Matrix.
    IF (first == TRUE) THEN
 
-      IF (con%general_info%printproc > 4) &
+      IF (con%general_info%printproc > 4) THEN
+         WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
          WRITE(*,*) '   Entering Hopf beta Algorithm'
+         WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+      ENDIF
 
       tmp  = SQRT(dp(con%hopf_info%y_vec, con%hopf_info%y_vec))
 
@@ -1255,6 +1317,7 @@ FUNCTION hopf_beta_alg(x, delta_x, con, reltol, abstol) RESULT (output)
    END IF ! IF (first)
 
    IF (con%general_info%printproc > 7) THEN
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
       IF(con%private_info%mass_x == 1) THEN
          WRITE(*,*) 'dM/dx is included in Komplex solves'
       ELSE
@@ -1265,6 +1328,7 @@ FUNCTION hopf_beta_alg(x, delta_x, con, reltol, abstol) RESULT (output)
       ELSE
          WRITE(*,*) 'dM/d(param) is NOT included in Komplex solves'
       END IF
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
    END IF
 
    ! If Mass Matrix is not constant, allocate extra work arrays
@@ -1292,16 +1356,26 @@ FUNCTION hopf_beta_alg(x, delta_x, con, reltol, abstol) RESULT (output)
    END IF
 
    ! construct "a" vector from delta_x
-   IF (con%general_info%printproc > 4) &
-      WRITE(*,*) '   Hopf Continuation: Constructed *a* vector!'
+   IF (con%general_info%printproc > 4) THEN
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+      WRITE(*,*) '   Hopf beta Continuation: Constructing *a* vector!'
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+   ENDIF
 
    a = - delta_x
+
+#if DEBUG > 3
+   CALL save_vector(a,'a.vector')
+#endif
 
    ! Next, "b" is calculated. This is exactly
    ! the same linear solve as a continuation predictor step except
    ! the bif_param is perturbed, not the continuation param.
-   IF (con%general_info%printproc > 4) &
-      WRITE(*,*) '   Hopf Continuation: Calculating *b* vector!'
+   IF (con%general_info%printproc > 4) THEN
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+      WRITE(*,*) '   Hopf beta Continuation: Calculating *b* vector!'
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+   ENDIF
 
    CALL calc_rhs_continuation(TP_CONT_SOL2, x, b,                                      &
                               NULL, NULL, NULL,                                        &
@@ -1310,98 +1384,117 @@ FUNCTION hopf_beta_alg(x, delta_x, con, reltol, abstol) RESULT (output)
 
    i = linear_solver_conwrap(b, CHECK_JACOBIAN, NULL)
 
+#if DEBUG > 3
+   CALL save_vector(b,'b.vector')
+#endif
+
    ! Fill the Mass Matrix for RHS and Komplex Solves
    CALL mass_matrix_fill_conwrap(x, x_tmp)
+   ! Fill the Lns Matrix for RHS and Komplex Solves
+   CALL Lns_matrix_fill_conwrap(x, NEW_BASE_LNS)
 
-   ! Next, "c" and "d" are calculated as a function of y_vec, z_vec,
-   ! and the Mass Matrix M. c and d hold the rhs vector on input to
+   ! Next, "c" is calculated as a function of y_vec, z_vec,
+   ! and the Mass Matrix M. v_r and v_i hold the rhs vector on input to
    ! solver and have solution on exit.
-   IF (con%general_info%printproc > 4) &
-      WRITE(*,*) '   Hopf Continuation: Calculating *c* and *d* vectors (Komplex solve)!'
+   IF (con%general_info%printproc > 4) THEN
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+      WRITE(*,*) '   Hopf beta Continuation: Calculating *c* vector (Komplex solve)!'
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+   ENDIF
 
-   CALL calc_rhs_continuation(HP_CONT_SOL3, x, c,                                   &
-                              con%hopf_info%z_vec, con%hopf_info%y_vec, x_tmp,      &
-                              con%hopf_info%bif_param, con%general_info%perturb, d, &
+   CALL calc_rhs_continuation(HP_CONT_SOL3, x, v_r,                                   &
+                              con%hopf_info%z_vec, con%hopf_info%y_vec, x_tmp,        &
+                              con%hopf_info%bif_param, con%general_info%perturb, v_i, &
                               con%general_info%numUnks, con%general_info%numOwnedUnks)
 
-   i = komplex_linear_solver_conwrap(c, d, NEW_JACOBIAN, con%hopf_info%omega, x_tmp)
+   !v_r = -v_r
+   !v_i = -v_i
 
-   ! Next, "e" and "f" are calculated as a function of a, y_vec, and z_vec.
-   ! e and f hold the rhs vector on input to  solver and have solution
+   i = komplex_linear_solver_conwrap(v_r, v_i, NEW_LNS_BETA, con%hopf_info%omega, x_tmp)
+
+   !c = CMPLX(v_r, v_i, KIND=8)
+   c_r = v_r
+   c_i = v_i
+
+#if DEBUG > 3
+   CALL save_vector(c_r,'c_r.vector')
+   CALL save_vector(c_i,'c_i.vector')
+#endif
+
+   ! Next, "d" is calculated as a function of a, y_vec, and z_vec.
+   ! v_r and v_i hold the rhs vector on input to  solver and have solution
    ! on exit.
-   IF (con%general_info%printproc > 4) &
-      WRITE(*,*) '   Hopf Continuation: Calculating *e* and *f* vectors (Komplex solve)!'
+   IF (con%general_info%printproc > 4) THEN
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+      WRITE(*,*) '   Hopf beta Continuation: Calculating *d* vector (Komplex solve)!'
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+   ENDIF
 
-   CALL calc_rhs_continuation(TP_CONT_SOL3, x, e,                                                     &
-                              a, con%private_info%scale_vec, x_tmp,                                   &
-                              con%hopf_info%bif_param, con%general_info%perturb, con%hopf_info%y_vec, &
-                              con%general_info%numUnks, con%general_info%numOwnedUnks)
-
-   CALL calc_rhs_continuation(TP_CONT_SOL3, x, f,                                                     &
-                              a, con%private_info%scale_vec, x_tmp,                                   &
-                              con%hopf_info%bif_param, con%general_info%perturb, con%hopf_info%z_vec, &
+   CALL calc_rhs_continuation(HP_BETA_CONT_SOL3, x, v_r,                              &
+                              a, con%hopf_info%y_vec, con%hopf_info%z_vec,            &
+                              con%hopf_info%bif_param, con%general_info%perturb, v_i, &
                               con%general_info%numUnks, con%general_info%numOwnedUnks)
 
    ! Get null vector residual now.
-   RayQ = null_vector_resid(0d0, con%hopf_info%omega, con%hopf_info%y_vec, con%hopf_info%z_vec, TRUE)
+   RayQ = null_vector_resid(0d0, con%hopf_info%omega, con%hopf_info%y_vec, con%hopf_info%z_vec, TRUE, 1)
 
    IF (con%private_info%mass_x == TRUE) THEN
       CALL calc_rhs_continuation(HP_CONT_DMDX, x, M_1,                                                   &
                                  a, con%private_info%scale_vec, x_tmp,                                   &
-                                 con%hopf_info%bif_param, con%general_info%perturb, con%hopf_info%z_vec, &
+                                 con%hopf_info%bif_param, con%general_info%perturb, con%hopf_info%y_vec, &
                                  con%general_info%numUnks, con%general_info%numOwnedUnks)
 
       CALL calc_rhs_continuation(HP_CONT_DMDX, x, M_2,                                                   &
                                  a, con%private_info%scale_vec, x_tmp,                                   &
-                                 con%hopf_info%bif_param, con%general_info%perturb, con%hopf_info%y_vec, &
+                                 con%hopf_info%bif_param, con%general_info%perturb, con%hopf_info%z_vec, &
                                  con%general_info%numUnks, con%general_info%numOwnedUnks)
 
-      ! FixMe I edited this, check it
-      !DO i = 0, con%general_info%numUnks-1
-      !   e(i) = e(i) + M_1(i) * con%hopf_info%omega
-      !   f(i) = f(i) - M_2(i) * con%hopf_info%omega
-      !END DO
-      e = e + M_1 * con%hopf_info%omega
-      f = f - M_2 * con%hopf_info%omega
+      v_r = v_r - con%hopf_info%omega*M_2
+      v_i = v_i + con%hopf_info%omega*M_1
 
    END IF
 
-   i = komplex_linear_solver_conwrap(e, f, OLD_JACOBIAN, con%hopf_info%omega, x_tmp)
+   v_r = -v_r
+   v_i = -v_i
 
-   ! Next, "g" and "h" are calculated as a function of a, y_vec, and z_vec.
-   ! g and h hold the rhs vector on input to  solver and have solution
+   i = komplex_linear_solver_conwrap(v_r, v_i, LNS_BETA, con%hopf_info%omega, x_tmp)
+
+   !d = CMPLX(v_r, v_i, KIND=8)
+   d_r = v_r
+   d_i = v_i
+
+#if DEBUG > 3
+   CALL save_vector(d_r,'d_r.vector')
+   CALL save_vector(d_i,'d_i.vector')
+#endif
+
+   ! Next, "e" is calculated as a function of a, y_vec, and z_vec.
+   ! v_r and v_i hold the rhs vector on input to  solver and have solution
    ! on exit.
-   IF (con%general_info%printproc > 4) &
-      WRITE(*,*) '   Hopf Continuation: Calculating *g* and *h* vectors  (Komplex solve)!'
+   IF (con%general_info%printproc > 4) THEN
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+      WRITE(*,*) '   Hopf beta Continuation: Calculating *e* vector (Komplex solve)!'
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+   ENDIF
 
-   CALL calc_rhs_continuation(TP_CONT_SOL4, x, g,                                                     &
-                              b, con%private_info%scale_vec, x_tmp,                                   &
-                              con%hopf_info%bif_param, con%general_info%perturb, con%hopf_info%y_vec, &
-                              con%general_info%numUnks, con%general_info%numOwnedUnks)
-
-   CALL calc_rhs_continuation(TP_CONT_SOL4, x, h,                                                     &
-                              b, con%private_info%scale_vec, x_tmp,                                   &
-                              con%hopf_info%bif_param, con%general_info%perturb, con%hopf_info%z_vec, &
+   CALL calc_rhs_continuation(HP_BETA_CONT_SOL4, x, v_r,                              &
+                              b, con%hopf_info%y_vec, con%hopf_info%z_vec,            &
+                              con%hopf_info%bif_param, con%general_info%perturb, v_i, &
                               con%general_info%numUnks, con%general_info%numOwnedUnks)
 
    IF (con%private_info%mass_x == TRUE) THEN
       CALL calc_rhs_continuation(HP_CONT_DMDX, x, M_1,                                                   &
                                  b, con%private_info%scale_vec, x_tmp,                                   &
-                                 con%hopf_info%bif_param, con%general_info%perturb, con%hopf_info%z_vec, &
+                                 con%hopf_info%bif_param, con%general_info%perturb, con%hopf_info%y_vec, &
                                  con%general_info%numUnks, con%general_info%numOwnedUnks)
 
       CALL calc_rhs_continuation(HP_CONT_DMDX, x, M_2,                                                   &
                                  b, con%private_info%scale_vec, x_tmp,                                   &
-                                 con%hopf_info%bif_param, con%general_info%perturb, con%hopf_info%y_vec, &
+                                 con%hopf_info%bif_param, con%general_info%perturb, con%hopf_info%z_vec, &
                                  con%general_info%numUnks, con%general_info%numOwnedUnks)
 
-      ! FixMe I edited this, check it
-      !DO i = 0, con%general_info%numUnks-1
-      !   g(i) = g(i) + M_1(i) * con%hopf_info%omega
-      !   h(i) = h(i) - M_2(i) * con%hopf_info%omega
-      !END DO
-      g = g + M_1 * con%hopf_info%omega
-      h = h - M_2 * con%hopf_info%omega
+      v_r = v_r - con%hopf_info%omega*M_2
+      v_i = v_i + con%hopf_info%omega*M_1
 
    END IF
 
@@ -1411,48 +1504,77 @@ FUNCTION hopf_beta_alg(x, delta_x, con, reltol, abstol) RESULT (output)
 
       CALL calc_rhs_continuation(HP_CONT_DMDPARAM, x, M_1,                                               &
                                  a, con%private_info%scale_vec, x_tmp,                                   &
-                                 con%hopf_info%bif_param, con%general_info%perturb, con%hopf_info%z_vec, &
+                                 con%hopf_info%bif_param, con%general_info%perturb, con%hopf_info%y_vec, &
                                  con%general_info%numUnks, con%general_info%numOwnedUnks)
 
       CALL calc_rhs_continuation(HP_CONT_DMDPARAM, x, M_2,                                               &
                                  a, con%private_info%scale_vec, x_tmp,                                   &
-                                 con%hopf_info%bif_param, con%general_info%perturb, con%hopf_info%y_vec, &
+                                 con%hopf_info%bif_param, con%general_info%perturb, con%hopf_info%z_vec, &
                                  con%general_info%numUnks, con%general_info%numOwnedUnks)
 
-      ! FixMe I edited this, check it
-      !DO i = 0, con%general_info%numUnks-1
-      !  g(i) = g(i) + M_1(i) * con%hopf_info%omega
-      !  h(i) = h(i) - M_2(i) * con%hopf_info%omega
-      !END DO
-      g = g + M_1 * con%hopf_info%omega
-      h = h - M_2 * con%hopf_info%omega
+      v_r = v_r - con%hopf_info%omega*M_2
+      v_i = v_i + con%hopf_info%omega*M_1
 
    END IF
 
-   i = komplex_linear_solver_conwrap(g, h, OLD_JACOBIAN_DESTROY, con%hopf_info%omega, x_tmp)
+   v_r = -v_r
+   v_i = -v_i
 
-   IF (con%general_info%printproc > 4) &
-      WRITE(*,*) '   Hopf Continuation: Finished Komplex solves,  Updating solution'
+   i = komplex_linear_solver_conwrap(v_r, v_i, LNS_BETA, con%hopf_info%omega, x_tmp)
+
+   !e = CMPLX(v_r, v_i, KIND=8)
+   e_r = v_r
+   e_i = v_i
+
+#if DEBUG > 3
+   CALL save_vector(e_r,'e_r.vector')
+   CALL save_vector(e_i,'e_i.vector')
+#endif
+
+   IF (con%general_info%printproc > 4) THEN
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+      WRITE(*,*) '   Hopf beta Continuation: Finished Komplex solves,  Updating solution'
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+   ENDIF
 
    ! Calculate the updates and scaled updates to bif_param,
    ! omega, y_vec, z_vec, and x.
 
    ! Calculate Update parameters
-   ltc = ltransnorm(c, con%private_info%scale_vec)
-   ltd = ltransnorm(d, con%private_info%scale_vec)
-   lte = ltransnorm(e, con%private_info%scale_vec)
-   ltf = ltransnorm(f, con%private_info%scale_vec)
-   ltg = ltransnorm(g, con%private_info%scale_vec)
-   lth = ltransnorm(h, con%private_info%scale_vec)
+   !ltc_r = ltransnorm( DBLE(c), con%private_info%scale_vec)
+   !ltc_i = ltransnorm(AIMAG(c), con%private_info%scale_vec)
+   !ltd_r = ltransnorm( DBLE(d), con%private_info%scale_vec)
+   !ltd_i = ltransnorm(AIMAG(d), con%private_info%scale_vec)
+   !lte_r = ltransnorm( DBLE(e), con%private_info%scale_vec)
+   !lte_i = ltransnorm(AIMAG(e), con%private_info%scale_vec)
+   ltc_r = ltransnorm(c_r, con%private_info%scale_vec)
+   ltc_i = ltransnorm(c_i, con%private_info%scale_vec)
+   ltd_r = ltransnorm(d_r, con%private_info%scale_vec)
+   ltd_i = ltransnorm(d_i, con%private_info%scale_vec)
+   lte_r = ltransnorm(e_r, con%private_info%scale_vec)
+   lte_i = ltransnorm(e_i, con%private_info%scale_vec)
 
-   ! Update turning point param
-   dt_p = (ltc*ltf - lte*ltd + ltd) / (ltd*ltg - ltc*lth)
+#if DEBUG > 1
+   WRITE(*,*) 'max(a) = ', MAXVAL(a)
+   WRITE(*,*) 'max(b) = ', MAXVAL(b)
+   WRITE(*,*) 'ltc_r  = ', ltc_r
+   WRITE(*,*) 'ltc_i  = ', ltc_i
+   WRITE(*,*) 'ltd_r  = ', ltd_r
+   WRITE(*,*) 'ltd_i  = ', ltd_i
+   WRITE(*,*) 'lte_r  = ', lte_r
+   WRITE(*,*) 'lte_i  = ', lte_i
+#endif
+
+   ! Update bif_param
+   !dt_p = (-ltc_r*ltd_i - ltc_i*(1 - ltd_r))/(ltc_r*lte_i - ltc_i*lte_r)
+   dt_p = (ltc_r*ltd_i - ltd_r*ltc_i + ltc_i)/(ltc_i*lte_r - ltc_r*lte_i)
    con%hopf_info%bif_param = con%hopf_info%bif_param + dt_p
    CALL assign_bif_parameter_conwrap(con%hopf_info%bif_param)
    param_update = ABS(dt_p) / (reltol * ABS(con%hopf_info%bif_param) + abstol)
 
    ! Update imaginary eigenvalue omega
-   delta_omega = (lth*dt_p + ltf) / ltd
+   !delta_omega = (lte_i*(1 - ltd_r) + ltd_i*lte_r)/(ltc_r*lte_i - ltc_i*lte_r)
+   delta_omega = (lte_i*dt_p + ltd_i)/ltc_i
    con%hopf_info%omega = con%hopf_info%omega + delta_omega
    omega_update = ABS(delta_omega) / (reltol * ABS(con%hopf_info%omega) + abstol)
 
@@ -1468,11 +1590,10 @@ FUNCTION hopf_beta_alg(x, delta_x, con, reltol, abstol) RESULT (output)
 
    DO i = 0, con%general_info%numOwnedUnks-1
 
-      e(i) = - con%hopf_info%y_vec(i) + e(i) + g(i)*dt_p - c(i)*delta_omega
-      f(i) = - con%hopf_info%z_vec(i) + f(i) + h(i)*dt_p - d(i)*delta_omega
-
-      delta_y = e(i)
-      delta_z = f(i)
+      !delta_y = -con%hopf_info%y_vec(i) +  DBLE(d(i)) - delta_omega* DBLE(c(i)) + dt_p* DBLE(e(i))
+      !delta_z = -con%hopf_info%z_vec(i) + AIMAG(d(i)) - delta_omega*AIMAG(c(i)) + dt_p*AIMAG(e(i))
+      delta_y = -con%hopf_info%y_vec(i) + d_r(i) - delta_omega*c_r(i) + dt_p*e_r(i)
+      delta_z = -con%hopf_info%z_vec(i) + d_i(i) - delta_omega*c_i(i) + dt_p*e_i(i)
 
       y_update = y_update + ABS(delta_y)/(ABS(con%hopf_info%y_vec(i))*reltol + abstol) &
                           * ABS(delta_y)/(ABS(con%hopf_info%y_vec(i))*reltol + abstol)
@@ -1499,6 +1620,7 @@ FUNCTION hopf_beta_alg(x, delta_x, con, reltol, abstol) RESULT (output)
    END IF
 
    IF (con%general_info%printproc > 4) THEN
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
       WRITE(*,*) '   Hopf Continuation: Convergence Criteria'
       WRITE(*,*) '   Variable     Scaled Update (<1)  Unscaled Update  New Value'
       WRITE(*,*) '   ***********************************************************'
@@ -1508,16 +1630,22 @@ FUNCTION hopf_beta_alg(x, delta_x, con, reltol, abstol) RESULT (output)
       WRITE(*,*) '   Y vector     ', y_update
       WRITE(*,*) '   Z vector     ', z_update
       WRITE(*,*) '   ***********************************************************'
+      WRITE(*,*) '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
    END IF
 
    DEALLOCATE(a)
    DEALLOCATE(b)
-   DEALLOCATE(c)
-   DEALLOCATE(d)
-   DEALLOCATE(e)
-   DEALLOCATE(f)
-   DEALLOCATE(g)
-   DEALLOCATE(h)
+   !DEALLOCATE(c)
+   !DEALLOCATE(d)
+   !DEALLOCATE(e)
+   DEALLOCATE(c_r)
+   DEALLOCATE(c_i)
+   DEALLOCATE(d_r)
+   DEALLOCATE(d_i)
+   DEALLOCATE(e_r)
+   DEALLOCATE(e_i)
+   DEALLOCATE(v_r)
+   DEALLOCATE(v_i)
    DEALLOCATE(x_tmp)
    DEALLOCATE(NULL)
    IF (con%private_info%mass_param == TRUE .OR. con%private_info%mass_x == TRUE) THEN
@@ -1836,7 +1964,7 @@ END FUNCTION scalar_perturbation
 !******************************************************************************
 
 SUBROUTINE calc_rhs_continuation(rhs_type, x, resid_vector, ab_vec, scale_vec, x_tmp, &
-			                           param, perturb, r_vec, numUnks, numOwnedUnks)
+                                          param, perturb, r_vec, numUnks, numOwnedUnks)
 
 ! routine to pre-calculate the non-standard right-hand-sides for solves
 ! of continuation runs. This routine returns the matrix fill time.
@@ -1858,6 +1986,7 @@ SUBROUTINE calc_rhs_continuation(rhs_type, x, resid_vector, ab_vec, scale_vec, x
 
    REAL(KIND=8) :: abdp, dc_p, dc_p1
    REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: resid_delta
+   REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: v_tmp1, v_tmp2
 
    ! Allocate and initialize resid_delta
    !CALL vec_init(resid_vector)
@@ -1936,6 +2065,36 @@ SUBROUTINE calc_rhs_continuation(rhs_type, x, resid_vector, ab_vec, scale_vec, x
 
       resid_vector = - AGS_option * resid_vector - (resid_delta - resid_vector)/dc_p1
 
+   ! HP_BETA_CONT_SOL3
+   ELSE IF (rhs_type == HP_BETA_CONT_SOL3 ) THEN
+
+      abdp = dp(ab_vec, ab_vec)
+
+      IF (ABS(abdp) < 1d-99) THEN
+        WRITE(*,*) 'Fatal error. ab_vec too small: ',abdp,', try a larger perturbation!'
+        STOP ! FixMe
+      ELSE
+        dc_p1 = perturb * (perturb + SQRT(dp(x,x)/abdp))
+      END IF
+
+      ALLOCATE(v_tmp1(0:numUnks-1))
+      ALLOCATE(v_tmp2(0:numUnks-1))
+      
+      resid_delta = x_tmp
+
+      CALL Lns_matrix_fill_conwrap(x + dc_p1*ab_vec, PERT_LNS)
+
+      CALL Lns_matvec_mult_conwrap(scale_vec, resid_delta, resid_vector, r_vec)
+
+      CALL Lns_matrix_fill_conwrap(x, BASE_LNS)
+
+      CALL Lns_matvec_mult_conwrap(scale_vec, resid_delta, v_tmp1, v_tmp2)
+
+      resid_vector = (resid_vector - v_tmp1)/dc_p1
+      r_vec        = (r_vec        - v_tmp2)/dc_p1
+
+      DEALLOCATE(v_tmp1, v_tmp2)
+
    ! For TP_CONT_SOL4, resid_delta is the matrix at perturbed value of
    ! solution in the direction of ab_vec multiplied by the vector r_vec
    ! plus the matrix perturbed in the direction of the bif_parameter
@@ -1979,6 +2138,54 @@ SUBROUTINE calc_rhs_continuation(rhs_type, x, resid_vector, ab_vec, scale_vec, x
       CALL matvec_mult_conwrap(r_vec, resid_vector)
 
       resid_vector = - resid_delta + resid_vector/dc_p
+
+   ! HP_BETA_CONT_SOL4
+   ELSE IF (rhs_type == HP_BETA_CONT_SOL4 ) THEN
+
+      dc_p = scalar_perturbation(param, perturb)
+
+      abdp = dp(ab_vec, ab_vec)
+
+      IF (ABS(abdp) < 1d-99) THEN
+        WRITE(*,*) 'Fatal error. ab_vec too small: ',abdp,', try a larger perturbation!'
+        STOP ! FixMe
+      ELSE
+        dc_p1 = perturb * (perturb + sqrt(dp(x,x)/abdp))
+      END IF
+
+      ALLOCATE(v_tmp1(0:numUnks-1))
+      ALLOCATE(v_tmp2(0:numUnks-1))
+      
+      resid_delta = x_tmp
+
+      CALL Lns_matrix_fill_conwrap(x + dc_p1*ab_vec, PERT_LNS)
+
+      CALL Lns_matvec_mult_conwrap(scale_vec, resid_delta, resid_vector, r_vec)
+
+      CALL assign_bif_parameter_conwrap(param + dc_p)
+
+      CALL Lns_matrix_fill_conwrap(x, PERT_LNS)
+
+      CALL assign_bif_parameter_conwrap(param)
+
+      CALL Lns_matvec_mult_conwrap(scale_vec, resid_delta, v_tmp1, v_tmp2)
+
+      ! Two numerical differences with different perturbations are summed
+      ! together
+      resid_vector = resid_vector/dc_p1 + v_tmp1/dc_p
+      r_vec        = r_vec       /dc_p1 + v_tmp2/dc_p
+
+      ! also sum together the perturbations
+      dc_p = 1d0 / (1d0/dc_p1 + 1d0/dc_p)
+
+      CALL Lns_matrix_fill_conwrap(x, BASE_LNS)
+
+      CALL Lns_matvec_mult_conwrap(scale_vec, resid_delta, v_tmp1, v_tmp2)
+
+      resid_vector = resid_vector - v_tmp1/dc_p
+      r_vec        = r_vec        - v_tmp2/dc_p
+
+      DEALLOCATE(v_tmp1, v_tmp2)
 
    ELSE IF (rhs_type == HP_CONT_SOL3 ) THEN
 

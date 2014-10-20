@@ -42,12 +42,12 @@ SUBROUTINE cvarsparser(con, pd, filename)
    ! output variable
    TYPE(con_struct) :: con
    ! local variables
-   INTEGER           :: i
-   INTEGER           :: hopf_nev,  hopf_ind
-   INTEGER           :: pitch_nev, pitch_ind
-   REAL(KIND=8)      :: bif_param_init = 0
-   CHARACTER(LEN=90) :: tmp, temp1, temp2
-   CHARACTER(LEN=90) :: temp ! FixMe this string may need to be trimmed to fit exactly the input file format
+   INTEGER            :: i
+   INTEGER            :: hopf_nev,  hopf_ind
+   INTEGER            :: pitch_nev, pitch_ind
+   REAL(KIND=8)       :: bif_param_init = 0
+   CHARACTER(LEN=150) :: tmp, temp1, temp2
+   CHARACTER(LEN=90)  :: temp ! FixMe this string may need to be trimmed to fit exactly the input file format
 
    OPEN(UNIT=11, FILE=filename,  FORM='formatted', STATUS='unknown')
 
@@ -73,7 +73,6 @@ SUBROUTINE cvarsparser(con, pd, filename)
    ! temporary fix for turning off printing for debug=0
    ! if (pd%debug==0) con%general_info%printproc=0;
    ! Doing it this way will allow the print level to be set (serial only)
-   ! FixMe in the old version here I had written con%general_info%printproc = 8, but I don't know why...
    con%general_info%printproc = pd%debug
 
    !pd%num_res_fills  = 0
@@ -86,7 +85,6 @@ SUBROUTINE cvarsparser(con, pd, filename)
    con%general_info%x            => pd%x
 
 #if DEBUG > 1
-   ! FixMe need to check if the indices of this vector go from 0 to ldz-1 or from 1 to ldz
    WRITE(*,*) 'Check to have correctly received the initial solution'
    WRITE(*,*) '   pd->x[1]   = ', con%general_info%x(1)
    WRITE(*,*) '   pd->x[end] = ', con%general_info%x(pd%ldz)
@@ -100,10 +98,11 @@ SUBROUTINE cvarsparser(con, pd, filename)
    READ(11,*)  temp, con%general_info%method
    READ(11,*)  temp, pd%bif_param
 
-   ! if Hopd .AND. beta /= 0 => complex Hopf
+   ! if Hopf .AND. beta /= 0 => complex Hopf
    !
    IF (con%general_info%method == HOPF_CONTINUATION .AND. pd%beta /= 0) &
       con%general_info%method = HOPF_BETA_CONTINUATION
+   !WRITE(*,*) 'FORCING HOPF BETA'
 
    ! Assign initial value of bifurcation param based on flag value
    !
@@ -261,7 +260,7 @@ SUBROUTINE cvarsparser(con, pd, filename)
    READ(11,*)  tmp
    !*************************************
    READ(11,*)  temp, hopf_nev
-   READ(11,'(a18,a90)')  temp, temp1
+   READ(11,'(a18,a150)')  temp, temp1
 
    IF (con%general_info%method == HOPF_CONTINUATION .OR. con%general_info%method == HOPF_BETA_CONTINUATION) THEN
       IF (ADJUSTL(temp1) /= "none") THEN

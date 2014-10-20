@@ -189,6 +189,7 @@ loca_wrappers.o: par_solve_mumps.o           \
                  axisym_boundary_values.o    \
                  vtk_plot.o                  \
 					  case_dependent.o            \
+					  restart_io.o                \
 					  loca_types.o                \
 					  loca_pd.o
 
@@ -223,4 +224,5 @@ loca_lib.o: loca_types.o       \
 
 loca_bord.o: loca_types.o    \
              loca_util.o     \
-				 loca_wrappers.o
+				 loca_wrappers.o \
+				 restart_io.o

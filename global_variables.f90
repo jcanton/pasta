@@ -2,7 +2,7 @@ MODULE global_variables
 !
 ! Author: Jacopo Canton
 ! E-mail: jcanton@mech.kth.se
-! Last revision: 26/8/2013
+! Last revision: 15/10/2013
 !
    USE read_input_files       ! for the definition of the type 'program_input'
    USE dynamic_structures     ! for the definition of various vector types
@@ -31,7 +31,11 @@ MODULE global_variables
 
    REAL(KIND=8), ALLOCATABLE, DIMENSION(:,:,:) :: in_bvs_D
 
-   TYPE(CSR_MUMPS_Matrix) :: Jacobian, Mass
+   TYPE(CSR_MUMPS_Matrix)         :: Jacobian,  Mass
+   TYPE(CSR_MUMPS_Complex_Matrix) :: Lns_cmplx, Mass_cmplx
+   LOGICAL :: Mass_init       = .FALSE.
+   LOGICAL :: Lns_cmplx_init  = .FALSE.
+   LOGICAL :: Mass_cmplx_init = .FALSE.
 
    REAL(KIND=8), ALLOCATABLE, DIMENSION(:,:) :: uu, u0
    REAL(KIND=8), ALLOCATABLE, DIMENSION(:)   :: pp, p0

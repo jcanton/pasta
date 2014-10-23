@@ -204,22 +204,6 @@ IF ( myRank == 0 ) THEN
          ! PLOT OUTPUT IN VTK FORMAT
          CALL vtk_plot_P2 (rr, jj, jj_L, uu, pp, trim(p_in%plot_directory) // 'steadyStateSolution.vtk')
 
-         ! computation of vorticity and stream function
-         ! as the boundary conditions are not imposed in a general form (yet),
-         ! this part needs to be modified according to the geometry and
-         ! BCs of the problem being solved
-         !ALLOCATE (Dir_psi(number_of_sides))
-         !ALLOCATE (zz(np), psi(np))
-         !Dir_psi = (/.TRUE.,  &
-         !            .TRUE.,  &
-         !            .FALSE., &
-         !            .TRUE.,  &
-         !            .TRUE. /)
-         !CALL compute_vorticity_stream (mm, jj, js, uu, Dir_psi,  zz, psi)
-         !CALL vtk_plot_scalar_P2 (rr, jj,  zz, trim(p_in%plot_directory) // 'steadyStateVorticity.vtk')
-         !CALL vtk_plot_scalar_P2 (rr, jj, psi, trim(p_in%plot_directory) // 'steadyStateStream.vtk')
-         !DEALLOCATE(Dir_psi)
-         !DEALLOCATE(zz, psi)
       END IF
 
       IF ( p_in%write_BVS_flag ) THEN

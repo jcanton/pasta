@@ -15,7 +15,7 @@ CONTAINS
 
 !-----------------------------------------------------------------------------
 
-SUBROUTINE  compute_vorticity_stream (jj, jjs, js, uu, rr, t, sides, Axis, Dir_psi,  zz, psi)
+SUBROUTINE  compute_vorticity_stream (jj, jjs, js, uu, rr, sides, Axis, Dir_psi,  zz, psi)
 
 !  Compute the vorticity field  zz  and Stokes stream function  psi
 !  corresponding to the 2D solenoidal velocity field  uu
@@ -26,7 +26,6 @@ SUBROUTINE  compute_vorticity_stream (jj, jjs, js, uu, rr, t, sides, Axis, Dir_p
    INTEGER,      DIMENSION(:),   INTENT(IN) :: js
    REAL(KIND=8), DIMENSION(:,:), INTENT(IN) :: uu
    REAL(KIND=8), DIMENSION(:,:), INTENT(IN) :: rr
-   REAL(KIND=8),                 INTENT(IN) :: t ! time
    INTEGER,      DIMENSION(:),   INTENT(IN) :: sides
    LOGICAL,      DIMENSION(:),   INTENT(IN) :: Axis
    LOGICAL,      DIMENSION(:),   INTENT(IN) :: Dir_psi
@@ -49,12 +48,12 @@ SUBROUTINE  compute_vorticity_stream (jj, jjs, js, uu, rr, t, sides, Axis, Dir_p
 !-------------MATRICES ALLOCATION AND SYMBOLIC FACTORIZATION-------------------
 
    IF (first_time) THEN
-   
+
       CALL Dirichlet_nodes_gen (jjs, sides, Axis,  js_Axis)
 
       CALL Dirichlet_nodes_gen (jjs, sides, Dir_psi .AND. .NOT.Axis,  js_psi_D)
       ALLOCATE (as_psi_D(SIZE(js_psi_D)))
-  
+
 
       WRITE(*,*)
       WRITE(*,*) '    Structuring of the matrix for the vorticity problem'
@@ -69,8 +68,8 @@ SUBROUTINE  compute_vorticity_stream (jj, jjs, js, uu, rr, t, sides, Axis, Dir_p
 
       ALLOCATE (vortMatr%e(SIZE(vortMatr%j)))
 
-      CALL qs_00_sp_M  (1.d0,     vortMatr, .true.) 
-      CALL Dirichlet_M (js_Axis,  vortMatr, .true.) 
+      CALL qs_0y0_sp_M (1.d0,     vortMatr)
+      CALL Dirichlet_M (js_Axis,  vortMatr)
 
 !      CALL numerical_factorization (vortMatr, 5)
       CALL par_mumps_master (NUMER_FACTOR,   10, vortMatr, 0)
@@ -80,7 +79,7 @@ SUBROUTINE  compute_vorticity_stream (jj, jjs, js, uu, rr, t, sides, Axis, Dir_p
 
       WRITE(*,*)
       WRITE(*,*) '    Structuring of the matrix for the Stokes stream function problem'
-      
+
 !      psiMatr%i => vortMatr%i
 !      psiMatr%j => vortMatr%j
       ALLOCATE (psiMatr%i      (SIZE(vortMatr%i))      ); psiMatr%i       = vortMatr%i
@@ -94,10 +93,10 @@ SUBROUTINE  compute_vorticity_stream (jj, jjs, js, uu, rr, t, sides, Axis, Dir_p
 
 !      WRITE (*,*) ' Symbolic factorization of matrix of psiMatr = (Dw).R D + 1/R '
 
-      CALL qs_1y1_sp_M (1.d0,  psiMatr, 1d0, .true.) ! + SINGULAR TERM
+      CALL qs_1y1_sp_M (1.d0,  psiMatr, 1d0) ! + SINGULAR TERM
 
-      CALL Dirichlet_M (js_Axis,   psiMatr, .true.)
-      CALL Dirichlet_M (js_psi_D,  psiMatr, .true.)
+      CALL Dirichlet_M (js_Axis,   psiMatr)
+      CALL Dirichlet_M (js_psi_D,  psiMatr)
 
 !      CALL numerical_factorization (psiMatr, 6)
       CALL par_mumps_master (NUMER_FACTOR,   11, psiMatr, 0)
@@ -114,16 +113,16 @@ SUBROUTINE  compute_vorticity_stream (jj, jjs, js, uu, rr, t, sides, Axis, Dir_p
 !------------------------------------------------------------------------------
 !-------------VORTICITY COMPUTATION--------------------------------------------
 
-   ! right hand side for the vorticity equation 
-   
-   CALL qs_01_sp_c (uu,  zz)  !  zz <--- (w, k.Rot u)
+   ! right hand side for the vorticity equation
 
-   CALL Dirichlet (js_Axis, SPREAD(0.d0,1,SIZE(js_Axis)),  zz, .true.)
-  
-!   CALL direct_solution (zz, 5)  
+   CALL qs_0y1_sp_c (uu,  zz)  !  zz <--- (w, k.Rot u)
+
+   CALL Dirichlet (js_Axis, SPREAD(0.d0,1,SIZE(js_Axis)),  zz)
+
+!   CALL direct_solution (zz, 5)
    CALL par_mumps_master (DIRECT_SOLUTION, 10, vortMatr, 0, zz)
 
-   
+
 !   WRITE (*,*) ' Solution of problem  vortMatr zz = k.Rot u '
    WRITE (*,*) '   Vorticity field computed'
 
@@ -135,14 +134,14 @@ SUBROUTINE  compute_vorticity_stream (jj, jjs, js, uu, rr, t, sides, Axis, Dir_p
 
    CALL qs_0y1_sp_c (uu,  psi)  !  psi <--- (w, y k.Rot u)
 
-   as_psi_D = Stokes_stream_boundary_values (js_psi_D, rr, t)
+   as_psi_D = Stokes_stream_boundary_values (js_psi_D, rr)
 
    CALL Dirichlet (js_Axis, SPREAD(0.d0,1,SIZE(js_Axis)),  psi, .true.)
    CALL Dirichlet (js_psi_D,                    as_psi_D,  psi, .true.)
 
 !   CALL direct_solution (psi, 6)
    CALL par_mumps_master (DIRECT_SOLUTION, 11, psiMatr, 0, psi)
-   
+
 !   WRITE (*,*) ' Solution of problem  [(Dw).R D + 1/R] psi = R k.Rot u '
    WRITE (*,*) '    Stokes stream function computed'
 
@@ -158,17 +157,17 @@ END SUBROUTINE compute_vorticity_stream
 SUBROUTINE  compute_axial_plane_vorticity (jj, jjs, js, ww, Axis,  zz_R, zz_z)
 
 !  Compute the vorticity components  zz_R  and  zz_z  of an
-!  axisymmetric swrirling velocity component ww 
+!  axisymmetric swrirling velocity component ww
 
    IMPLICIT NONE
 
-   INTEGER,      DIMENSION(:,:), INTENT(IN) :: jj, jjs 
+   INTEGER,      DIMENSION(:,:), INTENT(IN) :: jj, jjs
    INTEGER,      DIMENSION(:),   INTENT(IN) :: js
    REAL(KIND=8), DIMENSION(:),   INTENT(IN) :: ww
    LOGICAL,      DIMENSION(:),   INTENT(IN) :: Axis
-  
+
    REAL(KIND=8), DIMENSION(:)               :: zz_R, zz_z
-   
+
    REAL(KIND=8), DIMENSION(2, SIZE(ww)) :: uu
 
    LOGICAL, SAVE :: first_time = .TRUE.
@@ -176,7 +175,7 @@ SUBROUTINE  compute_axial_plane_vorticity (jj, jjs, js, ww, Axis,  zz_R, zz_z)
    TYPE(CSR_MUMPS_matrix), SAVE :: vortMatr_R, vortMatr_z
 
    INTEGER, DIMENSION(:), POINTER, SAVE :: js_Axis
- 
+
    WRITE(*,*)
    WRITE(*,*) '+++++++++++++++++++++++++++++++++++++'
    WRITE(*,*) '--> CALL to compute_axial_plane_vorticity'
@@ -185,7 +184,7 @@ SUBROUTINE  compute_axial_plane_vorticity (jj, jjs, js, ww, Axis,  zz_R, zz_z)
 !-------------MATRICES ALLOCATION AND SYMBOLIC FACTORIZATION-------------------
 
    IF (first_time) THEN
-   
+
       CALL Dirichlet_nodes_gen (jjs, sides, Axis,  js_Axis)
 
       WRITE(*,*)
@@ -201,7 +200,7 @@ SUBROUTINE  compute_axial_plane_vorticity (jj, jjs, js, ww, Axis,  zz_R, zz_z)
 
       ALLOCATE (vortMatr_R%e(SIZE(vortMatr_R%j)))
 
-      CALL qs_00_sp_M  (1.d0,     vortMatr_R, .true.)                                                
+      CALL qs_00_sp_M  (1.d0,     vortMatr_R, .true.)
       CALL Dirichlet_M (js_Axis,  vortMatr_R, .true.)
 
 !      CALL numerical_factorization (vortMatr_R, 7)
@@ -211,7 +210,7 @@ SUBROUTINE  compute_axial_plane_vorticity (jj, jjs, js, ww, Axis,  zz_R, zz_z)
 
 
  !     WRITE (*,*) ' Structuring of vortMatr_z matrix for zz_z'
-      
+
 !      vortMatr_z%i => vortMatr_R%i
 !      vortMatr_z%j => vortMatr_R%j
       ALLOCATE (vortMatr_z%i      (SIZE(vortMatr_R%i))      ); vortMatr_z%i       = vortMatr_R%i
@@ -225,9 +224,9 @@ SUBROUTINE  compute_axial_plane_vorticity (jj, jjs, js, ww, Axis,  zz_R, zz_z)
 
 !      WRITE (*,*) ' Symbolic factorization of vortMatr_z matrix for zz_z'
 
-      CALL qs_00_sp_M  (1d0,  vortMatr_z, .true.) 
+      CALL qs_00_sp_M  (1d0,  vortMatr_z, .true.)
 
-!      CALL numerical_factorization (vortMatr_z, 8) 
+!      CALL numerical_factorization (vortMatr_z, 8)
       CALL par_mumps_master (NUMER_FACTOR,   13, vortMatr_z, 0)
 
 !      WRITE (*,*) ' Numerical factorization for problem  vortMatr_z zz_z = dw/dR '
@@ -238,13 +237,13 @@ SUBROUTINE  compute_axial_plane_vorticity (jj, jjs, js, ww, Axis,  zz_R, zz_z)
    ENDIF
 
 
-   ! right hand sides of the equations for the 
-   ! vorticity components in the axial plane  
+   ! right hand sides of the equations for the
+   ! vorticity components in the axial plane
 
-   CALL qv_01_sp (mm, jj, ww,  uu)  
+   CALL qv_01_sp (mm, jj, ww,  uu)
 
-   zz_R = - uu(1,:) 
-   zz_z =   uu(2,:) 
+   zz_R = - uu(1,:)
+   zz_z =   uu(2,:)
 
 
 !------------------------------------------------------------------------------
@@ -254,17 +253,17 @@ SUBROUTINE  compute_axial_plane_vorticity (jj, jjs, js, ww, Axis,  zz_R, zz_z)
 
 !   CALL direct_solution (zz_R, 7)
    CALL par_mumps_master (DIRECT_SOLUTION, 12, vortMatr_R, 0, zz_R)
-   
-!   WRITE (*,*) ' Solution of problem  vortMatr_R zz_R = - dw/dz '  
+
+!   WRITE (*,*) ' Solution of problem  vortMatr_R zz_R = - dw/dz '
    WRITE(*,*) '    Radial vorticity component computed'
 
 
 !------------------------------------------------------------------------------
 !-------------AXIAL VORTICITY COMPUTATION--------------------------------------
-  
-!   CALL direct_solution (zz_z, 8)  
+
+!   CALL direct_solution (zz_z, 8)
    CALL par_mumps_master (DIRECT_SOLUTION, 13, vortMatr_z, 0, zz_z)
-   
+
 !   WRITE (*,*) ' Solution of problem  vortMatr_z zz_z = dw/dR '
    WRITE(*,*) '    Axial vorticity component computed'
 
@@ -273,69 +272,64 @@ END SUBROUTINE  compute_axial_plane_vorticity
 
 !------------------------------------------------------------------------------
 
-FUNCTION  Stokes_stream_boundary_values (js, rr, t) RESULT(psis)
+FUNCTION  Stokes_stream_boundary_values (js, rr) RESULT(psis)
 
-!  This program defines boundary values for Stokes stream function 
-!  at time  t (optional)
+!  This program defines boundary values for Stokes stream function
 
-!  Here, the velocity boundary values are assumed not to depend on time  
+!  Here, the velocity boundary values are assumed not to depend on time
 
    IMPLICIT NONE
-  
+
    INTEGER,      DIMENSION(:),   INTENT(IN) :: js
    REAL(KIND=8), DIMENSION(:,:), INTENT(IN) :: rr
-   REAL(KIND=8), OPTIONAL,       INTENT(IN) :: t
-   
+
    REAL(KIND=8), DIMENSION(SIZE(js)) :: psis
 
-   
+
    psis = 0d0
 
 
-   ! Inflow boundary 
+   ! Inflow boundary
 
 !!   WHERE (rr(2,js)  >  4*a - eps)
-!!   
+!!
 !!      ! per il segno meno, non dimenticare che l'integrazione
 !!      ! lungo il contorno deve essere fatta con la variabile
-!!      ! che aumenta percorrendo il contorno nel verso positivo 
-!!    
-!!      psis = - uR_IN_max * 4*a  & 
+!!      ! che aumenta percorrendo il contorno nel verso positivo
+!!
+!!      psis = - uR_IN_max * 4*a  &
 !!             * (   (1/3.0d0) * (rr(1,js)/a)**3  &
 !!                 + (3/2.0d0) * (rr(1,js)/a)**2  &
 !!                 +     2     *  rr(1,js)/a      &
-!!                 +  2/3.0d0  ) 
-!!   
+!!                 +  2/3.0d0  )
+!!
 !!   END WHERE
 !!
 !!
-!!   ! Superior wall of the inlet section and of the tube 
+!!   ! Superior wall of the inlet section and of the tube
 !!
 !!   WHERE ( (rr(1,js) > -a - eps  .AND.  rr(2,js) > a - eps)  .OR.  &
-!!           
+!!
 !!           (rr(1,js) >  H - eps  .AND.  rr(2,js) > b - eps) )
-!!    
+!!
 !!      psis = uR_IN_max  * 4 * (2/3.0d0) * a**2 / rr(2,js)
-!!      
-!!    ! psis = uz_OUT_max * b**2 / rr(2,js)  !  alternativa equivalente  
 !!
-!!   END WHERE  
+!!    ! psis = uz_OUT_max * b**2 / rr(2,js)  !  alternativa equivalente
+!!
+!!   END WHERE
 !!
 !!
-!!   ! Outflow boundary 
+!!   ! Outflow boundary
 !!
 !!   WHERE ( rr(1,js) > H + a - eps  .AND.  &
 !!           rr(2,js) >= 0  .AND.  rr(2,js) <= b )
 !!
-!!      psis = uz_OUT_max * (rr(2,js)/2) * (1 - (rr(2,js)/b)**2/2)           
-!!            
+!!      psis = uz_OUT_max * (rr(2,js)/2) * (1 - (rr(2,js)/b)**2/2)
+!!
 !!
 !!   END WHERE
 
-   
-!!   IF (PRESENT(t)) psis = psis * time_dep(t)
 
-   
 END FUNCTION  Stokes_stream_boundary_values
 
 !=============================================================================

@@ -15,6 +15,7 @@ MODULE case_dependent
    USE Gauss_points
    USE Gauss_points_L
    USE vorticity_stream
+   USE vtk_plot
 
 
 !------------------------------------------------------------------------------
@@ -205,6 +206,20 @@ SUBROUTINE case_postprocess_analysis1()
    WRITE(fid,*) Re, flow_parameters(1), flow_parameters(2), flow_parameters(3), &
                 u_avg(1), u_avg(2), u_avg(3), volumeForcing(3,2)
    CLOSE(fid)
+
+   ! computation of vorticity and stream function
+   ! as the boundary conditions are not imposed in a general form (yet),
+   ! this part needs to be modified according to the geometry and
+   ! BCs of the problem being solved
+   ALLOCATE (Dir_psi(number_of_sides))
+   ALLOCATE (zz(np), psi(np))
+   Dir_psi = (/.TRUE./)
+   CALL compute_vorticity_stream (jj, jjs, js, uu, rr, sides, Axis, Dir_psi,  zz, psi)
+   CALL vtk_plot_scalar_P2 (rr, jj,  zz, trim(p_in%plot_directory) // 'steadyStateVorticity.vtk')
+   CALL vtk_plot_scalar_P2 (rr, jj, psi, trim(p_in%plot_directory) // 'steadyStateStream.vtk')
+   DEALLOCATE(Dir_psi)
+   DEALLOCATE(zz, psi)
+
 
 
    WRITE(*,*) '    done: case_postprocess_analysis1'

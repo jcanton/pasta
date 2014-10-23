@@ -309,7 +309,7 @@ SUBROUTINE qs_0y1_sp_c (gg,  u0)
 
    IF (k_d /= 2) THEN
    
-       WRITE (*,*) 'Program qs_01_sp_c is valid only in two dimensions' 
+       WRITE (*,*) 'Program qs_0y1_sp_c is valid only in two dimensions' 
    
        STOP 
        

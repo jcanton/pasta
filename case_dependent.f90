@@ -43,12 +43,19 @@ SUBROUTINE case_problemset()
    WRITE(*,*)
    WRITE(*,*) '--> call to: case_problemset'
 
-   !***coaxial jets
-   IF (flow_parameters(1) /= 0d0) THEN
-      WRITE(*,*) '    vRatio = ', flow_parameters(1)
-      in_bvs_D(1,1,2) = 1d0
-      in_bvs_D(1,5,2) = flow_parameters(1)
-   ENDIF
+   !***torus
+   WRITE(*,*) '    curvature = ', flow_parameters(1)
+   WRITE(*,*) '    R_t       = ', Rp/flow_parameters(1)
+
+   ! the mesh has R_t = 0.5
+   rr_L(2,:) = rr_L(2,:) - 0.5d0 + Rp/flow_parameters(1)
+   rr(2,:)   = rr(2,:)   - 0.5d0 + Rp/flow_parameters(1)
+   CALL Gauss_gen_L(np_L, me, nps_L, mes, jj_L, jjs_L, rr_L)
+   CALL Gauss_gen  (np,   me, nps,   mes, jj,   jjs,   rr)
+
+!write(*,*) '*** check'
+!write(*,*) '    maxR = ', MAXVAL(rr(2,:))
+!write(*,*) '    minR = ', MINVAL(rr(2,:))
 
 
    WRITE(*,*) '    done: case_problemset'
@@ -82,9 +89,9 @@ END SUBROUTINE case_preprocess
 
 SUBROUTINE case_newton_iteprocess(ite, continuation_converged)
 !
-! Author:
-! E-mail:
-! Last revision:
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 13/6/2014
 !
 ! This routine is called inside the nonlinear solver (Newton's method) before
 ! the generation of the right-hand side and Jacobian matrix
@@ -102,6 +109,41 @@ SUBROUTINE case_newton_iteprocess(ite, continuation_converged)
    ! executable statements
    WRITE(*,*)
    WRITE(*,*) '--> call to: case_newton_iteprocess'
+
+   !***torus
+   Ub = 1d0
+   Ub_tol = 1e-3
+   !
+   CALL computeFieldAverage(u0,  u_avg)
+   fn1  = volumeForcing(3,2)
+   Ubn1 = u_avg(3)
+
+   IF ( ABS(Ub-Ubn1) > Ub_tol ) THEN
+      continuation_converged=0
+      WRITE(*,*) '    tol NOT satisfied'
+   ELSE
+      continuation_converged=1
+      WRITE(*,*) '    tol satisfied'
+   ENDIF
+!   WRITE(*,*) '    Average velocity field'
+!   WRITE(*,*) '    avg(u_z) = ', u_avg(1)
+!   WRITE(*,*) '    avg(u_r) = ', u_avg(2)
+   WRITE(*,*) '    avg(u_t) = ', u_avg(3)
+
+   IF (ite>1) THEN
+      ! secant method
+      volumeForcing(3,2) = fn1 - (Ubn1-Ub)*(fn1-fn2)/(Ubn1-Ubn2)
+!      write(*,*) 'secant', fn1, Ubn1, fn2, Ubn2
+   ELSE
+      volumeForcing(3,2) = fn1 + (Ub - Ubn1) * 0.2
+!      write(*,*) 'stupid', fn1, Ubn1, fn2, Ubn2
+   ENDIF
+
+   fn2  = fn1
+   Ubn2 = Ubn1
+
+   WRITE(*,*) '    force    = ', volumeForcing(3,2)
+
    WRITE(*,*) '    done: case_newton_iteprocess'
    WRITE(*,*)
 END SUBROUTINE case_newton_iteprocess
@@ -133,9 +175,9 @@ END SUBROUTINE case_newton_postprocess
 
 SUBROUTINE case_postprocess_analysis1()
 !
-! Author:
-! E-mail:
-! Last revision:
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 13/6/2014
 !
 ! This routine is executed after analysis 1:
 ! Steady state computation
@@ -150,6 +192,21 @@ SUBROUTINE case_postprocess_analysis1()
    ! executable statements
    WRITE(*,*)
    WRITE(*,*) '--> call to: case_postprocess_analysis1'
+
+   !***torus
+   CALL computeFieldAverage(uu,  u_avg)
+   WRITE(*,*)
+   WRITE(*,*) '--> Average velocity field'
+   WRITE(*,*) '    avg(u_z) = ', u_avg(1)
+   WRITE(*,*) '    avg(u_r) = ', u_avg(2)
+   WRITE(*,*) '    avg(u_t) = ', u_avg(3)
+
+   OPEN(UNIT= fid, FILE='./locaOut/paramsUb.dat', ACCESS= 'APPEND')
+   WRITE(fid,*) Re, flow_parameters(1), flow_parameters(2), flow_parameters(3), &
+                u_avg(1), u_avg(2), u_avg(3), volumeForcing(3,2)
+   CLOSE(fid)
+
+
    WRITE(*,*) '    done: case_postprocess_analysis1'
    WRITE(*,*)
 END SUBROUTINE case_postprocess_analysis1
@@ -274,9 +331,9 @@ END SUBROUTINE case_postprocess_analysis7
 
 SUBROUTINE case_loca_paramout()
 !
-! Author:
-! E-mail:
-! Last revision:
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 13/6/2014
 !
 ! This routine is executed when LOCA has converged on a steady solution
 ! and saves the results
@@ -291,6 +348,21 @@ SUBROUTINE case_loca_paramout()
    ! executable statements
    WRITE(*,*)
    WRITE(*,*) '--> call to: case_loca_paramout'
+
+   !***torus
+   CALL extract (xx,  uu)
+   CALL computeFieldAverage(uu,  u_avg)
+!   WRITE(*,*) '    Average velocity field'
+!   WRITE(*,*) '    avg(u_z) = ', u_avg(1)
+!   WRITE(*,*) '    avg(u_r) = ', u_avg(2)
+   WRITE(*,*) '    avg(u_t) = ', u_avg(3)
+
+   OPEN(UNIT= fid, FILE='./locaOut/paramsUb.dat', ACCESS= 'APPEND')
+   WRITE(fid,*) Re, flow_parameters(1), flow_parameters(2), flow_parameters(3), &
+                u_avg(1), u_avg(2), u_avg(3), volumeForcing(3,2)
+   CLOSE(fid)
+
+
    WRITE(*,*) '    done: case_loca_paramout'
    WRITE(*,*)
 END SUBROUTINE case_loca_paramout
@@ -301,7 +373,7 @@ SUBROUTINE case_loca_changeOscar(oscar)
 !
 ! Author: Jacopo Canton
 ! E-mail: jcanton@mech.kth.se
-! Last revision: 14/7/2014
+! Last revision: 13/6/2014
 !
 ! This routine is executed when LOCA needs to change parameter Oscar
 
@@ -316,12 +388,21 @@ SUBROUTINE case_loca_changeOscar(oscar)
    WRITE(*,*)
    WRITE(*,*) '--> call to: case_loca_changeOscar'
 
-   !***coaxial jets
-   WRITE(*,*) '    old vRatio = ', flow_parameters(1)
-   WRITE(*,*) '    new vRatio = ', oscar
-   in_bvs_D(1,1,2) = 1d0
-   in_bvs_D(1,5,2) = oscar
-   CALL gen_dirichlet_boundary_values (rr, sides, Dir, jjs, js_D, in_bvs_D, bvs_D)
+   !***torus
+   WRITE(*,*) '    old curvature = ', flow_parameters(1)
+   WRITE(*,*) '    old R_t       = ', Rp/flow_parameters(1)
+   WRITE(*,*) '    new curvature = ', oscar
+   WRITE(*,*) '    new R_t       = ', Rp/oscar
+
+   rr_L(2,:) = rr_L(2,:) + Rp/oscar-Rp/flow_parameters(1)
+   rr(2,:) = rr(2,:) + Rp/oscar-Rp/flow_parameters(1)
+   CALL Gauss_gen_L(np_L, me, nps_L, mes, jj_L, jjs_L, rr_L)
+   CALL Gauss_gen  (np,   me, nps,   mes, jj,   jjs,   rr)
+
+write(*,*) '*** check'
+write(*,*) '    dR   = ', Rp/oscar-Rp/flow_parameters(1)
+write(*,*) '    maxR = ', MAXVAL(rr(2,:))
+write(*,*) '    minR = ', MINVAL(rr(2,:))
 
 
    WRITE(*,*) '    done: case_loca_changeOscar'

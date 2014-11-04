@@ -134,7 +134,7 @@ SUBROUTINE  compute_vorticity_stream (jj, jjs, js, uu, rr, sides, Axis, Dir_psi,
 
    CALL qs_0y1_sp_c (uu,  psi)  !  psi <--- (w, y k.Rot u)
 
-   as_psi_D = Stokes_stream_boundary_values (js_psi_D, rr)
+   as_psi_D = stream_boundary_values (js_psi_D, rr)
 
    CALL Dirichlet (js_Axis, SPREAD(0.d0,1,SIZE(js_Axis)),  psi, .true.)
    CALL Dirichlet (js_psi_D,                    as_psi_D,  psi, .true.)
@@ -272,7 +272,7 @@ END SUBROUTINE  compute_axial_plane_vorticity
 
 !------------------------------------------------------------------------------
 
-FUNCTION  Stokes_stream_boundary_values (js, rr) RESULT(psis)
+FUNCTION  stream_boundary_values (js, rr) RESULT(psis)
 
 !  This program defines boundary values for Stokes stream function
 
@@ -330,7 +330,7 @@ FUNCTION  Stokes_stream_boundary_values (js, rr) RESULT(psis)
 !!   END WHERE
 
 
-END FUNCTION  Stokes_stream_boundary_values
+END FUNCTION  stream_boundary_values
 
 !=============================================================================
 

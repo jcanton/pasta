@@ -44,7 +44,7 @@ FC = mpif90 -cpp
 F90CMP = $(FC) -c
 F90LNK = $(FC)
 F90OPT = -O3 -fopenmp
-F90DEB = -DDEBUG=0 -DMUMPSDEBUG=0 #-g -Wall #-fcheck=all -DASCIIRESTART
+F90DEB = -DASCIIEIGENVECTOR -DDEBUG=0 -DMUMPSDEBUG=0 #-g -Wall #-fcheck=all -DASCIIRESTART
 F90FLAGS = $(F90OPT) $(F90DEB)
 
 # Include paths

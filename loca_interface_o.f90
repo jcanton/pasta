@@ -12,6 +12,7 @@ MODULE Loca_interface_o
    USE eigensolve    ! read_eigenvector
    USE restart_io    ! write_restart, write_QP_restart
    USE loca_wrappers ! param_out, vtk_plot_loca, compute_eigen
+   USE case_dependent
 
    IMPLICIT NONE
 
@@ -542,6 +543,10 @@ SUBROUTINE solution_output_conwrap(num_soln_flag, x,  param,  &
          CALL compute_eigen(x, trim(str3), shiftIm)
       END IF
    END IF
+
+   !
+   !
+   CALL case_loca_solution_output(x, trim(str3))
 
 END SUBROUTINE solution_output_conwrap
 

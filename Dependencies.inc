@@ -209,11 +209,12 @@ loca_interface_i.o: loca_types.o       \
 						  loca_lib.o         \
 						  loca_interface_o.o
 
-loca_interface_o.o: loca_types.o    \
-                    loca_pd.o       \
-						  eigensolve.o    \
-						  restart_io.o    \
-						  loca_wrappers.o
+loca_interface_o.o: loca_types.o     \
+                    loca_pd.o        \
+						  eigensolve.o     \
+						  restart_io.o     \
+						  loca_wrappers.o  \
+						  case_dependent.o
 
 loca_lib.o: loca_types.o       \
             loca_util.o        \

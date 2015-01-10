@@ -21,6 +21,11 @@ MODULE case_dependent
 !------------------------------------------------------------------------------
 
    IMPLICIT NONE
+   !***torus
+   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE, SAVE :: rr0, rr0_L
+   REAL(KIND=8), SAVE :: deform0, deform1
+   INTEGER,      SAVE :: maxRloc
+   LOGICAL,      SAVE :: rr0init=.FALSE.
 
 
 CONTAINS
@@ -38,7 +43,7 @@ SUBROUTINE case_problemset()
    ! input variables
    ! output variables
    ! local variables
-   REAL(KIND=8) :: Rt, Rp=0.5
+   REAL(KIND=8) :: Rt, Rp=0.5d0
 
    ! executable statements
    WRITE(*,*)
@@ -48,16 +53,37 @@ SUBROUTINE case_problemset()
    WRITE(*,*) '    curvature = ', flow_parameters(1)
    WRITE(*,*) '    R_t       = ', Rp/flow_parameters(1)
 
-   ! the mesh has R_t = 0.5
-   rr_L(2,:) = rr_L(2,:) - 0.5d0 + Rp/flow_parameters(1)
-   rr(2,:)   = rr(2,:)   - 0.5d0 + Rp/flow_parameters(1)
+   IF (.NOT.rr0init) THEN
+      ! save initial mesh with curvature 1
+      ALLOCATE( rr0  (SIZE(rr,1),  SIZE(rr,2))   )
+      ALLOCATE( rr0_L(SIZE(rr_L,1),SIZE(rr_L,2)) )
+      ! the initial mesh has curvature = 1
+      rr0   = rr   - Rp
+      rr0_L = rr_L - Rp
+      maxRloc = MAXLOC(rr0(2,:),1)
+      deform0 = rr0(2,maxRloc) - MAX( MAXVAL(rr0(2,1:maxRloc-1)), MAXVAL(rr0(2,maxRloc+1 : SIZE(rr0,1))) )
+#if DEBUG > 1
+      WRITE(*,*) '*** check'
+      WRITE(*,*) '    maxRloc = ', maxRloc
+      WRITE(*,*) '    deform0 = ', deform0
+      !WRITE(*,*) '    deform = ', MAXVAL(rr(2,:)) - MAXVAL( (/ rr(2,1:maxRloc-1), rr(2,maxRloc+1 : SIZE(rr,1)) /) )
+#endif
+      rr0init = .TRUE.
+   ENDIF
+
+   rr_L(2,:) = rr0_L(2,:) + Rp/flow_parameters(1)
+   rr(2,:)   = rr0(2,:)   + Rp/flow_parameters(1)
    CALL Gauss_gen_L(np_L, me, nps_L, mes, jj_L, jjs_L, rr_L)
    CALL Gauss_gen  (np,   me, nps,   mes, jj,   jjs,   rr)
 
-!write(*,*) '*** check'
-!write(*,*) '    maxR = ', MAXVAL(rr(2,:))
-!write(*,*) '    minR = ', MINVAL(rr(2,:))
+   deform1 = rr(2,maxRloc) - MAX( MAXVAL(rr(2,1:maxRloc-1)), MAXVAL(rr(2,maxRloc+1 : SIZE(rr,1))) )
 
+#if DEBUG > 1
+   WRITE(*,*) '*** check'
+   WRITE(*,*) '    maxR = ', rr(2,maxRloc)
+   WRITE(*,*) '    minR = ', MINVAL(rr(2,:))
+   WRITE(*,*) '    deform1 = ', deform1
+#endif
 
    WRITE(*,*) '    done: case_problemset'
    WRITE(*,*)
@@ -136,7 +162,8 @@ SUBROUTINE case_newton_iteprocess(ite, continuation_converged)
       volumeForcing(3,2) = fn1 - (Ubn1-Ub)*(fn1-fn2)/(Ubn1-Ubn2)
 !      write(*,*) 'secant', fn1, Ubn1, fn2, Ubn2
    ELSE
-      volumeForcing(3,2) = fn1 + (Ub - Ubn1) * 0.2
+      !volumeForcing(3,2) = fn1 + SIGN(1d0,Ub - Ubn1)*fn1/10d0
+      volumeForcing(3,2) = fn1 + (Ub - Ubn1)*fn1
 !      write(*,*) 'stupid', fn1, Ubn1, fn2, Ubn2
    ENDIF
 
@@ -173,6 +200,60 @@ SUBROUTINE case_newton_postprocess()
 END SUBROUTINE case_newton_postprocess
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+SUBROUTINE case_postprocess_analysis0()
+!
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 18/12/2014
+!
+! This routine is executed after analysis 0:
+! Steady state computation
+
+   IMPLICIT NONE
+   ! input variables
+   ! output variables
+   ! local variables
+   INTEGER           :: fid = 23
+   REAL(KIND=8), DIMENSION(velCmpnnts) :: u_avg
+
+   ! executable statements
+   WRITE(*,*)
+   WRITE(*,*) '--> call to: case_postprocess_analysis0'
+
+   !***torus
+   CALL computeFieldAverage(uu,  u_avg)
+   WRITE(*,*)
+   WRITE(*,*) '--> Average velocity field'
+   WRITE(*,*) '    avg(u_z) = ', u_avg(1)
+   WRITE(*,*) '    avg(u_r) = ', u_avg(2)
+   WRITE(*,*) '    avg(u_t) = ', u_avg(3)
+
+   OPEN(UNIT= fid, FILE='./locaOut/stokesParamsUb.dat', ACCESS= 'APPEND')
+   WRITE(fid,*) Re, flow_parameters(1), flow_parameters(2), flow_parameters(3), &
+                u_avg(1), u_avg(2), u_avg(3), volumeForcing(3,2)
+   CLOSE(fid)
+
+   ! computation of vorticity and stream function
+   ! as the boundary conditions are not imposed in a general form (yet),
+   ! this part needs to be modified according to the geometry and
+   ! BCs of the problem being solved
+   ALLOCATE (Dir_psi(number_of_sides))
+   ALLOCATE (zz(np), psi(np))
+   Dir_psi = (/.TRUE./)
+   CALL compute_vorticity_stream (jj, jjs, js, uu, rr, sides, Axis, Dir_psi,  zz, psi)
+   CALL vtk_plot_scalar_P2 (rr, jj,  zz, trim(p_in%plot_directory) // 'stokesVorticity.vtk')
+   CALL vtk_plot_scalar_P2 (rr, jj, psi, trim(p_in%plot_directory) // 'stokesStream.vtk')
+   DEALLOCATE(Dir_psi)
+   DEALLOCATE(zz, psi)
+
+
+
+   WRITE(*,*) '    done: case_postprocess_analysis0'
+   WRITE(*,*)
+END SUBROUTINE case_postprocess_analysis0
+
+!------------------------------------------------------------------------------
 
 SUBROUTINE case_postprocess_analysis1()
 !
@@ -440,7 +521,8 @@ SUBROUTINE case_loca_changeOscar(oscar)
    REAL(KIND=8), INTENT(IN) :: oscar
    ! output variables
    ! local variables
-   REAL(KIND=8) :: Rt, Rp=0.5
+   REAL(KIND=8) :: Rt, Rp=0.5d0
+   REAL(KIND=8) :: deform, deformRel
 
    ! executable statements
    WRITE(*,*)
@@ -452,15 +534,36 @@ SUBROUTINE case_loca_changeOscar(oscar)
    WRITE(*,*) '    new curvature = ', oscar
    WRITE(*,*) '    new R_t       = ', Rp/oscar
 
-   rr_L(2,:) = rr_L(2,:) + Rp/oscar-Rp/flow_parameters(1)
-   rr(2,:) = rr(2,:) + Rp/oscar-Rp/flow_parameters(1)
+   IF (.NOT.rr0init) THEN
+      WRITE(*,*) '*** strange Error ***'
+   ENDIF
+
+   rr_L(2,:) = rr0_L(2,:) + Rp/oscar
+   rr(2,:)   = rr0(2,:)   + Rp/oscar
    CALL Gauss_gen_L(np_L, me, nps_L, mes, jj_L, jjs_L, rr_L)
    CALL Gauss_gen  (np,   me, nps,   mes, jj,   jjs,   rr)
 
-write(*,*) '*** check'
-write(*,*) '    dR   = ', Rp/oscar-Rp/flow_parameters(1)
-write(*,*) '    maxR = ', MAXVAL(rr(2,:))
-write(*,*) '    minR = ', MINVAL(rr(2,:))
+   deform = rr(2,maxRloc) - MAX( MAXVAL(rr(2,1:maxRloc-1)), MAXVAL(rr(2,maxRloc+1 : SIZE(rr,1))) )
+   deformRel = (deform - deform1)/deform1
+
+#if DEBUG > 1
+   WRITE(*,*) '*** check'
+   WRITE(*,*) '    dR   = ', Rp/oscar-Rp/flow_parameters(1)
+   WRITE(*,*) '    maxR = ', rr(2,maxRloc)
+   WRITE(*,*) '    minR = ', MINVAL(rr(2,:))
+   
+   WRITE(*,*) '    deformRel  = ', deformRel
+#endif
+
+   IF ( ABS(deformRel) > 1e-6 ) THEN
+      WRITE(*,*) '*************************************'
+      WRITE(*,*) '*** WARNING:                      ***'
+      WRITE(*,*) '*** The mesh is being deformed    ***'
+      WRITE(*,*) '*** more than the accepted tol    ***'
+      !WRITE(*,*) '*** STOP                          ***'
+      WRITE(*,*) '*************************************'
+      !CALL MPI_ABORT(MPI_COMM_WORLD, mpiErrC, mpiIerr)
+   ENDIF
 
 
    WRITE(*,*) '    done: case_loca_changeOscar'

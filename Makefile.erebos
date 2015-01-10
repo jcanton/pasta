@@ -36,7 +36,7 @@ FC = mpif90 -cpp
 F90CMP = $(FC) -c
 F90LNK = $(FC)
 F90OPT = -O3 -fopenmp
-F90DEB = -DDEBUG=1 -DMUMPSDEBUG=0 #-g -Wall -Wextra -pedantic -fcheck=all #-DASCIIEIGENVECTOR -DASCIIRESTART
+F90DEB = -DDEBUG=2 -DMUMPSDEBUG=0 #-g -Wall -Wextra -pedantic -fcheck=all #-DASCIIEIGENVECTOR -DASCIIRESTART
 F90FLAGS = $(F90OPT) $(F90DEB)
 
 # Include paths
@@ -51,7 +51,7 @@ LIBMPI    = -lmpi
 LIBS      = $(LIBMUMPS) $(LIBMPI) $(LIBARPACK) $(LIBLAPACK) $(LIBBLAS)
 
 FOLDER = ~/scratch/software/bin/
-NAME   = pasta_loca
+NAME   = pasta_stokes
 
 
 ###############################################################################

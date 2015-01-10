@@ -14,11 +14,18 @@ MODULE case_dependent
    USE axisym_boundary_values
    USE Gauss_points
    USE Gauss_points_L
+   USE vorticity_stream
+   USE vtk_plot
 
 
 !------------------------------------------------------------------------------
 
    IMPLICIT NONE
+   !***torus
+   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE, SAVE :: rr0, rr0_L
+   REAL(KIND=8), SAVE :: deform0, deform1
+   INTEGER,      SAVE :: maxRloc
+   LOGICAL,      SAVE :: rr0init=.FALSE.
 
 
 CONTAINS
@@ -26,9 +33,9 @@ CONTAINS
 
 SUBROUTINE case_problemset()
 !
-! Author:
-! E-mail:
-! Last revision:
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 13/6/2014
 !
 ! This routine is executed after reading the 'problem_data.in' file
 
@@ -36,6 +43,7 @@ SUBROUTINE case_problemset()
    ! input variables
    ! output variables
    ! local variables
+   REAL(KIND=8) :: Rt, Rp=0.5d0
 
    ! executable statements
    WRITE(*,*)
@@ -71,9 +79,9 @@ END SUBROUTINE case_preprocess
 
 SUBROUTINE case_newton_iteprocess(ite, continuation_converged)
 !
-! Author:
-! E-mail:
-! Last revision:
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 13/6/2014
 !
 ! This routine is called inside the nonlinear solver (Newton's method) before
 ! the generation of the right-hand side and Jacobian matrix
@@ -84,6 +92,9 @@ SUBROUTINE case_newton_iteprocess(ite, continuation_converged)
    ! output variables
    INTEGER :: continuation_converged
    ! local variables
+   REAL(KIND=8) :: Ub, Ub_tol
+   REAL(KIND=8), DIMENSION(velCmpnnts) :: u_avg
+   REAL(KIND=8), SAVE :: fn1, Ubn1, fn2, Ubn2
 
    ! executable statements
    WRITE(*,*)
@@ -117,11 +128,36 @@ END SUBROUTINE case_newton_postprocess
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+SUBROUTINE case_postprocess_analysis0()
+!
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 18/12/2014
+!
+! This routine is executed after analysis 0:
+! Steady state computation
+
+   IMPLICIT NONE
+   ! input variables
+   ! output variables
+   ! local variables
+   INTEGER           :: fid = 23
+   REAL(KIND=8), DIMENSION(velCmpnnts) :: u_avg
+
+   ! executable statements
+   WRITE(*,*)
+   WRITE(*,*) '--> call to: case_postprocess_analysis0'
+   WRITE(*,*) '    done: case_postprocess_analysis0'
+   WRITE(*,*)
+END SUBROUTINE case_postprocess_analysis0
+
+!------------------------------------------------------------------------------
+
 SUBROUTINE case_postprocess_analysis1()
 !
-! Author:
-! E-mail:
-! Last revision:
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 13/6/2014
 !
 ! This routine is executed after analysis 1:
 ! Steady state computation
@@ -258,11 +294,37 @@ END SUBROUTINE case_postprocess_analysis7
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+SUBROUTINE case_loca_solution_output(x_vec, filenm)
+!
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 24/11/2014
+!
+! This routine is executed when LOCA has converged on a steady solution
+! and saves the results
+
+   IMPLICIT NONE
+   ! input variables
+   REAL(KIND=8), DIMENSION(Nx) :: x_vec
+   CHARACTER(*)                :: filenm
+   ! output variables
+   ! local variables
+   REAL(KIND=8), DIMENSION(velCmpnnts,np) :: u_zzpsi
+
+   ! executable statements
+   WRITE(*,*)
+   WRITE(*,*) '--> call to: case_loca_solution_output'
+   WRITE(*,*) '    done: case_loca_solution_output'
+   WRITE(*,*)
+END SUBROUTINE case_loca_solution_output
+
+!------------------------------------------------------------------------------
+
 SUBROUTINE case_loca_paramout()
 !
-! Author:
-! E-mail:
-! Last revision:
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 13/6/2014
 !
 ! This routine is executed when LOCA has converged on a steady solution
 ! and saves the results
@@ -271,6 +333,8 @@ SUBROUTINE case_loca_paramout()
    ! input variables
    ! output variables
    ! local variables
+   INTEGER           :: fid = 23
+   REAL(KIND=8), DIMENSION(velCmpnnts) :: u_avg
 
    ! executable statements
    WRITE(*,*)
@@ -294,6 +358,8 @@ SUBROUTINE case_loca_changeOscar(oscar)
    REAL(KIND=8), INTENT(IN) :: oscar
    ! output variables
    ! local variables
+   REAL(KIND=8) :: Rt, Rp=0.5d0
+   REAL(KIND=8) :: deform, deformRel
 
    ! executable statements
    WRITE(*,*)

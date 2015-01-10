@@ -182,6 +182,25 @@ IF ( myRank == 0 ) THEN
 !------------------------------------------------------------------------------
 
    SELECT CASE ( p_in%method )
+
+   CASE (0)
+   !---------------------------
+   ! Plot Stokes solution
+   !---------------------------
+
+      CALL computeStokes()
+
+      CALL extract (xx,  uu, pp)
+
+      IF ( p_in%write_plots_flag ) THEN
+         ! PLOT OUTPUT IN VTK FORMAT
+         CALL vtk_plot_P2 (rr, jj, jj_L, uu, pp, trim(p_in%plot_directory) // 'stokesSolution.vtk')
+
+      END IF
+
+      CALL case_postprocess_analysis0()
+
+
    CASE (1)
    !---------------------------
    ! Solve steady state
@@ -715,6 +734,71 @@ SUBROUTINE compute_Stokes_initial_guess(np, mm, jj, jj_L, jjs, iis, js_D, bvs_D,
 
 END SUBROUTINE compute_Stokes_initial_guess
 
+!------------------------------------------------------------------------------
+
+SUBROUTINE computeStokes()
+
+   IMPLICIT NONE
+   ! input variables
+   ! output variables
+   INTEGER :: Ub_converged
+   ! local variables
+   REAL(KIND=8) :: Ub, Ub_tol
+   REAL(KIND=8), DIMENSION(velCmpnnts) :: u_avg
+   REAL(KIND=8) :: fn1, Ubn1, fn2, Ubn2
+   INTEGER :: ite=1
+
+   ! executable statements
+   WRITE(*,*)
+   WRITE(*,*) '--> call to: computeStokes'
+
+   !***torus
+   Ub = 1d0
+   Ub_tol = 1e-6
+   !
+   DO WHILE (Ub_converged == 0)
+
+      CALL computeFieldAverage(u0,  u_avg)
+      fn1  = volumeForcing(3,2)
+      Ubn1 = u_avg(3)
+   
+      IF ( ABS(Ub-Ubn1) > Ub_tol ) THEN
+         Ub_converged=0
+         WRITE(*,*) '    tol NOT satisfied'
+      ELSE
+         Ub_converged=1
+         WRITE(*,*) '    tol satisfied'
+      ENDIF
+   
+   !   WRITE(*,*) '    Average velocity field'
+   !   WRITE(*,*) '    avg(u_z) = ', u_avg(1)
+   !   WRITE(*,*) '    avg(u_r) = ', u_avg(2)
+      WRITE(*,*) '    avg(u_t) = ', u_avg(3)
+   
+      IF (ite>1) THEN
+         ! secant method
+         volumeForcing(3,2) = fn1 - (Ubn1-Ub)*(fn1-fn2)/(Ubn1-Ubn2)
+   !      write(*,*) 'secant', fn1, Ubn1, fn2, Ubn2
+      ELSE
+         volumeForcing(3,2) = fn1 + (Ub - Ubn1) * 0.2
+   !      write(*,*) 'stupid', fn1, Ubn1, fn2, Ubn2
+      ENDIF
+   
+      fn2  = fn1
+      Ubn2 = Ubn1
+   
+      WRITE(*,*) '    force    = ', volumeForcing(3,2)
+
+      CALL compute_Stokes_initial_guess(np, mm, jj, jj_L, jjs, iis, js_D, bvs_D, &
+                ms_2, ms_3, c_2, q_3, DESINGULARIZE, Re,   Jacobian, u0, p0, x0)
+
+
+      ite = ite + 1
+
+   ENDDO
+
+
+END SUBROUTINE computeStokes
 !==============================================================================
 
 END PROGRAM  main

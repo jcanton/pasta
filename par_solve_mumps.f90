@@ -913,10 +913,12 @@ SUBROUTINE par_mumps (parMumpsJob, matrID)
          id_real(matrID)%ICNTL(23) = id_real(matrID)%INFOG(16) * memRelax
          !write(*,*) 'infog(16) = ', id_real(matrID)%INFOG(16)
          !write(*,*) 'icntl(23) = ', id_real(matrID)%ICNTL(23)
+         id_real(matrID)%ICNTL(14) = 20 ! 20 default ! percentage increase in the estimated working space
          id_real(matrID)%JOB  = 2
          CALL DMUMPS(id_real(matrID))
       ELSEIF (realCmpl == CMPL_FLAG) THEN
          id_cmpl(matrID)%ICNTL(23) = id_cmpl(matrID)%INFOG(16) * memRelax
+         id_cmpl(matrID)%ICNTL(14) = 20 ! 20 default ! percentage increase in the estimated working space
          id_cmpl(matrID)%JOB  = 2
          CALL ZMUMPS(id_cmpl(matrID))
       ENDIF

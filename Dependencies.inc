@@ -164,13 +164,23 @@ vorticity_stream.o: global_variables.o  \
 						  qv_sp.o             \
                     par_solve_mumps.o
 
-case_dependent.o: global_variables.o          \
+case_dependent.o: $(CASEDIR)/case_dependent.f90 \
+                  global_variables.o          \
                   miscellaneous_subroutines.o \
-						axisym_boundary_values.o    \
+                  axisym_boundary_values.o    \
                   gauss_points_2d_l.o         \
                   gauss_points_2d_p_sp.o      \
-						vorticity_stream.o          \
-						vtk_plot.o
+                  vorticity_stream.o          \
+                  vtk_plot.o
+	$(F90CMP) $(F90FLAGS) $(CASEDIR)/case_dependent.f90
+
+#case_dependent.o: global_variables.o          \
+#                  miscellaneous_subroutines.o \
+#						axisym_boundary_values.o    \
+#                  gauss_points_2d_l.o         \
+#                  gauss_points_2d_p_sp.o      \
+#						vorticity_stream.o          \
+#						vtk_plot.o
 
 loca_wrappers.o: par_solve_mumps.o           \
                  qv_sp.o                     \

@@ -1,3 +1,9 @@
+# Modules:
+#
+# module add gcc/4.9.2
+# module add openmpi/1.8-gcc-4.9
+# module add mumps/5.0.0-gcc-4.9
+#
 ###############################################################################
 # Rules
 #
@@ -35,35 +41,21 @@ FC = mpif90 -cpp
 
 F90CMP = $(FC) -c
 F90LNK = $(FC)
-F90OPT = -O3 -fopenmp
-F90DEB = -DASCIIRESTART -DDEBUG=0 -DMUMPSDEBUG=0 #-g -Wall -Wextra -pedantic -fcheck=all
-F90FLAGS = $(F90OPT) $(F90DEB)
+F90OPT = -O2 #-fopenmp
+F90DEB = -DDEBUG=0 -DMUMPSDEBUG=0 #-g -Wall -Wextra -pedantic -fcheck=all
+F90FLAGS = $(F90OPT) $(F90DEB) $(PASTAFLAGS)
 
 # Include paths
-F90INCDIR = -I/usr/include $(MUMPS_INCLUDE) $(MKL_INCLUDE)
+F90INCDIR = -I/pdc/vol/mumps/5.0.0/gcc/4.9/include
 
 # Libraries
-LIBARPACK    = -L$(HOME)/software/ARPACK/ -larpack_abisko
-LIBLAPACK    = -llapack
-LIBSCALAPACK = $(SCALAPACK_LDFLAGS) -lscalapack_ompi
-LIBBLAS      = -lblas
-LIBSCOTCH    = $(SCOTCH_LDFLAGS) -lptscotch -lptesmumps -lptscotcherr -lscotch
-LIBMKL       = $(MKL_LDFLAGS) -lmkl_gf_lp64 -lmkl_core -lmkl_sequential -lmkl_gnu_thread
-LIBMUMPS     = $(MUMPS_LDFLAGS) -ldmumps -lzmumps -lmumps_common -lpord
-LIBMPI       = -lmpi
-LIBS         = $(LIBMUMPS) $(LIBMPI) $(LIBARPACK) $(LIBSCOTCH) $(LIBSCALAPACK) $(LIBMKL) $(LIBLAPACK) $(LIBBLAS) $(LIBMUMPS) $(LIBSCOTCH)
+LIBARPACK    = # needs to be compiled
+LIBMKL       = -L/pdc/vol/i-compilers/15.0.2/mkl/lib/intel64 -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -Wl,--rpath,/pdc/vol/i-compilers/15.0.2/mkl/lib/intel64
+LIBMUMPS     = -L/pdc/vol/mumps/5.0.0/gcc/4.9/lib -ldmumps -lzmumps -lmumps_common -lpord
+LIBS         = $(LIBMUMPS) $(LIBMKL)
 
-FOLDER = ~/software/bin/
-NAME   = pasta_loca
-
-# Modules
-# modules:
-# 	@echo loading modules
-# 	@module load openmpi/gcc/1.8.1
-# 	@module load scalapack/gcc/2.0.2
-# 	@module load mkl/11.1.2
-# 	@module load scotch/6.0.0
-# 	@module load mumps/gcc/4.10.0
+FOLDER = $(CASEDIR)/
+NAME   = $(PASTANAME)
 
 
 ###############################################################################

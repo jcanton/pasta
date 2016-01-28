@@ -1,11 +1,8 @@
 # Modules:
 #
 # module add mkl/11.1.2
-# module add mumps/gcc/4.10.0
-# module add openmpi/gcc/1.8.1
-#
-# module add scalapack/gcc/2.0.2
-# module add scotch/6.0.0
+# module add arpack/gcc/96
+# module add openmpi/gcc/1.8.8
 #
 ###############################################################################
 # Rules
@@ -44,27 +41,33 @@ FC = mpif90 -cpp
 
 F90CMP = $(FC) -c
 F90LNK = $(FC)
-F90OPT = -O3 -fopenmp
-F90DEB = -DASCIIRESTART -DDEBUG=0 -DMUMPSDEBUG=0 #-g -Wall -Wextra -pedantic -fcheck=all
-F90FLAGS = $(F90OPT) $(F90DEB)
+F90OPT = -O2 #-fopenmp
+F90DEB = -DDEBUG=0 -DMUMPSDEBUG=0 #-g -Wall -Wextra -pedantic -fcheck=all
+F90FLAGS = $(F90OPT) $(F90DEB) $(PASTAFLAGS)
 
 # Include paths
-F90INCDIR = -I/usr/include $(MUMPS_INCLUDE) $(MKL_INCLUDE)
+#F90INCDIR = -I/usr/include $(MUMPS_INCLUDE) $(SCOTCH_INCLUDE) $(MKL_INCLUDE) $(OPENBLAS_INCLUDE)
+#F90INCDIR = -I/usr/include $(MUMPS_INCLUDE) $(MKL_INCLUDE) $(OPENBLAS_INCLUDE)
+#F90INCDIR = -I/usr/include $(MUMPS_INCLUDE) $(MKL_INCLUDE) #$(OPENBLAS_INCLUDE)
+#F90INCDIR = $(MUMPS_INCLUDE)
+F90INCDIR = -I/home/j/jcanton/software/MUMPS_5.0.1/include
 
 # Libraries
-LIBARPACK    = -L$(HOME)/software/ARPACK/ -larpack_abisko
-LIBLAPACK    = 
+LIBARPACK    = $(ARPACK_LDFLAGS)    $(ARPACK_LIBS)
+LIBMKL       = $(MKL_LDFLAGS)       -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lmkl_core -lmkl_gnu_thread
+#LIBMUMPS     = $(MUMPS_LDFLAGS)     -ldmumps -lzmumps -lmumps_common -lpord
+LIBMUMPS     = -L/home/j/jcanton/software/MUMPS_5.0.1/lib -ldmumps -lzmumps -lmumps_common -lpord
+#LIBMPI       = -L/lap/openmpi/1.8.8/gcc-4.6/lib 
+#LIBSCOTCH    = $(SCOTCH_LDFLAGS)    -lptscotch -lptesmumps -lptscotcherr -lscotch
+#LIBBLAS      = $(OPENBLAS_LDFLAGS)  $(OPENBLAS_LIBS)
+#LIBLAPACK    = $(LAPACK_LDFLAGS)    $(LAPACK_LIBS)
 #LIBSCALAPACK = $(SCALAPACK_LDFLAGS) -lscalapack_ompi
-LIBBLAS      = 
-#LIBSCOTCH    = $(SCOTCH_LDFLAGS) -lptscotch -lptesmumps -lptscotcherr -lscotch
-LIBMKL       = $(MKL_LDFLAGS) -lmkl_gf_lp64 -lmkl_core -lmkl_sequential -lmkl_gnu_thread
-LIBMUMPS     = $(MUMPS_LDFLAGS) -ldmumps -lzmumps -lmumps_common -lpord
-LIBMPI       = 
-LIBS         = $(LIBMUMPS) $(LIBARPACK) $(LIBMKL)
-#LIBS         = $(LIBMUMPS) $(LIBMPI) $(LIBARPACK) $(LIBSCOTCH) $(LIBSCALAPACK) $(LIBMKL) $(LIBLAPACK) $(LIBBLAS) $(LIBMUMPS) $(LIBSCOTCH)
+#LIBS         = $(LIBMUMPS) $(LIBSCOTCH) $(LIBARPACK) $(LIBSCALAPACK) $(LIBMKL) $(LIBLAPACK) $(LIBBLAS) $(LIBMUMPS)
+#LIBS         = $(LIBMUMPS) $(LIBARPACK) $(LIBSCALAPACK) $(LIBMKL) $(LIBLAPACK) $(LIBBLAS) $(LIBMUMPS)
+LIBS         = $(LIBMUMPS) $(LIBSCOTCH) $(LIBARPACK) $(LIBMKL)
 
-FOLDER = ~/software/bin/
-NAME   = pasta_loca
+FOLDER = $(CASEDIR)/
+NAME   = $(PASTANAME)
 
 
 ###############################################################################

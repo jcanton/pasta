@@ -43,7 +43,7 @@ FC = mpif90 -cpp
 F90CMP = $(FC) -c
 F90LNK = $(FC)
 F90OPT = -O2 #-fopenmp
-F90DEB = -DASCIIRESTART -DDEBUG=0 -DMUMPSDEBUG=0 -g #-Wall -Wextra -pedantic -fcheck=all # -DASCIIEIGENVECTOR
+F90DEB = -DASCIIRESTART -DDEBUG=1 -DMUMPSDEBUG=0 -g #-Wall -Wextra -pedantic -fcheck=all # -DASCIIEIGENVECTOR -DSAVEEIGENVECTOR
 F90FLAGS = $(F90OPT) $(F90DEB)
 
 # Include paths
@@ -61,8 +61,10 @@ LIBMPI       = -L/afs/pdc.kth.se/pdc/vol/openmpi/1.5.4/gcc/4.6/lib -lmpi_f77 -lm
 LIBS         = $(LIBMUMPS) $(LIBARPACK) $(LIBMKL) $(LIBMPI)
 #LIBS         = $(LIBMUMPS) $(LIBMPI) $(LIBARPACK) $(LIBSCOTCH) $(LIBSCALAPACK) $(LIBMKL) $(LIBLAPACK) $(LIBBLAS) $(LIBMUMPS) $(LIBSCOTCH)
 
-FOLDER = $(HOME)/software/bin/
-NAME   = pasta_loca
+#FOLDER = $(HOME)/software/bin/
+#NAME   = pasta_loca
+FOLDER = $(CASEDIR)/
+NAME   = pasta_cyl
 
 
 ###############################################################################

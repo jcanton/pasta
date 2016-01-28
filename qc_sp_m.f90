@@ -1461,7 +1461,7 @@ SUBROUTINE qc_ny0_sp_s (ms0, jjs, iis, fs,  v0)
 
          DO k = 1, k_d     
 
-            v0(k, jjs(:,ms)) = v0(k, jjs(:,ms)) + (normals(k, ls,ms)*x) * wws(:,ls) 
+            v0(k, jjs(:,ms)) = v0(k, jjs(:,ms)) + (normals(k, ls,ms)*x) * wws(:,ls)
 
          ENDDO
 
@@ -1507,9 +1507,9 @@ SUBROUTINE qc_ty0_sp_s (ms0, jjs, iis, gzs,  v0)
              
          x = gzls * JACs(ms) * pp_ws(ls) * yy_Gs(ls,ms) 
              
-         v0(1, jjs(:,ms)) = v0(1, jjs(:,ms)) - (normals(2, ls,ms)*x) * wws(:,ls) 
+         v0(1, jjs(:,ms)) = v0(1, jjs(:,ms)) - (normals(2, ls,ms)*x) * wws(:,ls)
      
-         v0(2, jjs(:,ms)) = v0(2, jjs(:,ms)) + (normals(1, ls,ms)*x) * wws(:,ls) 
+         v0(2, jjs(:,ms)) = v0(2, jjs(:,ms)) + (normals(1, ls,ms)*x) * wws(:,ls)
      
       ENDDO
 
@@ -1896,7 +1896,7 @@ SUBROUTINE qc_oseen2y_sp_3d_M (m0, jj, gg, beta,  CC)
 
                j_ = j + 2*np
                                          ! *** ONLY IF SWIRLING BASE FLOW ***
-               ! xd  +  y * vt * ( gy/R  +  i beta/R * gy )
+               ! xd  +  y * vt * ( gy/R  +  i beta/R * gt )
             
                xo = wij * gl(2) * pp_w(l) * JAC(m)
 

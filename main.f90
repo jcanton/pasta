@@ -132,17 +132,23 @@ IF ( myRank == 0 ) THEN
 
 !------------------------------------------------------------------------------
 !------------MATRIX STRUCTURING ACCORDING TO CSR FORMAT------------------------
+!/-------------AND SYMBOLIC FACTORIZATION OF MATRIX----------------------------
 
-   CALL start_coupled_system_axisym (np, np_L, jj, js,  Jacobian)
+   SELECT CASE ( p_in%method )
 
-   DESINGULARIZE = SIZE(ms_3) == 0  !  means Gamma_3 is void 
+   CASE (8, 313)
+      ! These analyses do not need it
 
-!------------------------------------------------------------------------------
-!-------------SYMBOLIC FACTORIZATION OF MATRIX---------------------------------
+   CASE DEFAULT
 
-   CALL par_mumps_master (INITIALIZATION, 1, Jacobian, 0)
-   CALL par_mumps_master (SYMBO_FACTOR,   1, Jacobian, 0)
-!
+      CALL start_coupled_system_axisym (np, np_L, jj, js,  Jacobian)
+      DESINGULARIZE = SIZE(ms_3) == 0  !  means Gamma_3 is void 
+
+      CALL par_mumps_master (INITIALIZATION, 1, Jacobian, 0)
+      CALL par_mumps_master (SYMBO_FACTOR,   1, Jacobian, 0)
+
+   END SELECT
+
 !------------------------------------------------------------------------------
 !------------INITIAL GUESS EITHER FROM STOKES PROBLEM OR RESTART FILE----------
  
@@ -188,7 +194,7 @@ IF ( myRank == 0 ) THEN
    ! Plot Stokes solution
    !---------------------------
 
-      CALL computeStokes()
+      !CALL computeStokes() be smart and compute it above
 
       CALL extract (xx,  uu, pp)
 
@@ -341,6 +347,35 @@ IF ( myRank == 0 ) THEN
       !CALL evolve_transientGrowth(x0)
 
       !CALL case_postprocess_analysis7()
+
+   CASE (8)
+   !-------------------------------
+   ! compute streamfunction and
+   ! vorticity of an eigenvector
+   !-------------------------------
+
+      CALL read_eigenvector (Nx, 1, trim(p_in%output_restart_file),  xx, x0)
+      CALL extract (xx,  uu)
+      
+      ! computation of vorticity and stream function
+      ! as the boundary conditions are not imposed in a general form (yet),
+      ! this part needs to be modified according to the geometry and
+      ! BCs of the problem being solved
+      ALLOCATE (Dir_psi(number_of_sides))
+      ALLOCATE (zz(np), psi(np))
+      Dir_psi = (/.TRUE./)
+      CALL compute_vorticity_stream (jj, jjs, js, uu, rr, sides, Axis, Dir_psi,  zz, psi)
+      CALL vtk_plot_scalar_P2 (rr, jj,  zz, trim(p_in%plot_directory) // 'eigenvectorVorticity.vtk')
+      CALL vtk_plot_scalar_P2 (rr, jj, psi, trim(p_in%plot_directory) // 'eigenvectorStream.vtk')
+      DEALLOCATE(Dir_psi)
+      DEALLOCATE(zz, psi)
+
+   CASE (313)
+   !-------------------------------
+   ! case dependent analysis
+   !-------------------------------
+
+      CALL case_analysis313()
 
    CASE DEFAULT
       WRITE(*,*) '*************************************'

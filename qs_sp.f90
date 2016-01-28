@@ -458,7 +458,7 @@ SUBROUTINE qs_0y1_sp_s (ms_N, gs,  u0)
 
    INTEGER,      DIMENSION(:),   INTENT(IN)  :: ms_N
    REAL(KIND=8), DIMENSION(:,:), INTENT(IN)  :: gs
-   REAL(KIND=8), DIMENSION(:),   INTENT(OUT) :: u0
+   REAL(KIND=8), DIMENSION(:)                :: u0
 
    REAL(KIND=8), DIMENSION(k_d) :: gls
    REAL(KIND=8) :: x
@@ -467,14 +467,15 @@ SUBROUTINE qs_0y1_sp_s (ms_N, gs,  u0)
    DO mm = 1, SIZE(ms_N);  ms = ms_N(mm)
 
       DO ls = 1, l_Gs
-                                 
+
          DO k = 1, k_d
-            gls(k) = SUM(gs(k, iis(:,ms)) * wws(:,ls))  
+            gls(k) = SUM(gs(k, iis(:,ms)) * wws(:,ls))
          ENDDO
 
          x = SUM(gls * normals(:,ls,ms)) * JACs(ms) * pp_ws(ls) * yy_Gs(ls,ms)
          
-         u0(jjs(:,ms)) = u0(jjs(:,ms)) + wws(:,ls) * x 
+         u0(jjs(:,ms)) = u0(jjs(:,ms)) + wws(:,ls) * x
+         !u0(jjs(:,ms)) = wws(:,ls) * x
                 
       ENDDO
 
@@ -483,6 +484,48 @@ SUBROUTINE qs_0y1_sp_s (ms_N, gs,  u0)
 
 END SUBROUTINE qs_0y1_sp_s
 
+!------------------------------------------------------------------------------
+
+
+SUBROUTINE qs_0y1_sp_sl (ms_N, gs,  u0)
+!=====================================
+
+!  < ws, y n.g_s >_sl   ===>   u0   incremental accumulation of boundary terms
+ 
+   USE Gauss_points
+
+   IMPLICIT NONE
+
+   INTEGER,      DIMENSION(:),   INTENT(IN)  :: ms_N
+   REAL(KIND=8), DIMENSION(:,:), INTENT(IN)  :: gs
+   REAL(KIND=8), DIMENSION(:)                :: u0
+
+   REAL(KIND=8), DIMENSION(k_d) :: gls
+   REAL(KIND=8) :: x, slval
+   INTEGER :: mm, ms, ls, k
+
+   slval = 0d0
+
+   DO mm = 1, SIZE(ms_N);  ms = ms_N(mm)
+
+      DO ls = 1, l_Gs
+
+         DO k = 1, k_d
+            gls(k) = SUM(gs(k, iis(:,ms)) * wws(:,ls))
+         ENDDO
+
+         x = SUM(gls * normals(:,ls,ms)) * JACs(ms) * pp_ws(ls) * yy_Gs(ls,ms)
+
+         slval = slval + x
+
+         u0(jjs(:,ms)) = u0(jjs(:,ms)) + wws(:,ls) * slval
+
+      ENDDO
+
+   ENDDO
+
+
+END SUBROUTINE qs_0y1_sp_sl
 
 !------------------------------------------------------------------------------
 

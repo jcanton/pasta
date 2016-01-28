@@ -134,13 +134,16 @@ SUBROUTINE  compute_vorticity_stream (jj, jjs, js, uu, rr, sides, Axis, Dir_psi,
 
    CALL qs_0y1_sp_c (uu,  psi)  !  psi <--- (w, y k.Rot u)
 
-   as_psi_D = stream_boundary_values (js_psi_D, rr)
+   !as_psi_D = stream_boundary_values (jjs, js_psi_D, rr, uu, Dir_psi)
+   as_psi_D = 0d0
 
-   CALL Dirichlet (js_Axis, SPREAD(0.d0,1,SIZE(js_Axis)),  psi, .true.)
-   CALL Dirichlet (js_psi_D,                    as_psi_D,  psi, .true.)
+   CALL Dirichlet (js_Axis, SPREAD(0d0,1,SIZE(js_Axis)),  psi)
+   CALL Dirichlet (js_psi_D,                   as_psi_D,  psi)
 
-!   CALL direct_solution (psi, 6)
+
    CALL par_mumps_master (DIRECT_SOLUTION, 11, psiMatr, 0, psi)
+
+   psi = psi * rr(2,:)
 
 !   WRITE (*,*) ' Solution of problem  [(Dw).R D + 1/R] psi = R k.Rot u '
    WRITE (*,*) '    Stokes stream function computed'
@@ -268,69 +271,96 @@ SUBROUTINE  compute_axial_plane_vorticity (jj, jjs, js, ww, Axis,  zz_R, zz_z)
    WRITE(*,*) '    Axial vorticity component computed'
 
 
-END SUBROUTINE  compute_axial_plane_vorticity
+END SUBROUTINE compute_axial_plane_vorticity
 
 !------------------------------------------------------------------------------
 
-FUNCTION  stream_boundary_values (js, rr) RESULT(psis)
-
-!  This program defines boundary values for Stokes stream function
-
-!  Here, the velocity boundary values are assumed not to depend on time
-
-   IMPLICIT NONE
-
-   INTEGER,      DIMENSION(:),   INTENT(IN) :: js
-   REAL(KIND=8), DIMENSION(:,:), INTENT(IN) :: rr
-
-   REAL(KIND=8), DIMENSION(SIZE(js)) :: psis
-
-
-   psis = 0d0
-
-
-   ! Inflow boundary
-
-!!   WHERE (rr(2,js)  >  4*a - eps)
-!!
-!!      ! per il segno meno, non dimenticare che l'integrazione
-!!      ! lungo il contorno deve essere fatta con la variabile
-!!      ! che aumenta percorrendo il contorno nel verso positivo
-!!
-!!      psis = - uR_IN_max * 4*a  &
-!!             * (   (1/3.0d0) * (rr(1,js)/a)**3  &
-!!                 + (3/2.0d0) * (rr(1,js)/a)**2  &
-!!                 +     2     *  rr(1,js)/a      &
-!!                 +  2/3.0d0  )
-!!
-!!   END WHERE
-!!
-!!
-!!   ! Superior wall of the inlet section and of the tube
-!!
-!!   WHERE ( (rr(1,js) > -a - eps  .AND.  rr(2,js) > a - eps)  .OR.  &
-!!
-!!           (rr(1,js) >  H - eps  .AND.  rr(2,js) > b - eps) )
-!!
-!!      psis = uR_IN_max  * 4 * (2/3.0d0) * a**2 / rr(2,js)
-!!
-!!    ! psis = uz_OUT_max * b**2 / rr(2,js)  !  alternativa equivalente
-!!
-!!   END WHERE
-!!
-!!
-!!   ! Outflow boundary
-!!
-!!   WHERE ( rr(1,js) > H + a - eps  .AND.  &
-!!           rr(2,js) >= 0  .AND.  rr(2,js) <= b )
-!!
-!!      psis = uz_OUT_max * (rr(2,js)/2) * (1 - (rr(2,js)/b)**2/2)
-!!
-!!
-!!   END WHERE
-
-
-END FUNCTION  stream_boundary_values
+!FUNCTION stream_boundary_values (jjs, js, rr, uu, Dir_psi) RESULT(psis)
+!
+!!  This function defines boundary values for Stokes stream function
+!
+!   IMPLICIT NONE
+!
+!   INTEGER,      DIMENSION(:,:), INTENT(IN) :: jjs
+!   INTEGER,      DIMENSION(:),   INTENT(IN) :: js
+!   REAL(KIND=8), DIMENSION(:,:), INTENT(IN) :: rr
+!   REAL(KIND=8), DIMENSION(:,:), INTENT(IN) :: uu
+!   LOGICAL,      DIMENSION(:),   INTENT(IN) :: Dir_psi
+!
+!   REAL(KIND=8), DIMENSION(SIZE(js)) :: psis
+!
+!   INTEGER :: i, k, nel, nnodes, ind
+!   LOGICAL, DIMENSION(number_of_sides) :: this_side
+!   INTEGER, DIMENSION(:), POINTER      :: nots  ! Nodes On This Side
+!   INTEGER, DIMENSION(:), ALLOCATABLE  :: notss ! Nodes On This Side in anti-cloclwise order
+!   REAL(KIND=8) :: za, zb, ra, rb
+!   REAL(KIND=8) :: intR, intZ
+!
+!
+!   WRITE(*,*) ''
+!   WRITE(*,*) 'WARNING:'
+!   WRITE(*,*) 'it looks like the first and second node are'
+!   WRITE(*,*) 'always the first and last one of the side, but'
+!   WRITE(*,*) 'this may not always be the case.'
+!   WRITE(*,*) 'We will assume this here.'
+!   WRITE(*,*) ''
+!
+!   psis   = 0d0
+!   intR   = 0d0
+!   intZ   = 0d0
+!
+!   DO i = number_of_sides, 1, -1 ! cycle on side number
+!
+!      IF ( Dir_psi(i) ) THEN ! if Dirichlet for this side (to be changed in order to avoid the axis only)
+!
+!         ! get the indexes of the nodes on this side
+!         !
+!         this_side = .false.;  this_side(i) = .true.
+!         CALL Dirichlet_nodes_gen (jjs, sides, this_side, nots)
+!         nnodes = size(nots)
+!         nel = (nnodes-1)/2
+!
+!         ! order them in counter-clocwise order
+!         !
+!         ALLOCATE( notss(nnodes) )
+!         notss(1) = nots(2)
+!         DO k = 1, nel-1
+!            notss(2*k)   = nots(2*nel + 2 - k)
+!            notss(2*k+1) = nots(  nel + 2 - k)
+!         ENDDO
+!         notss(2*k)   = nots(nel + 2)
+!         notss(2*k+1) = nots(1)
+!
+!         ! evaluate the boundary integrals
+!         !
+!         DO k = 2, nnodes
+!
+!            IF ( abs(rr(2,notss(k))) > 1e-9 ) THEN
+!
+!               za = rr(1,notss(k-1))
+!               zb = rr(1,notss(k))
+!               ra = rr(2,notss(k-1))
+!               rb = rr(2,notss(k))
+!
+!               intR = intR + ( uu(1,notss(k))*rb + uu(1,notss(k-1))*ra ) / 2 * ( rb - ra )
+!               intZ = intZ + ( uu(2,notss(k))*rb + uu(2,notss(k-1))*ra ) / 2 * ( zb - za )
+!
+!               ind = minloc(abs(js - notss(k)), 1)
+!               psis(ind) = ( intR - intZ ) / rb
+!
+!#if DEBUG > 2
+!               write(*,*) zb, rb, uu(1,notss(k)), uu(2,notss(k)), intZ, intR, psis(ind)
+!#endif
+!
+!            ENDIF
+!
+!         ENDDO
+!
+!         DEALLOCATE(nots, notss)
+!      ENDIF
+!   ENDDO
+!
+!END FUNCTION stream_boundary_values
 
 !=============================================================================
 

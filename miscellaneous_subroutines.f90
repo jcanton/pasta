@@ -14,6 +14,10 @@ MODULE miscellaneous_subroutines
       MODULE PROCEDURE computeFieldAverage_rv
    END INTERFACE computeFieldAverage
 
+   INTERFACE computeFieldIntegral
+      MODULE PROCEDURE computeFieldIntegral_r
+   END INTERFACE computeFieldIntegral
+
 CONTAINS
 
 !------------------------------------------------------------------------------
@@ -210,11 +214,49 @@ END FUNCTION
 !------------------------------------------------------------------------------
 !------------------------------------------------------------------------------
 
+SUBROUTINE computeFieldIntegral_r (fld,  intFld)
+!
+! Author: Jacopo Canton
+! E-mail: jcanton@mech.kth.se
+! Last revision: 29/9/2015
+!
+! - fld        : field to be integrated
+!
+! - intFld     : integrated values of the field
+
+   IMPLICIT NONE
+   ! input variables
+   REAL(KIND=8), DIMENSION(np), INTENT(IN) :: fld
+   ! output variable
+   REAL(KIND=8) :: intFld
+   ! local variables
+   REAL(KIND=8), DIMENSION(np) :: intvFld
+   INTEGER :: mi, m, l
+
+   intFld = 0
+	! outer cycle on elements.  m = current element index
+	!
+   DO mi = 1, SIZE(mm);  m = mm(mi)
+
+		! cycle on parabolic Gauss points [ l_G = 7 ]
+		!
+      DO l = 1, l_G
+
+         intFld = intFld + SUM(fld(jj(:,m)) * ww(:,l)) * JAC(m) * pp_w(l)
+
+      ENDDO
+
+   ENDDO
+
+END SUBROUTINE computeFieldIntegral_r
+
+!------------------------------------------------------------------------------
+
 SUBROUTINE computeFieldAverage_rv (fld,  avgFld_v)
 !
 ! Author: Jacopo Canton
 ! E-mail: jcanton@mech.kth.se
-! Last revision: 16/5/2014
+! Last revision: 29/9/2015
 !
 ! - fld          : field to be averaged
 !
@@ -226,11 +268,12 @@ SUBROUTINE computeFieldAverage_rv (fld,  avgFld_v)
    ! output variable
    REAL(KIND=8), DIMENSION(velCmpnnts) :: avgFld_v
    ! local variables
-   REAL(KIND=8), DIMENSION(velCmpnnts,np) :: avgFld, ones, weights
+   REAL(KIND=8), DIMENSION(velCmpnnts,np) :: ones
+   REAL(KIND=8), DIMENSION(velCmpnnts)    :: avgFld, area
    INTEGER :: mi, m, l, k
 
-
-   ones = 1d0
+   ones   = 1d0
+   avgFld = 0d0
 
 	! outer cycle on elements.  m = current element index
 	!
@@ -244,9 +287,8 @@ SUBROUTINE computeFieldAverage_rv (fld,  avgFld_v)
          !
          DO k = 1, velCmpnnts
 
-            avgFld(k, jj(:,m))  = SUM(fld(k, jj(:,m))  * ww(:,l)) * JAC(m) * pp_w(l) !* yy_G(l,m)
-
-            weights(k, jj(:,m)) = SUM(ones(k, jj(:,m)) * ww(:,l)) * JAC(m) * pp_w(l) !* yy_G(l,m)
+            avgFld(k) = avgFld(k) + SUM(fld(k, jj(:,m))  * ww(:,l)) * JAC(m) * pp_w(l)
+            area(k)   = area(k)   + SUM(ones(k, jj(:,m)) * ww(:,l)) * JAC(m) * pp_w(l)
 
          ENDDO
 
@@ -256,7 +298,7 @@ SUBROUTINE computeFieldAverage_rv (fld,  avgFld_v)
 
    DO k = 1, velCmpnnts
 
-      avgFld_v(k) = SUM(avgFld(k,:)) / SUM(weights(k,:))
+      avgFld_v(k) = avgFld(k) / area(k)
 
    ENDDO
 

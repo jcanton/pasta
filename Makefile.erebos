@@ -36,8 +36,8 @@ FC = mpif90 -cpp
 F90CMP = $(FC) -c
 F90LNK = $(FC)
 F90OPT = -O3 -fopenmp
-F90DEB = -DDEBUG=2 -DMUMPSDEBUG=0 #-g -Wall -Wextra -pedantic -fcheck=all #-DASCIIEIGENVECTOR -DASCIIRESTART
-F90FLAGS = $(F90OPT) $(F90DEB)
+F90DEB = -DDEBUG=1 -DMUMPSDEBUG=0 #-g -Wall -Wextra -pedantic -fcheck=all #-DASCIIEIGENVECTOR -DASCIIRESTART -DSAVEEIGENVECTOR
+F90FLAGS = $(F90OPT) $(F90DEB) $(PASTAFLAGS)
 
 # Include paths
 F90INCDIR = -I/usr/include
@@ -50,8 +50,10 @@ LIBMUMPS  = -ldmumps -lzmumps -lpord
 LIBMPI    = -lmpi
 LIBS      = $(LIBMUMPS) $(LIBMPI) $(LIBARPACK) $(LIBLAPACK) $(LIBBLAS)
 
-FOLDER = ~/scratch/software/bin/
-NAME   = pasta_stokes
+#FOLDER = ~/scratch/software/bin/
+#FOLDER = /home/mech/jcanton/scratch/DATA/continuation_axi_cases/torus/
+FOLDER = $(CASEDIR)/
+NAME   = $(PASTANAME)
 
 
 ###############################################################################

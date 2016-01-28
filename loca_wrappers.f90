@@ -1684,9 +1684,11 @@ SUBROUTINE compute_eigen(x_vec, filenm, shiftIm)
                                trim(p_in%eigen_output_directory)// &
                                 'directEigenvalues'//trim(filenm)//trim(shiftName)//'.dat')
 
+#ifdef SAVEEIGENVECTOR
             CALL Save_eigenvectors (directEigenvectors, &
                                trim(p_in%eigen_output_directory)// &
                                'directEigenvectors'//trim(filenm)//trim(shiftName)//'.dat')
+#endif
 
             !------------------
             ! PLOT EIGENVECTORS
@@ -1750,9 +1752,11 @@ SUBROUTINE compute_eigen(x_vec, filenm, shiftIm)
                                 trim(p_in%eigen_output_directory)// &
                                  'adjointEigenvalues'//trim(filenm)//trim(shiftName)//'.dat')
 
+#ifdef SAVEEIGENVECTOR
             CALL Save_eigenvectors (adjointEigenvectors, &
                                 trim(p_in%eigen_output_directory)// &
                                 'adjointEigenvectors'//trim(filenm)//trim(shiftName)//'.dat')
+#endif
 
             !------------------
             ! PLOT EIGENVECTORS

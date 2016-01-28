@@ -208,7 +208,7 @@ SUBROUTINE case_postprocess_analysis0()
 ! Last revision: 18/12/2014
 !
 ! This routine is executed after analysis 0:
-! Steady state computation
+! Stokes solution
 
    IMPLICIT NONE
    ! input variables

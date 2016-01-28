@@ -4,7 +4,6 @@
 
  Created by Jacopo Canton under the supervision of Franco Auteri and Marco
  Carini, based on Luigi Quartapelle's subroutines for FEM discretization.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ### FEATURES:
   - axisymmetric base flow computation
@@ -14,11 +13,9 @@
   - computation of the optimal linear perturbations -3d- (transient growth)
   - DNS
   - evolution of optimal linear perturbations on the nonlinear system
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ### CONTACTS:
   - jcanton@mech.kth.se
   - franco.auteri@polimi.it
   - marco.carini@polimi.it
   - luigi.quartapelle@polimi.it
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

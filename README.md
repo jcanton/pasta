@@ -15,7 +15,7 @@
   - evolution of optimal linear perturbations on the nonlinear system
 
 ### CONTACTS:
-  - jcanton@mech.kth.se
-  - franco.auteri@polimi.it
-  - marco.carini@polimi.it
-  - luigi.quartapelle@polimi.it
+  - jcanton(at)mech.kth.se
+  - franco.auteri(at)polimi.it
+  - marco.carini(at)polimi.it
+  - luigi.quartapelle(at)polimi.it
